@@ -489,10 +489,13 @@ var good = [
 ["({a:b}[ohi].iets()++);", 16, "Object Literal With 1 Member, Square Bracket Member Accessor, Dot Member Accessor, Function Call, Postfix Increment"],
 
 ["switch(x){ default: foo; break; case x: break; default: fail; }", [30, 34], "double default should include error token"],
-["/foo/\\u0069", [1, 2], [true], "regular expression with unicode escape as flag. yes, i went there"]
+["/foo/\\u0069", [1, 2], [true], "regular expression with unicode escape as flag. yes, i went there"],
+
+["for ((x=5)in y);", 13, "initialization of for-in var is not allowed without var, but okay if you wrap it in parens"],
 
 ];
 
-var bad = {
-
-};
+// these are mainly for the parser, of course...
+var bad = [
+    'for (x = 5 in y) ;' // initialization (dead code) in for-in is only allowed with var keyword or with parens
+];
