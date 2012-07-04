@@ -4,16 +4,18 @@ var WHITE_SPACE = 1;
 var LINETERMINATOR = 2;
 var COMMENT_SINGLE = 3;
 var COMMENT_MULTI = 4;
+var STRING = 10;
 var STRING_SINGLE = 5;
 var STRING_DOUBLE = 6;
+var NUMBER = 11;
 var NUMERIC_HEX = 7;
-var NUMERIC_DEC = 10;
+var NUMERIC_DEC = 12;
 var REGEX = 8;
 var PUNCTUATOR = 9;
-var IDENTIFIER = 11;
-var EOF = 12;
-var ASI = 13;
-var ERROR = 14;
+var IDENTIFIER = 13;
+var EOF = 14;
+var ASI = 15;
+var ERROR = 16;
 
 var Tok = function(input, options){
     options = options || {};
@@ -38,6 +40,11 @@ Tok.prototype = {
     whites: [],
     blacks: [],
 
+    // parser can look at these positions to see where in the input the last token was
+    // this way the tokenizer can simply return number-constants-as-types.
+    lastStart: 0,
+    lastStop: 0,
+
     // some of these regular expressions are so complex that i had to
     // write scripts to construct them. the only way to keep my sanity
     rex: {
@@ -58,12 +65,18 @@ Tok.prototype = {
     },
 
     nextBlackToken: function(expressionStart){
-        while (this.nextWhiteToken());
+        if (this.pos >= this.normalizedInput.length) return EOF;
+
+        this.lastStart = this.pos;
+        var type = null;
+        while ((type = this.nextWhiteToken()) === true) this.lastStart = this.pos;
+        this.lastStop = this.pos;
+        return type;
     },
     nextWhiteToken: function(expressionStart){
-        if (this.pos >= this.originalInput.length) return {type:EOF};
+        if (this.pos >= this.normalizedInput.length) return {type:EOF};
 
-        var nextStart = this.originalInput.substring(this.pos,this.pos+4);
+        var nextStart = this.normalizedInput.substring(this.pos,this.pos+4);
         var part = this.rex.startSubstring.exec(nextStart);
 
         if (part[WHITE_SPACE]) return this.whitespace();
@@ -86,29 +99,29 @@ Tok.prototype = {
     },
     lineTerminator: function(){
         var pos = this.pos++;
-//        var input = this.originalInput;
+//        var input = this.normalizedInput;
 //        if (input[pos] == '\r' && input[pos+1] == '\n') ++this.pos;
+        return true;
     },
     commentSingle: function(){
         this.pos = this.normalizedInput.indexOf('\n', this.pos);
-        if (this.pos == -1) this.pos = this.originalInput.length;
+        if (this.pos == -1) this.pos = this.normalizedInput.length;
         return true;
     },
     commentMulti: function(){
-        var end = this.originalInput.indexOf('*/',this.pos+2)+2;
+        var end = this.normalizedInput.indexOf('*/',this.pos+2)+2;
         if (end == -1) throw new Error('Unable to find end of multiline comment started on pos '+this.pos);
         this.pos = end;
         return true;
     },
     stringSingle: function(){
-        this.string(this.rex.stringBodySingle);
+        return this.string(this.rex.stringBodySingle);
     },
     stringDouble: function(){
-        this.string(this.rex.stringBodyDouble);
+        return this.string(this.rex.stringBodyDouble);
     },
     string: function(regex){
         var pos = this.pos+1;
-
         regex.lastIndex = pos; // start from here...
         var matches = regex.test(this.normalizedInput);
 
@@ -116,6 +129,13 @@ Tok.prototype = {
 
         // i just wanna know where it ended...
         this.pos = regex.lastIndex;
+
+        // now check whether the first char was part of the match
+        regex.lastIndex = 0;
+        regex.test(this.normalizedInput[pos])
+
+        // actual type doesnt matter for now...
+        return STRING;
     },
     numeric: function(){
         // numeric is either a decimal or hex
@@ -123,11 +143,13 @@ Tok.prototype = {
 
         var regex = this.rex.numbers;
         regex.lastIndex = this.pos;
-        var matches = regex.test(this.originalInput);
+        var matches = regex.test(this.normalizedInput);
 
         if (!matches) throw new Error('Invalid number parsed, starting at '+this.pos);
 
         this.pos = regex.lastIndex;
+
+        return NUMBER;
     },
     regex: function(){
         // /foo/
@@ -141,8 +163,10 @@ Tok.prototype = {
 
         var pos = this.pos;
         this.regexBody();
-        if (this.originalInput[this.pos++] != '/') throw new Error('Regular expression not closed properly, started at '+pos);
+        if (this.normalizedInput[this.pos++] != '/') throw new Error('Regular expression not closed properly, started at '+pos);
         this.regexFlags();
+
+        return REGEX;
     },
     regexBody: function(){
         var input = this.normalizedInput;
@@ -185,7 +209,7 @@ Tok.prototype = {
         throw new Error('Unterminated regular expression at eof');
     },
     regexFlags: function(){
-        var input = this.originalInput;
+        var input = this.normalizedInput;
         while (this.pos < input.length) {
             switch (input[this.pos++]) {
                 case 'g':
@@ -201,19 +225,23 @@ Tok.prototype = {
     },
     punctuator: function(str){
         this.pos += str.length;
+
+        return PUNCTUATOR;
     },
     identifierOrBust: function(){
         var regex = this.rex.identifier;
-        regex.start = this.pos;
-        regex.test(this.originalInput);
+        regex.lastIndex = this.pos;
+        regex.test(this.normalizedInput);
         var end = regex.lastIndex;
         if (!end) throw 'Was expecting an identifier at '+this.pos;
 
         // regex might have skipped some characters at first, make sure the first character is part of the match
         regex.lastIndex = 0;
-        if (!regex.test(this.originalInput[this.pos])) throw 'Was expecting an identifier at '+this.pos;
+        if (!regex.test(this.normalizedInput[this.pos])) throw 'Was expecting an identifier at '+this.pos;
 
         this.pos = end;
+
+        return IDENTIFIER;
     },
 
 };

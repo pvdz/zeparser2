@@ -10,12 +10,16 @@ var getStringBodyRegex = function(quote, testing){
         return '(?:'+part+')';
     }).join('|');
 
-    var regex = '/^(?:'+body+')*'+quote+'/im'+(!testing?'g':'');
+    var regex = '/(?:'+body+')*'+quote+'/img';
     regex = eval(regex);
 
     if (!testing) return regex;
 
     // rest is just for running tests...
+
+    // slightly different regex for testing (i want it to match exactly the whole test case)
+    var regex = '/^(?:'+body+')*'+quote+'$/im';
+    regex = eval(regex);
 
     var good = [
         'foo',
