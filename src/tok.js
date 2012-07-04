@@ -7,9 +7,9 @@ var COMMENT_MULTI = 4;
 var STRING = 10;
 var STRING_SINGLE = 5;
 var STRING_DOUBLE = 6;
-var NUMBER = 11;
-var NUMERIC_HEX = 7;
-var NUMERIC_DEC = 12;
+var NUMBER = 7;
+var NUMERIC_DEC = 11;
+var NUMERIC_HEX = 12;
 var REGEX = 8;
 var PUNCTUATOR = 9;
 var IDENTIFIER = 13;
@@ -29,6 +29,24 @@ var Tok = function(input, options){
     // maintain the original type of newline...
     this.normalizedInput = (input||'').replace(this.rex.normalizeNewlines, '\n');
 };
+
+// reverse lookup
+Tok[WHITE_SPACE] = 'whitespace';
+Tok[LINETERMINATOR] = 'lineterminator';
+Tok[COMMENT_SINGLE] = 'comment_single';
+Tok[COMMENT_MULTI] = 'comment_multi';
+Tok[STRING] = 'string';
+Tok[STRING_SINGLE] = 'string_single';
+Tok[STRING_DOUBLE] = 'string_multi';
+Tok[NUMBER] = 'number';
+Tok[NUMERIC_DEC] = 'numeric_dec';
+Tok[NUMERIC_HEX] = 'numeric_hex';
+Tok[REGEX] = 'regex';
+Tok[PUNCTUATOR] = 'punctuator';
+Tok[IDENTIFIER] = 'identifier';
+Tok[EOF] = 'eof';
+Tok[ASI] = 'asi';
+Tok[ERROR] = 'error';
 
 Tok.prototype = {
     originalInput: null,
@@ -61,7 +79,9 @@ Tok.prototype = {
         // full number parser, both decimal and hex
         numbers: getNumberRegex(),
         // full identifier, except for non-ascii ranged characters...
-        identifier: /[\w\d$]+/g, // note: \w also includes underscore
+        identifier: /(?:[\w\d$]|(?:\\u(?:[\da-f]){4}))+/ig, // note: \w also includes underscore
+
+        hex: /[\da-f]/i,
     },
 
     nextBlackToken: function(expressionStart){
@@ -69,12 +89,12 @@ Tok.prototype = {
 
         this.lastStart = this.pos;
         var type = null;
-        while ((type = this.nextWhiteToken()) === true) this.lastStart = this.pos;
+        while ((type = this.nextWhiteToken(expressionStart)) === true) this.lastStart = this.pos;
         this.lastStop = this.pos;
         return type;
     },
     nextWhiteToken: function(expressionStart){
-        if (this.pos >= this.normalizedInput.length) return {type:EOF};
+        if (this.pos >= this.normalizedInput.length) return EOF;
 
         var nextStart = this.normalizedInput.substring(this.pos,this.pos+4);
         var part = this.rex.startSubstring.exec(nextStart);
@@ -85,7 +105,7 @@ Tok.prototype = {
         if (part[COMMENT_MULTI]) return this.commentMulti();
         if (part[STRING_SINGLE]) return this.stringSingle();
         if (part[STRING_DOUBLE]) return this.stringDouble();
-        if (part[NUMERIC_DEC]) return this.numeric();
+        if (part[NUMBER]) return this.number();
         if (expressionStart && part[REGEX]) return this.regex();
         // in case this is not an expression start, regex is a punctuator (division operator)
         if (part[PUNCTUATOR] || part[REGEX]) return this.punctuator(part[PUNCTUATOR] || part[REGEX]);
@@ -121,31 +141,32 @@ Tok.prototype = {
         return this.string(this.rex.stringBodyDouble);
     },
     string: function(regex){
-        var pos = this.pos+1;
-        regex.lastIndex = pos; // start from here...
+        regex.lastIndex = this.pos; // start from here...
         var matches = regex.test(this.normalizedInput);
 
-        if (!matches) throw new Error('String not terminated or contained invalid escape, started at '+pos);
+        if (!matches) throw new Error('String not terminated or contained invalid escape, started at '+this.pos);
 
         // i just wanna know where it ended...
         this.pos = regex.lastIndex;
 
-        // now check whether the first char was part of the match
-        regex.lastIndex = 0;
-        regex.test(this.normalizedInput[pos])
+        // since the leading quote is part of the match, we know that the match
+        // started at pos, no need to check for that. (otherwise we would have had to check)
 
         // actual type doesnt matter for now...
         return STRING;
     },
-    numeric: function(){
+    number: function(){
         // numeric is either a decimal or hex
         // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
-
         var regex = this.rex.numbers;
+
         regex.lastIndex = this.pos;
         var matches = regex.test(this.normalizedInput);
 
         if (!matches) throw new Error('Invalid number parsed, starting at '+this.pos);
+
+        // we dont have to check whether the first character is part of the match because we already know
+        // that it is a zero and therefor has to be part of the match.
 
         this.pos = regex.lastIndex;
 
@@ -160,10 +181,8 @@ Tok.prototype = {
         // /foo(!:foo)/
         // /foo(?!foo)bar/
         // /foo\dbar/
-
-        var pos = this.pos;
+        var pos = this.pos++;
         this.regexBody();
-        if (this.normalizedInput[this.pos++] != '/') throw new Error('Regular expression not closed properly, started at '+pos);
         this.regexFlags();
 
         return REGEX;
@@ -174,12 +193,12 @@ Tok.prototype = {
             switch (input[this.pos++]) {
                 case '\n':
                     throw new Error('Newline not allowed in regular expression at '+(this.pos-1));
-                case '/':
-                    ++this.pos;
-                    if (c == '\n') throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
+                case '\\':
+                    if (input[this.pos++] == '\n') throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
                     break;
                 case '(':
                     this.regexBody();
+                    break;
                 case ')':
                     return;
                 case '[':
@@ -187,6 +206,8 @@ Tok.prototype = {
                     break;
                 case '/':
                     return;
+//                default:
+//                    console.log("ignored", input[this.pos-1]);
             }
         }
 
@@ -198,8 +219,8 @@ Tok.prototype = {
             switch (input[this.pos++]) {
                 case '\n': throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
                 case '\\':
+                    if (input[this.pos] == '\n') throw new Error('Newline can not be escaped in regular expression at '+this.pos);
                     ++this.pos;
-                    if (c == '\n') throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
                     break;
                 case ']':
                     return;
@@ -210,18 +231,24 @@ Tok.prototype = {
     },
     regexFlags: function(){
         var input = this.normalizedInput;
+        var rex = this.rex.identifier;
         while (this.pos < input.length) {
-            switch (input[this.pos++]) {
-                case 'g':
-                case 'i':
-                case 'm':
-                case 'y':
-                default:
+            var c = input[this.pos];
+            rex.lastIndex = 0;
+            if (rex.test(c)) ++this.pos;
+            else if (c == '\\') {
+                // it can be a unicode escape...
+                // manually excavating this edge case
+                var pos = this.pos+1;
+                var hex = this.rex.hex;
+                if (input[pos] == 'u' && hex.test(input[pos+1]) && hex.test(input[pos+2]) && hex.test(input[pos+3]) && hex.test(input[pos+4])) {
+                    this.pos += 6;
+                } else {
                     return;
+                }
             }
+            else return;
         }
-
-        throw 'Unterminated regular expression at eof';
     },
     punctuator: function(str){
         this.pos += str.length;
@@ -230,6 +257,7 @@ Tok.prototype = {
     },
     identifierOrBust: function(){
         var regex = this.rex.identifier;
+
         regex.lastIndex = this.pos;
         regex.test(this.normalizedInput);
         var end = regex.lastIndex;
@@ -237,11 +265,15 @@ Tok.prototype = {
 
         // regex might have skipped some characters at first, make sure the first character is part of the match
         regex.lastIndex = 0;
-        if (!regex.test(this.normalizedInput[this.pos])) throw 'Was expecting an identifier at '+this.pos;
+        if (!regex.test(this.normalizedInput[this.pos])) {
+            // also have to check for unicode escape as start...
+            if (this.normalizedInput[this.pos] != '\\' || !regex.test(this.normalizedInput.substring(this.pos,6))) {
+                throw 'Was expecting an identifier at '+this.pos;
+            }
+        }
 
         this.pos = end;
 
         return IDENTIFIER;
     },
-
 };

@@ -1,16 +1,16 @@
 var getStringBodyRegex = function(quote, testing){
     // unicode hex escape+any-char non-newline-char
     var parts = [
-        '\\\\u[\\da-f]{4,}',
-        '\\\\x[\\da-f]{2,}',
-        '\\\\.',
-        '[^\\n]'
+        '\\\\u[\\da-f]{4}', // unicode escape, \u1234
+        '\\\\x[\\da-f]{2}', // hex escape, \x12
+        '\\\\[^xu]', // single char escape, but dont allow u or x here
+        '[^\\n\\\\'+quote+']' // anything but a newline,backslash or target quote (we want to fail malformed \x and \u)
     ];
     var body = parts.map(function(part){
         return '(?:'+part+')';
     }).join('|');
 
-    var regex = '/(?:'+body+')*'+quote+'/img';
+    var regex = '/'+quote+'(?:'+body+')*'+quote+'/img';
     regex = eval(regex);
 
     if (!testing) return regex;

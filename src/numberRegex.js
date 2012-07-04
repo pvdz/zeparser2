@@ -35,12 +35,15 @@ function getNumberRegex(testing){
             wrap(exp)+'?'
         )
     );
-    var regex = '/^'+body+(true?'$':'')+'/i';
+    var regex = '/'+body+'/gi';
     regex = eval(regex);
 
     if (!testing) return regex;
 
     // test cases...
+
+    var regex = '/^'+body+'$/i';
+
 
     var good = [
         '25',
@@ -50,6 +53,7 @@ function getNumberRegex(testing){
         '.00',
         '.0',
         '0.',
+        '500.',
         '1e2',
         '1e15',
         '1e05',

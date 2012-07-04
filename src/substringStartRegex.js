@@ -15,8 +15,8 @@ var getSubstringStartRegex = function(testing){
 
     // everything is wrapped in (<start>)?
     var starts = [
-        '[ \\t\\u000B\\u000C\\u00A0\\uFFFF]', // whitespace
-        '[\\u000A\\u000D\\u2028\\u2029]', // lineterminators
+        '[\\u0009\\u000B\\u000C\\u0020\\u00A0\\uFFFF]', // whitespace: http://es5.github.com/#WhiteSpace
+        '[\\u000A\\u000D\\u2028\\u2029]', // lineterminators: http://es5.github.com/#LineTerminator
         '\\/\\/', // single comment
         '\\/\\*', // multi comment
         '\'', // single string

@@ -11,12 +11,16 @@
     <script src="../src/numberRegex.js"></script>
     <script src="../src/tok.js"></script>
     <script>
-        var tok = new Tok('console.log("foo");');
+        var testString = '/foo/\u0069';
+        var exprMatrix = [false, true];
+        var tok = new Tok(testString);
 
         var protect = 1000;
+        var n = 0;
         do {
-            var next = tok.nextBlackToken();
-            console.log(next);
+            var next = tok.nextWhiteToken(exprMatrix[n]);
+            console.log(next, Tok[next], '['+tok.pos+']');
+            ++n;
         } while (--protect && next != EOF);
         if (!protect) console.warn('endless loop');
     </script>
