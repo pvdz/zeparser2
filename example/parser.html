@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+    <head>
+        <title>
+            Parser example
+        </title>
+    </head>
+    <body>
+    <script src="../src/substringStartRegex.js"></script>
+    <script src="../src/stringBodyRegex.js"></script>
+    <script src="../src/numberRegex.js"></script>
+    <script src="../src/tok.js"></script>
+    <script src="../src/par.js"></script>
+    <script>
+        var testString = 'x=y.a/z;';
+        console.log("testing", [testString.replace(/\n/g,'\u23CE')]);
+        var par = new Par(testString);
+        par.run();
+        console.log("finished...", Tok[par.tok.lastBlack]);
+    </script>
+    </body>
+</html>

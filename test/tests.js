@@ -43,7 +43,6 @@ var good = [
 ["[1,2,abc]", [7, 8], "Array literal"],
 ["[1,2,abc];", 8, "Array literal, `;`"], // Taken from the parser test suite.
 
-["{a:1,\"b\":2,c:c}", [13, 19], "Malformed Block"],
 ["var o = {a:1,\"b\":2,c:c};", 20, "Assignment, Object Literal, `;`"], // Taken from the parser test suite.
 
 ["var x;\nvar y;", 9, "2 Variable Declarations, Multiple lines"],
@@ -467,7 +466,7 @@ var good = [
 
 ["(/'/g, '\\\\\\'') + \"'\";", 11, [false, true], "Regression Test: Confusing Escape Character Sequence"],
 ["/abc\//no_comment", [3, 4], [true, false, false], "RegExp Followed By Line Comment"],
-["a: b; c;", 8, "ASI Regression Test: Labeled Identifier, `;`, Identifier, `;`"],
+["a: b; c;", 8, "ASI Regression Test (failing asi for label being expr statement): Labeled Identifier, `;`, Identifier, `;`"],
 ["var x; function f(){ x; function g(){}}", 23, "Function Declaration Within Function Body"],
 ["if (x) { break }", [11, 12], "ASI: `if` Statement, `break`"],
 ["x.hasOwnProperty()", [5, 6], "Regression Test: Object Property Named `hasOwnProperty`"],
@@ -484,18 +483,46 @@ var good = [
 ["{return c}", [5, 6], "ASI: `return`, Identifier"],
 
 ["this.charsX = Gui.getSize(this.textarea).w / this.fontSize.w;", 25, "Complex Division Not Treated as RegExp"],
+["x=y.a/z;",8,"simplified case of above"],
 ["(x)/ (y);", 9, "Parenthesized Dividend, Division Operator, Space, Parenthesized Divisor"],
 ["/^(?:\\/(?![*\\n\\/])(?:\\[(?:\\\\.|[^\\]\\\\\\n])*\\]|\\\\.|[^\\[\\/\\\\\\n])+\\/[gim]*)$/", [1, 2], [true], "Complex RegExp for Matching RegExps"],
 ["({a:b}[ohi].iets()++);", 16, "Object Literal With 1 Member, Square Bracket Member Accessor, Dot Member Accessor, Function Call, Postfix Increment"],
 
-["switch(x){ default: foo; break; case x: break; default: fail; }", [30, 34], "double default should include error token"],
 ["/foo/\\u0069", [1, 2], [true], "regular expression with unicode escape as flag. yes, i went there"],
 
 ["for ((x=5)in y);", 13, "initialization of for-in var is not allowed without var, but okay if you wrap it in parens"],
+["do{}while(x)\nok;", 11, "ASI after do-while because the semi is required"],
 
+["a:b:c:nested;",8,"nested labels"],
 ];
 
 // these are mainly for the parser, of course...
 var bad = [
-    'for (x = 5 in y) ;' // initialization (dead code) in for-in is only allowed with var keyword or with parens
+    'for (x = 5 in y) ;', // initialization (dead code) in for-in is only allowed with var keyword or with parens
+    'break 5+5;', // break arg, if any, must be a valid label identifier
+    'continue 5+5;', // break arg, if any, must be a valid label identifier
+    'break if;', // break arg, if any, must be a valid label identifier
+    'continue if;', // break arg, if any, must be a valid label identifier
+    'do {} while() fail;', // semi after while is required
+    "foo--.toString();", // postfix ops effectively end the primary expression
+    "foo++.toString();", // postfix ops effectively end the primary expression
+    "foo--['toString'];", // postfix ops effectively end the primary expression
+    "foo++['toString'];", // postfix ops effectively end the primary expression
+    "foo--('toString');", // now you're just being silly (there's _no_ way this can lead to valid runtime code.)
+    "foo++('toString');", // now you're just being silly (there's _no_ way this can lead to valid runtime code.)
+
+    'x={get foo(x){}};', // getters have no params
+    'x={get foo(x,y){}};', // getters have no params
+    'x={set foo(){}};', // setters have one param
+    'x={set foo(x,y){}};', // setters have one param
+
+    'x={get (){}};', // getters must have a name
+    'x={set (x){}};', // setters must have a name
+
+    '{a:1,\"b\":2,c:c}', // old test, not sure how this never crashed anything. this is a block, not an objlit
+
+    "switch(x){ default: foo; break; case x: break; default: fail; }", // double default
+
+    // TOFIX: add tests for various keywords that should fail
+
 ];

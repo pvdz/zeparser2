@@ -16,6 +16,7 @@ var IDENTIFIER = 13;
 var EOF = 14;
 var ASI = 15;
 var ERROR = 16;
+var VALUE = 17; // STRING NUMBER REGEX IDENTIFIER
 
 var Tok = function(input, options){
     options = options || {};
@@ -47,6 +48,7 @@ Tok[IDENTIFIER] = 'identifier';
 Tok[EOF] = 'eof';
 Tok[ASI] = 'asi';
 Tok[ERROR] = 'error';
+Tok[VALUE] = 'value';
 
 Tok.prototype = {
     originalInput: null,
@@ -62,6 +64,10 @@ Tok.prototype = {
     // this way the tokenizer can simply return number-constants-as-types.
     lastStart: 0,
     lastStop: 0,
+    lastBlack: null,
+    lastValue: null,
+
+    tokenCount: 0,
 
     // some of these regular expressions are so complex that i had to
     // write scripts to construct them. the only way to keep my sanity
@@ -84,20 +90,65 @@ Tok.prototype = {
         hex: /[\da-f]/i,
     },
 
-    nextBlackToken: function(expressionStart){
-        if (this.pos >= this.normalizedInput.length) return EOF;
+    is: function(v){
+        if (typeof v == 'number') {
+            if (v === VALUE) return this.lastBlack === STRING || this.lastBlack === NUMBER || this.lastBlack === REGEX || this.lastBlack === IDENTIFIER;
+            return this.lastBlack == v;
+        }
+        return this.getLastValue() == v;
+    },
+    nextIf: function(value){
+        var equals = this.is(value);
+        if (equals) this.next();
+        return equals;
+    },
+    nextExprIf: function(value){
+        var equals = this.is(value);
+        if (equals) this.next(true);
+        return equals;
+    },
+    mustBe: function(value){
+        if (this.is(value)) {
+            // lets hope this doesnt create obscure bugs, but when
+            // you explicitly check for something, the next token
+            // is not going to be an expression start...
+            this.next();
+        } else {
+            throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastBlack]+')';
+        }
+    },
 
-        this.lastStart = this.pos;
-        var type = null;
-        while ((type = this.nextWhiteToken(expressionStart)) === true) this.lastStart = this.pos;
+    nextExpr: function(){
+        return this.next(true);
+    },
+
+
+    next: function(expressionStart){
+        this.lastValue = null;
+        if (this.pos >= this.normalizedInput.length) {
+            this.lastBlack = EOF;
+            this.lastStart = this.lastStop = this.pos;
+            return EOF;
+        }
+
+        do {
+            this.lastStart = this.pos;
+            var type = this.nextWhiteToken(expressionStart);
+            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`');
+        } while (type === true);
+
         this.lastStop = this.pos;
+        this.lastBlack = type;
         return type;
     },
     nextWhiteToken: function(expressionStart){
+        this.lastValue = null;
         if (this.pos >= this.normalizedInput.length) return EOF;
 
         var nextStart = this.normalizedInput.substring(this.pos,this.pos+4);
         var part = this.rex.startSubstring.exec(nextStart);
+
+        ++this.tokenCount;
 
         if (part[WHITE_SPACE]) return this.whitespace();
         if (part[LINETERMINATOR]) return this.lineTerminator();
@@ -256,24 +307,37 @@ Tok.prototype = {
         return PUNCTUATOR;
     },
     identifierOrBust: function(){
+        var result = this.identifier();
+        if (result === false) throw 'Expecting identifier here at pos '+this.pos;
+        return result;
+    },
+    identifier: function(){
         var regex = this.rex.identifier;
 
         regex.lastIndex = this.pos;
         regex.test(this.normalizedInput);
         var end = regex.lastIndex;
-        if (!end) throw 'Was expecting an identifier at '+this.pos;
+        if (!end) return false;
 
         // regex might have skipped some characters at first, make sure the first character is part of the match
         regex.lastIndex = 0;
         if (!regex.test(this.normalizedInput[this.pos])) {
             // also have to check for unicode escape as start...
             if (this.normalizedInput[this.pos] != '\\' || !regex.test(this.normalizedInput.substring(this.pos,6))) {
-                throw 'Was expecting an identifier at '+this.pos;
+                return false;
             }
         }
 
         this.pos = end;
 
         return IDENTIFIER;
+    },
+
+    getLastValue: function(){
+        return this.lastValue || (this.lastValue = this.normalizedInput.substring(this.lastStart, this.lastStop));
+    },
+
+    debug: function(){
+        return '`'+this.getLastValue()+'` @ '+this.pos+' ('+Tok[this.lastBlack]+')';
     },
 };

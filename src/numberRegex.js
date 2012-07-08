@@ -35,14 +35,12 @@ function getNumberRegex(testing){
             wrap(exp)+'?'
         )
     );
-    var regex = '/'+body+'/gi';
-    regex = eval(regex);
 
-    if (!testing) return regex;
+    if (!testing) return new RegExp(body, 'gi');
 
     // test cases...
 
-    var regex = '/^'+body+'$/i';
+    var regex = new RegExp('^'+body+'$', 'i');
 
 
     var good = [

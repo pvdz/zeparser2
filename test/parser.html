@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 	<head>
-		<title>Tokenizer Test Suite Page</title>
+		<title>Parser Test Suite Page</title>
 		<style>
 			input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
 			#cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
@@ -13,11 +13,12 @@
 	</head>
 	<body>
 		(c) qfox.nl<br/>
-        Testing tokenizer:<br/>
+        Testing parser:<br/>
         <script src="../src/substringStartRegex.js"></script>
         <script src="../src/stringBodyRegex.js"></script>
         <script src="../src/numberRegex.js"></script>
         <script src="../src/tok.js"></script>
+        <script src="../src/par.js"></script>
 		<script src="tests.js"></script>
 		<script>
             new function(){
@@ -29,7 +30,7 @@
                     out.appendChild(f);
                 };
 
-                debug("Running test suite...",good.length,"tests");
+                debug("Running test suite on parser...",good.length,"tests");
                 debug(' ');
                 var start = Date.now();
                 var ok = 0;
@@ -41,28 +42,31 @@
                     var regexHints = test[3] ? test[2] : []; // if flags, then len=4
                     var desc = test[3] || test[2];
 
+                    var crashed = false;
                     try {
-                        var found = 0;
-                        var tok = new Tok(input);
-                        var protect = 1000;
-                        while (--protect && tok.nextWhiteToken(regexHints[found]) != EOF) ++found;
+                        var par = new Par(input);
+                        par.run();
                     } catch (e) {
                         console.error('Crash for', input);
                         console.error(e);
+                        crashed = e;
                     }
 
-                    if (found == outputLen) {
+                    if (crashed) {
+                        debug('<b class="red">Test crashed:</span>',desc,'('+crashed.toString()+')');
+                        ++fail;
+                    } else if (par.tok.tokenCount == outputLen) {
                         debug('<span class="green">Test '+i+' ok:</span>',desc);
                         ++ok;
                     } else {
-                        debug('<b class="red">Test failed:</span>',desc,'(found',found,'expected',outputLen+')'),console.log(desc, tok);
+                        debug('<b class="red">Test failed:</span>',desc,'(found',par.tok.tokenCount,'expected',outputLen+')'),console.log(desc, par);
                         ++fail;
                     }
                     debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
                     debug('<br/>');
                 }
-                debug("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
-                console.log("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
+                debug("Parser test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
+                console.log("Parser test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
             };
 		</script>
 	</body>

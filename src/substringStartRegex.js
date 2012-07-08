@@ -28,8 +28,7 @@ var getSubstringStartRegex = function(testing){
 
     // basic structure: /^(token)?(token)?(token)?.../
     // match need to start left but might not match entire input part
-    var s = '/^' + starts.map(function(start){ return '('+start+')?'; }).join('') + (testing?'$':'') + '/';
-    var regex = eval(s);
+    var s = '^' + starts.map(function(start){ return '('+start+')?'; }).join('') + (testing?'$':'');
 
-    return regex;
+    return new RegExp(s);
 };
