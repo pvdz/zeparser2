@@ -83,7 +83,7 @@ var good = [
 ["\r\n\n\u2028\u2029\r", 5, "Various Line Terminators"],
 
 // Whitespace.
-["a \t\u000b\u000c\u00a0\uffffb", [8, 10], "Whitespace"],
+["throw \t\u000b\u000c\u00a0\uffffb", [8, 9], "Whitespace"],
 // Additional tests for whitespace...
 
 // http://code.google.com/p/es-lab/source/browse/trunk/tests/parser/parsertests.js?r=86 and 430.
@@ -179,7 +179,7 @@ var good = [
 
 // Array Literals.
 ["[];", 3, "Empty Array, `;`"],
-["[\n\f\r\t\u0020];", [8, 9], "Array Containing Whitespace, `;`"], // note: \b used to be in here, but it isnt part of whitespace (any more?), so i removed it.
+["[\n\f\r\t\u0020];", 8, "Array Containing Whitespace, `;`"], // note: \b used to be in here, but it isnt part of whitespace (any more?), so i removed it.
 ["[1];", 4, "Array Containing 1 Element, `;`"],
 ["[1,2];", 6, "Array Containing 2 Elements, `;`"],
 ["[1,2,,];", 8, "Array Containing 2 Elisions, `;`"],
@@ -350,7 +350,7 @@ var good = [
 ["break;", 2, "`break` Statement"],
 ["break somewhere;", 4, "`break` Statement With Identifier Label"],
 ["continue /* comment */ ;", 5, "`continue` Statement, Block Comment, `;`"],
-["continue \n;", 4, "`continue` Statement, Space, Linefeed, `;`"],
+["continue \n;", [4, 5], "`continue` Statement, Space, Linefeed, `;`"],
 ["return;", 2, "`return` Statement"],
 ["return 0;", 4, "`return` Statement, Integer, `;`"],
 ["return 0 + \n 1;", 10, "`return` Statement, Additive Expression Containing Linefeed, `;`"],
@@ -402,7 +402,7 @@ var good = [
 ["continue \n foo;", [6, 7], "Restricted Production: `continue` Statement"],
 ["break \n foo;", [6, 7], "Restricted Production: `break` Statement"],
 ["return\nfoo;", [4, 5], "Restricted Production: `return` Statement"],
-["throw\nfoo;", [4, 6], "Restricted Production: `throw` Statement"],
+["throw\nfoo;", [4, 5], "Restricted Production: `throw` Statement"],
 ["var x; { 1 \n 2 } 3", [16, 19], "Classic Automatic Semicolon Insertion Case"],
 ["ab \t /* hi */\ncd", [7, 9], "Automatic Semicolon Insertion: Block Comment"],
 ["ab/*\n*/cd", [3, 5], "Automatic Semicolon Insertion Triggered by Multi-Line Block Comment"],
@@ -494,6 +494,32 @@ var good = [
 ["do{}while(x)\nok;", 11, "ASI after do-while because the semi is required"],
 
 ["a:b:c:nested;",8,"nested labels"],
+
+["{}/foo/;", 4, "regex after block"],
+["var x=/foo/;", 6, "regex after var initalizer"],
+["+{x:/y/};", 7, "regex in objlit"],
+["if(/x/)y;", 6, "regex in statement header"],
+["if(x)/y/;", 6, "regex after statement header"],
+["{/foo/}", 4, "regex as block body"],
+["if(x){/foo/;}", 8, "regex as real block body"],
+[";/x/;", 3, "regex after empty statement"],
+["[/x/];", 4, "regex in array"],
+["x=x,x=/y/;", 8, "regex assignment"],
+["x=x,/y/;", 6, "regex after comma"],
+["x?/y/:z;", 6, "regex middle of ternary"],
+["x?y:/z/;", 6, "regex end of ternary"],
+["/=/;", 2, "regex that looks like the start of a compound division assignment"],
+
+["!--foo;", 4, "prefix decr after bang"],
+["!++foo;", 4, "prefix incr after bang"],
+
+["for(i=0,j=1;;);", 13, "for with multiple expressions but no var in lead"],
+["for(var i=x?y:z;;);", 15, "for with var and ternary initializer"],
+
+["switch(x){case 1,2:}", 12, "switch cases can have multiple expressions as key"],
+["x=x,y=y;", 8, "double assignment expression"],
+
+["X/R>=0", [5, 6], "/R a punctuator is not"], // regex also found >= and it would take that length instead of the /
 ];
 
 // these are mainly for the parser, of course...

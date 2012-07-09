@@ -64,8 +64,9 @@ Tok.prototype = {
     // this way the tokenizer can simply return number-constants-as-types.
     lastStart: 0,
     lastStop: 0,
-    lastBlack: null,
+    lastType: null,
     lastValue: null,
+    lastNewline: null,
 
     tokenCount: 0,
 
@@ -92,8 +93,8 @@ Tok.prototype = {
 
     is: function(v){
         if (typeof v == 'number') {
-            if (v === VALUE) return this.lastBlack === STRING || this.lastBlack === NUMBER || this.lastBlack === REGEX || this.lastBlack === IDENTIFIER;
-            return this.lastBlack == v;
+            if (v === VALUE) return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
+            return this.lastType == v;
         }
         return this.getLastValue() == v;
     },
@@ -107,14 +108,12 @@ Tok.prototype = {
         if (equals) this.next(true);
         return equals;
     },
-    mustBe: function(value){
+    mustBe: function(value, nextIsExpr){
         if (this.is(value)) {
-            // lets hope this doesnt create obscure bugs, but when
-            // you explicitly check for something, the next token
-            // is not going to be an expression start...
-            this.next();
+            if (nextIsExpr) this.nextExpr();
+            else this.next();
         } else {
-            throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastBlack]+')';
+            throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.normalizedInput.substring(this.pos-2000, this.pos+2000)+'`';
         }
     },
 
@@ -125,8 +124,10 @@ Tok.prototype = {
 
     next: function(expressionStart){
         this.lastValue = null;
+        this.lastNewline = false;
+
         if (this.pos >= this.normalizedInput.length) {
-            this.lastBlack = EOF;
+            this.lastType = EOF;
             this.lastStart = this.lastStop = this.pos;
             return EOF;
         }
@@ -134,11 +135,11 @@ Tok.prototype = {
         do {
             this.lastStart = this.pos;
             var type = this.nextWhiteToken(expressionStart);
-            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`');
+//            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`');
         } while (type === true);
 
         this.lastStop = this.pos;
-        this.lastBlack = type;
+        this.lastType = type;
         return type;
     },
     nextWhiteToken: function(expressionStart){
@@ -151,7 +152,10 @@ Tok.prototype = {
         ++this.tokenCount;
 
         if (part[WHITE_SPACE]) return this.whitespace();
-        if (part[LINETERMINATOR]) return this.lineTerminator();
+        if (part[LINETERMINATOR]) {
+            this.lastNewline = true;
+            return this.lineTerminator();
+        }
         if (part[COMMENT_SINGLE]) return this.commentSingle();
         if (part[COMMENT_MULTI]) return this.commentMulti();
         if (part[STRING_SINGLE]) return this.stringSingle();
@@ -159,7 +163,7 @@ Tok.prototype = {
         if (part[NUMBER]) return this.number();
         if (expressionStart && part[REGEX]) return this.regex();
         // in case this is not an expression start, regex is a punctuator (division operator)
-        if (part[PUNCTUATOR] || part[REGEX]) return this.punctuator(part[PUNCTUATOR] || part[REGEX]);
+        if (part[PUNCTUATOR] || part[REGEX]) return this.punctuator(part[REGEX] || part[PUNCTUATOR]);
 
         return this.identifierOrBust();
     },
@@ -232,6 +236,7 @@ Tok.prototype = {
         // /foo(!:foo)/
         // /foo(?!foo)bar/
         // /foo\dbar/
+
         var pos = this.pos++;
         this.regexBody();
         this.regexFlags();
@@ -338,6 +343,6 @@ Tok.prototype = {
     },
 
     debug: function(){
-        return '`'+this.getLastValue()+'` @ '+this.pos+' ('+Tok[this.lastBlack]+')';
+        return '`'+this.getLastValue()+'` @ '+this.pos+' ('+Tok[this.lastType]+')';
     },
 };

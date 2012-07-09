@@ -12,8 +12,8 @@ Par.prototype = {
     },
 
     parseStatements: function(){
-        var protect = 10000;
-        while (--protect && this.tok.lastBlack != EOF && this.parseStatement());
+        var protect = 100000;
+        while (--protect && this.tok.lastType != EOF && this.parseStatement());
         if (!protect) throw 'loop protection triggered '+this.tok.debug();
     },
     parseStatement: function(){
@@ -59,13 +59,18 @@ Par.prototype = {
             this.tok.is('-') ||
             this.tok.is('~') ||
             this.tok.is('!')
-        ) return this.parseExpressionStatement();
+        ) {
+            return this.parseExpressionStatement();
+        }
 
-        if (this.tok.nextIf('{')) return this.parseBlock();
-        if (this.tok.nextIf(';')) return true; // empty statement
+        if (this.tok.nextExprIf('{')) return this.parseBlock();
+        if (this.tok.nextExprIf(';')) return true; // empty statement
         if (this.tok.is(EOF)) return false;
-
-        console.error('Unfinished statement business... '+this.tok.debug());
+    },
+    parseStatementHeader: function(){
+        this.tok.mustBe('(', true);
+        this.parseExpressions();
+        this.tok.mustBe(')', true);
     },
 
     parseVar: function(){
@@ -76,8 +81,8 @@ Par.prototype = {
 
         this.tok.next();
         do {
-            this.tok.mustBe(IDENTIFIER);
-            if (this.tok.nextIf('=')) {
+            this.tok.mustBe(IDENTIFIER, true);
+            if (this.tok.nextExprIf('=')) {
                 this.parseExpression();
             }
         } while(this.tok.nextIf(','));
@@ -88,8 +93,8 @@ Par.prototype = {
     parseVarPartNoIn: function(){
         this.tok.next();
         do {
-            this.tok.mustBe(IDENTIFIER);
-            if (this.tok.nextIf('=')) {
+            this.tok.mustBe(IDENTIFIER,true);
+            if (this.tok.nextExprIf('=')) {
                 this.parseExpressionNoIn();
             }
         } while(this.tok.nextIf(','));
@@ -99,9 +104,7 @@ Par.prototype = {
         // if (<exprs>) <stmt> else <stmt>
 
         this.tok.next();
-        this.tok.mustBe('(');
-        this.parseExpressions();
-        this.tok.mustBe(')');
+        this.parseStatementHeader();
         this.parseStatement();
 
         this.parseElse();
@@ -130,9 +133,7 @@ Par.prototype = {
         // while ( <exprs> ) <stmt>
 
         this.tok.next();
-        this.tok.mustBe('(');
-        this.parseExpressions();
-        this.tok.mustBe(')');
+        this.parseStatementHeader();
         this.parseStatement();
     },
     parseFor: function(){
@@ -148,7 +149,7 @@ Par.prototype = {
 
         var parsedAssignment = false;
         if (this.tok.is('var')) this.parseVarPartNoIn();
-        else parsedAssignment = this.parseExpressionNoIn();
+        else parsedAssignment = this.parseExpressionsNoIn();
 
         if (this.tok.nextIf(';')) this.parseForEach();
         else {
@@ -162,9 +163,9 @@ Par.prototype = {
     parseForEach: function(){
         // <expr> ; <expr> ) <stmt>
 
-        this.parseExpression();
+        this.parseExpressions();
         this.tok.mustBe(';');
-        this.parseExpression();
+        this.parseExpressions();
         this.tok.mustBe(')');
         this.parseStatement();
     },
@@ -182,8 +183,11 @@ Par.prototype = {
         // newline right after keyword = asi
 
         this.tok.next();
-        this.tok.nextIf(IDENTIFIER);
-        this.parseSemi();
+        if (this.tok.lastNewline) this.addAsi();
+        else {
+            this.tok.nextIf(IDENTIFIER);
+            this.parseSemi();
+        }
     },
     parseBreak: function(){
         // break ;
@@ -191,8 +195,11 @@ Par.prototype = {
         // newline right after keyword = asi
 
         this.tok.next();
-        this.tok.nextIf(IDENTIFIER);
-        this.parseSemi();
+        if (this.tok.lastNewline) this.addAsi();
+        else {
+            this.tok.nextIf(IDENTIFIER);
+            this.parseSemi();
+        }
     },
     parseReturn: function(){
         // return ;
@@ -200,24 +207,28 @@ Par.prototype = {
         // newline right after keyword = asi
 
         this.tok.nextExpr();
-        this.parseExpressions();
-        this.parseSemi();
+        if (this.tok.lastNewline) this.addAsi();
+        else {
+            this.parseExpressions();
+            this.parseSemi();
+        }
     },
     parseThrow: function(){
         // throw <exprs> ;
 
         this.tok.nextExpr();
-        this.parseExpressions();
-        this.parseSemi();
+        if (this.tok.lastNewline) this.addAsi();
+        else {
+            this.parseExpressions();
+            this.parseSemi();
+        }
     },
     parseSwitch: function(){
         // switch ( <exprs> ) { <switchbody> }
 
         this.tok.next();
-        this.tok.mustBe('(');
-        this.parseExpressions();
-        this.tok.mustBe(')');
-        this.tok.mustBe('{');
+        this.parseStatementHeader();
+        this.tok.mustBe('{', true);
         this.parseSwitchBody();
         this.tok.mustBe('}');
     },
@@ -232,20 +243,19 @@ Par.prototype = {
         }
     },
     parseCases: function(){
-        while (this.tok.nextIf('case')) {
+        while (this.tok.nextIf('case',true)) {
             this.parseCase();
         }
     },
     parseCase: function(){
         // case <value> : <stmts-no-case-default>
-        if (this.tok.nextIf(VALUE)) {
-            this.tok.mustBe(':');
-            this.parseStatements();
-        }
+        this.parseExpressions();
+        this.tok.mustBe(':',true);
+        this.parseStatements();
     },
     parseDefault: function(){
         // default <value> : <stmts-no-case-default>
-        this.tok.mustBe(':');
+        this.tok.mustBe(':',true);
         this.parseStatements();
     },
     parseTry: function(){
@@ -254,9 +264,7 @@ Par.prototype = {
         // try { <stmts> } catch ( <idntf> ) { <stmts> } finally { <stmts> }
 
         this.tok.next();
-        this.tok.mustBe('{');
-        this.parseStatements();
-        this.tok.mustBe('}');
+        this.parseCompleteBlock();
 
         var one = this.parseCatch();
         var two = this.parseFinally();
@@ -270,9 +278,7 @@ Par.prototype = {
             this.tok.mustBe('(');
             this.tok.mustBe(IDENTIFIER);
             this.tok.mustBe(')');
-            this.tok.mustBe('{');
-            this.parseStatements();
-            this.tok.mustBe('}');
+            this.parseCompleteBlock();
 
             return true;
         }
@@ -281,9 +287,7 @@ Par.prototype = {
         // finally { <stmts> }
 
         if (this.tok.nextIf('finally')) {
-            this.tok.mustBe('{');
-            this.parseStatements();
-            this.tok.mustBe('}');
+            this.parseCompleteBlock();
 
             return true;
         }
@@ -298,9 +302,7 @@ Par.prototype = {
         // with ( <exprs> ) <stmts>
 
         this.tok.next();
-        this.tok.mustBe('(');
-        this.parseExpressions();
-        this.tok.mustBe(')');
+        this.parseStatementHeader();
         this.parseStatement();
     },
     parseFunction: function(hasName){
@@ -321,9 +323,7 @@ Par.prototype = {
         this.tok.mustBe('(');
         this.parseParameters();
         this.tok.mustBe(')');
-        this.tok.mustBe('{');
-        this.parseStatements();
-        this.tok.mustBe('}');
+        this.parseCompleteBlock();
     },
     parseParameters: function(){
         // [<idntf> [, <idntf>]]
@@ -336,19 +336,33 @@ Par.prototype = {
     },
     parseBlock: function(){
         this.parseStatements();
-        this.tok.mustBe('}');
+        this.tok.mustBe('}', true);
+        return true;
+    },
+    parseCompleteBlock: function(){
+        this.tok.mustBe('{', true);
+        this.parseBlock();
     },
     parseSemi: function(){
-        if (this.tok.nextIf(';')) return true;
-        if (this.parseAsi()) return true;
-
-        throw 'Unable to parse semi, unable to apply ASI: '+this.tok.debug();
+        if (this.tok.nextIf(';')) return PUNCTUATOR;
+        if (this.parseAsi()) return ASI;
+        throw 'Unable to parse semi, unable to apply ASI: '+this.tok.debug()+' #### '+
+            this.tok.normalizedInput.substring(this.tok.lastStart-2000, this.tok.lastStart)+
+            '###'+
+            this.tok.normalizedInput.substring(this.tok.lastStart, this.tok.lastStart+2000);
     },
     parseAsi: function(){
-        if (this.tok.is(EOF)) return true;
-        if (this.tok.is('}')) return true;
+        if (this.tok.is(EOF) || this.tok.is('}') || this.tok.lastNewline) {
+            return this.addAsi();
+        }
+        return false;
 
-        // need to fix the newline one...
+        // need to fix the newline-in-comment-or-string one...
+    },
+    addAsi: function(){
+//        console.log("Aplying ASI");
+        ++this.tok.tokenCount;
+        return ASI;
     },
     parseExpressionStatement: function(){
         this.parseExpressions();
@@ -413,12 +427,17 @@ Par.prototype = {
     parseTernary: function(){
         this.tok.nextExpr();
         this.parseExpression();
-        this.tok.mustBe(':');
+        this.tok.mustBe(':',true);
         this.parseExpression();
     },
     parsePrimaryAfter: function(){
         this.tok.nextExpr();
         this.parsePrimary();
+    },
+    parseExpressionsNoIn: function(){
+        do {
+            this.parseExpressionNoIn();
+        } while (this.tok.nextExprIf(','));
     },
     parseExpressionNoIn: function(){
         var parsedAssignment = false; // not allowed in for-in
@@ -433,8 +452,8 @@ Par.prototype = {
 
         // keep parsing non-assignment binary ops
         while (this.parseBinaryOperator() && !this.tok.is('in')) {
-            this.tok.nextExpr();
-            this.parsePrimary();
+            if (this.tok.is('?')) this.parseTernary();
+            else this.parsePrimaryAfter();
         }
 
         return parsedAssignment;
@@ -447,7 +466,7 @@ Par.prototype = {
         if (this.tok.is('function')) {
             this.parseFunction();
         } else if (!this.tok.nextIf(VALUE)) {
-            if (this.tok.nextIf('[')) this.parseArray();
+            if (this.tok.nextExprIf('[')) this.parseArray();
             else if (this.tok.nextIf('{')) this.parseObject();
             else if (this.tok.nextExprIf('(')) this.parseGroup();
         } else if (checkLabel) {
@@ -459,12 +478,11 @@ Par.prototype = {
     },
     parseUnary: function(){
         // start with unary
-        var val = this.tok.getLastValue();
         var rex = /^(?:delete|void|typeof|new|\+\+?|--?|~|!)$/;
-        if (rex.test(val)) {
+        if (rex.test(this.tok.getLastValue())) {
             do {
-                val = this.tok.nextExpr();
-            } while (!this.tok.is(EOF) && rex.test(val));
+                this.tok.nextExpr();
+            } while (!this.tok.is(EOF) && rex.test(this.tok.getLastValue()));
         }
     },
     parsePrimarySuffixes: function(){
@@ -477,7 +495,6 @@ Par.prototype = {
         while (true) {
             if (this.tok.nextIf('.')) {
                 this.tok.mustBe(IDENTIFIER);
-                console.log(this.tok.debug())
             }
             else if (this.tok.nextExprIf('(')) {
                 this.parseExpressions();
@@ -537,7 +554,7 @@ Par.prototype = {
         this.parseDataPart();
     },
     parseDataPart: function(){
-        this.tok.mustBe(':');
+        this.tok.mustBe(':',true);
         this.parseExpression();
     },
 };

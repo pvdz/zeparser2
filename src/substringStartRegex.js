@@ -22,7 +22,7 @@ var getSubstringStartRegex = function(testing){
         '\'', // single string
         '"', // double string
         '\\.?[0-9]', // numbers
-        '?:(\\/)[^=]', // regex
+        '\\/=?', // regex
         punc.join('|')
     ];
 
