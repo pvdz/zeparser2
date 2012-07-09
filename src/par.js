@@ -13,7 +13,7 @@ Par.prototype = {
 
     parseStatements: function(){
         var protect = 100000;
-        while (--protect && this.tok.lastType != EOF && this.parseStatement());
+        while (--protect && !this.tok.is(EOF) && this.parseStatement());
         if (!protect) throw 'loop protection triggered '+this.tok.debug();
     },
     parseStatement: function(){

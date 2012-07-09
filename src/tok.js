@@ -22,6 +22,9 @@ var Tok = function(input, options){
     options = options || {};
 
     this.originalInput = input;
+
+    this.tokens = [];
+
     // normalized input means all the newlines have been normalized to just '\n'
     // this makes searching strings and comments for newlines much faster/simpler
     // and it makes the position being reported properly. it does mean that, due
@@ -69,6 +72,7 @@ Tok.prototype = {
     lastNewline: null,
 
     tokenCount: 0,
+    tokens: null,
 
     // some of these regular expressions are so complex that i had to
     // write scripts to construct them. the only way to keep my sanity
@@ -135,10 +139,13 @@ Tok.prototype = {
         do {
             this.lastStart = this.pos;
             var type = this.nextWhiteToken(expressionStart);
+            this.lastStop = this.pos;
+
+            //this.tokens.push({type:type, /*value:this.getLastValue(),*/ start:this.lastStart, stop:this.pos});
+
 //            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`');
         } while (type === true);
 
-        this.lastStop = this.pos;
         this.lastType = type;
         return type;
     },
@@ -246,11 +253,11 @@ Tok.prototype = {
     regexBody: function(){
         var input = this.normalizedInput;
         while (this.pos < input.length) {
-            switch (input[this.pos++]) {
+            switch (input.charAt(this.pos++)) {
                 case '\n':
                     throw new Error('Newline not allowed in regular expression at '+(this.pos-1));
                 case '\\':
-                    if (input[this.pos++] == '\n') throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
+                    if (input.charAt(this.pos++) == '\n') throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
                     break;
                 case '(':
                     this.regexBody();
@@ -272,10 +279,10 @@ Tok.prototype = {
     regexClass: function(){
         var input = this.normalizedInput;
         do {
-            switch (input[this.pos++]) {
+            switch (input.charAt(this.pos++)) {
                 case '\n': throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
                 case '\\':
-                    if (input[this.pos] == '\n') throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+                    if (input.charAt(this.pos) == '\n') throw new Error('Newline can not be escaped in regular expression at '+this.pos);
                     ++this.pos;
                     break;
                 case ']':
@@ -289,7 +296,7 @@ Tok.prototype = {
         var input = this.normalizedInput;
         var rex = this.rex.identifier;
         while (this.pos < input.length) {
-            var c = input[this.pos];
+            var c = input.charAt(this.pos);
             rex.lastIndex = 0;
             if (rex.test(c)) ++this.pos;
             else if (c == '\\') {
@@ -297,7 +304,7 @@ Tok.prototype = {
                 // manually excavating this edge case
                 var pos = this.pos+1;
                 var hex = this.rex.hex;
-                if (input[pos] == 'u' && hex.test(input[pos+1]) && hex.test(input[pos+2]) && hex.test(input[pos+3]) && hex.test(input[pos+4])) {
+                if (input.charAt(pos) == 'u' && hex.test(input.charAt(pos+1)) && hex.test(input.charAt(pos+2)) && hex.test(input.charAt(pos+3)) && hex.test(input.charAt(pos+4))) {
                     this.pos += 6;
                 } else {
                     return;
@@ -326,9 +333,9 @@ Tok.prototype = {
 
         // regex might have skipped some characters at first, make sure the first character is part of the match
         regex.lastIndex = 0;
-        if (!regex.test(this.normalizedInput[this.pos])) {
+        if (!regex.test(this.normalizedInput.charAt(this.pos))) {
             // also have to check for unicode escape as start...
-            if (this.normalizedInput[this.pos] != '\\' || !regex.test(this.normalizedInput.substring(this.pos,6))) {
+            if (this.normalizedInput.charAt(this.pos) != '\\' || !regex.test(this.normalizedInput.substring(this.pos,6))) {
                 return false;
             }
         }
