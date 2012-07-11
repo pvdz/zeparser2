@@ -406,7 +406,7 @@ var good = [
 ["var x; { 1 \n 2 } 3", [16, 19], "Classic Automatic Semicolon Insertion Case"],
 ["ab \t /* hi */\ncd", [7, 9], "Automatic Semicolon Insertion: Block Comment"],
 ["ab/*\n*/cd", [3, 5], "Automatic Semicolon Insertion Triggered by Multi-Line Block Comment"],
-["continue /* wtf \n busta */ foo;", [6, 7], "Automatic Semicolon Insertion: `continue` Statement Preceding Multi-Line Block Comment"],
+["continue /* wtf \r busta */ foo;", [6, 7], "Automatic Semicolon Insertion: `continue` Statement Preceding Multi-Line Block Comment"],
 ["function f() { s }", [11, 12], "Automatic Semicolon Insertion: Statement Within Function Declaration"],
 ["function f() { return }", [11, 12], "Automatic Semicolon Insertion: `return` Statement Within Function Declaration"],
 
@@ -520,6 +520,17 @@ var good = [
 ["x=x,y=y;", 8, "double assignment expression"],
 
 ["X/R>=0", [5, 6], "/R a punctuator is not"], // regex also found >= and it would take that length instead of the /
+
+["a/*\r*/b;", [4, 5], "asi for multiline comment with only a return"],
+["/**/", 1, "just an empty multi-line comment"],
+
+["foo <!-- bar;", 8, "html comment is okay like this"],
+
+["'foo\\\r\nbar';", 2, "string with windows rn newline escape"],
+["'foo\\\rbar';", 2, "string with windows rn newline escape r"],
+["'foo\\\nbar';", 2, "string with windows rn newline escape n"],
+["'foo\\\u2028bar';", 2, "string with windows rn newline escape 28"],
+["'foo\\\u2029bar';", 2, "string with windows rn newline escape 29"],
 ];
 
 // these are mainly for the parser, of course...
@@ -548,6 +559,25 @@ var bad = [
     '{a:1,\"b\":2,c:c}', // old test, not sure how this never crashed anything. this is a block, not an objlit
 
     "switch(x){ default: foo; break; case x: break; default: fail; }", // double default
+
+    'foo/', // make sure this doesnt pass..
+
+    '`', // backticks do not occur in js syntax
+    '#', // hashes do not occur in js syntax
+    '@', // at signs do not occur in js syntax
+
+    'x/**/bar;', // asi not applied
+    'x/*      */bar;', // asi not applied
+
+    '/foo\nbar/', // newline in regex
+    '/foo\u2029bar/', // newline in regex 2
+    '/foo\\\\nbar/', // escaped newline in regex
+    '/foo\\\\rbar/', // escaped newline in regex 2
+    '/foo[\\\\n]bar/', // escaped newline in regex char class
+    '/foo[\\\\r]bar/', // escaped newline in regex char class 2
+
+    'foo\n<!--\nbar = 5;', // assignment after prefix decr is bad
+    'foo</script> <script>bar', // yeah, uh
 
     // TOFIX: add tests for various keywords that should fail
 

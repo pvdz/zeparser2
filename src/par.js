@@ -3,6 +3,10 @@ var Par = function(input){
 };
 
 Par.prototype = {
+    regexUnary: /^(?:delete|void|typeof|new|\+\+?|--?|~|!)$/,
+    regexAssignmentOp: /^(?:[+*%&|^\/-]|<<|>>>?)?=$/,
+    regexNonAssignBinaryOp: /^(?:[+*%|^&?\/-]|[=!]==?|<=|>=|<<?|>>?>?|&&|instanceof|in|\|\|)$/,
+
     run: function(){
         // prepare
         this.tok.nextExpr();
@@ -74,6 +78,7 @@ Par.prototype = {
     },
 
     parseVar: function(){
+//        console.log(this.tok.pos)
         // var <vars>
         // - foo
         // - foo=bar
@@ -478,7 +483,7 @@ Par.prototype = {
     },
     parseUnary: function(){
         // start with unary
-        var rex = /^(?:delete|void|typeof|new|\+\+?|--?|~|!)$/;
+        var rex = this.regexUnary;
         if (rex.test(this.tok.getLastValue())) {
             do {
                 this.tok.nextExpr();
@@ -513,12 +518,12 @@ Par.prototype = {
         // includes any "compound" operator
 
         var val = this.tok.getLastValue();
-        return (/^(?:[+*%&|^\/-]|<<|>>>?)?=$/.test(val));
+        return (this.regexAssignmentOp.test(val));
     },
     parseBinaryOperator: function(){
         // non-assignment binary operator
         var val = this.tok.getLastValue();
-        return (/^(?:[+*%|^&?\/-]|[=!]==?|<=|>=|<<?|>>?>?|&&|instanceof|in|\|\|)$/.test(val));
+        return (this.regexNonAssignBinaryOp.test(val));
     },
 
     parseGroup: function(){

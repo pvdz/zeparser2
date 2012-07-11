@@ -31,7 +31,7 @@ var Tok = function(input, options){
     // to the desync of original input and normalized input for windows style
     // line terminators (two characters; cr+lf), the tokenizer cannot properly
     // maintain the original type of newline...
-    this.normalizedInput = (input||'').replace(this.rex.normalizeNewlines, '\n');
+    this.normalizedInput = (input||''); //.replace(this.rexNormalizeNewlines, '\n');
 };
 
 // reverse lookup
@@ -60,9 +60,6 @@ Tok.prototype = {
 
     errorStack: null,
 
-    whites: [],
-    blacks: [],
-
     // parser can look at these positions to see where in the input the last token was
     // this way the tokenizer can simply return number-constants-as-types.
     lastStart: 0,
@@ -76,24 +73,23 @@ Tok.prototype = {
 
     // some of these regular expressions are so complex that i had to
     // write scripts to construct them. the only way to keep my sanity
-    rex: {
-        // replace windows' CRLF with a single LF, as well as the weird newlines. this fixes positional stuff.
-        normalizeNewlines: /(?:\u000D\u000A)|[\u000d\u2028\u2029]/g,
-        // some are so complex that we build them to keep our own sanity
-        // get start from next four bytes (substringing)
-        startSubstring: getSubstringStartRegex(),
-        // get start from entire input (lastIndex)
-//        tokenalt:  getLastindexStartRegex(),
-        // get the remainder of a string literal, after the opening quote
-        stringBodySingle: getStringBodyRegex('\''),
-        stringBodyDouble: getStringBodyRegex('"'),
-        // full number parser, both decimal and hex
-        numbers: getNumberRegex(),
-        // full identifier, except for non-ascii ranged characters...
-        identifier: /(?:[\w\d$]|(?:\\u(?:[\da-f]){4}))+/ig, // note: \w also includes underscore
 
-        hex: /[\da-f]/i,
-    },
+    // replace windows' CRLF with a single LF, as well as the weird newlines. this fixes positional stuff.
+    rexNewlines: /[\u000A\u000d\u2028\u2029]/g,
+    rexNormalizeNewlines: /(?:\u000D\u000A)|[\u000d\u2028\u2029]/g,
+    // some are so complex that we build them to keep our own sanity
+    // get start from next four bytes (substringing)
+    rexStartSubstring: getSubstringStartRegex(),
+    // get the remainder of a string literal, after the opening quote
+    rexStringBodySingle: getStringBodyRegex('\''),
+    rexStringBodyDouble: getStringBodyRegex('"'),
+    // full number parser, both decimal and hex
+    rexNumbers: getNumberRegex(),
+    // full identifier, except for non-ascii ranged characters...
+    rexIdentifier: getIdentifierRegex(), // note: \w also includes underscore
+    rexHex: /[\da-f]/i,
+    // after having found the */ (indexOf), apply this to quickly test for a newline in the comment
+    rexNewlineSearchInMultilineComment:/[\u000A\u000D\u2028\u2029]|\*\//g,
 
     is: function(v){
         if (typeof v == 'number') {
@@ -143,7 +139,7 @@ Tok.prototype = {
 
             //this.tokens.push({type:type, /*value:this.getLastValue(),*/ start:this.lastStart, stop:this.pos});
 
-//            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`');
+//            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
         } while (type === true);
 
         this.lastType = type;
@@ -154,14 +150,13 @@ Tok.prototype = {
         if (this.pos >= this.normalizedInput.length) return EOF;
 
         var nextStart = this.normalizedInput.substring(this.pos,this.pos+4);
-        var part = this.rex.startSubstring.exec(nextStart);
-
+        var part = this.rexStartSubstring.exec(nextStart);
         ++this.tokenCount;
 
         if (part[WHITE_SPACE]) return this.whitespace();
         if (part[LINETERMINATOR]) {
             this.lastNewline = true;
-            return this.lineTerminator();
+            return this.lineTerminator(part[LINETERMINATOR]);
         }
         if (part[COMMENT_SINGLE]) return this.commentSingle();
         if (part[COMMENT_MULTI]) return this.commentMulti();
@@ -179,28 +174,40 @@ Tok.prototype = {
         ++this.pos;
         return true;
     },
-    lineTerminator: function(){
-        var pos = this.pos++;
-//        var input = this.normalizedInput;
-//        if (input[pos] == '\r' && input[pos+1] == '\n') ++this.pos;
+    lineTerminator: function(c){
+        ++this.pos;
+        if (c == '\u000D' && this.normalizedInput[this.pos] == '\u000A') ++this.pos;
         return true;
     },
     commentSingle: function(){
-        this.pos = this.normalizedInput.indexOf('\n', this.pos);
+        var rex = this.rexNewlines;
+        rex.lastIndex = this.pos;
+        rex.test(this.normalizedInput);
+        this.pos = rex.lastIndex-1;
         if (this.pos == -1) this.pos = this.normalizedInput.length;
+
+//        this.pos = this.normalizedInput.indexOf('\n', this.pos);
+//        if (this.pos == -1) this.pos = this.normalizedInput.length;
         return true;
     },
     commentMulti: function(){
         var end = this.normalizedInput.indexOf('*/',this.pos+2)+2;
         if (end == -1) throw new Error('Unable to find end of multiline comment started on pos '+this.pos);
+
+        // search for newline (important for ASI)
+        var nls = this.rexNewlineSearchInMultilineComment;
+        nls.lastIndex = this.pos+2;
+        nls.test(this.normalizedInput);
+        if (nls.lastIndex != end) this.lastNewline = true;
+
         this.pos = end;
         return true;
     },
     stringSingle: function(){
-        return this.string(this.rex.stringBodySingle);
+        return this.string(this.rexStringBodySingle);
     },
     stringDouble: function(){
-        return this.string(this.rex.stringBodyDouble);
+        return this.string(this.rexStringBodyDouble);
     },
     string: function(regex){
         regex.lastIndex = this.pos; // start from here...
@@ -220,7 +227,7 @@ Tok.prototype = {
     number: function(){
         // numeric is either a decimal or hex
         // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
-        var regex = this.rex.numbers;
+        var regex = this.rexNumbers;
 
         regex.lastIndex = this.pos;
         var matches = regex.test(this.normalizedInput);
@@ -254,10 +261,15 @@ Tok.prototype = {
         var input = this.normalizedInput;
         while (this.pos < input.length) {
             switch (input.charAt(this.pos++)) {
-                case '\n':
-                    throw new Error('Newline not allowed in regular expression at '+(this.pos-1));
                 case '\\':
-                    if (input.charAt(this.pos++) == '\n') throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
+                    switch (input.charAt(this.pos)) {
+                        case '\u000D':
+                        case '\u000A':
+                        case '\u2028':
+                        case '\u2029':
+                            throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+                    }
+                    ++this.pos;
                     break;
                 case '(':
                     this.regexBody();
@@ -269,6 +281,11 @@ Tok.prototype = {
                     break;
                 case '/':
                     return;
+                case '\u000D':
+                case '\u000A':
+                case '\u2028':
+                case '\u2029':
+                    throw new Error('Newline not allowed in regular expression at '+(this.pos-1));
 //                default:
 //                    console.log("ignored", input[this.pos-1]);
             }
@@ -280,9 +297,19 @@ Tok.prototype = {
         var input = this.normalizedInput;
         do {
             switch (input.charAt(this.pos++)) {
-                case '\n': throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
+                case '\u000D':
+                case '\u000A':
+                case '\u2028':
+                case '\u2029':
+                    throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
                 case '\\':
-                    if (input.charAt(this.pos) == '\n') throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+                    switch (input.charAt(this.pos)) {
+                        case '\u000D':
+                        case '\u000A':
+                        case '\u2028':
+                        case '\u2029':
+                            throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+                    }
                     ++this.pos;
                     break;
                 case ']':
@@ -294,7 +321,7 @@ Tok.prototype = {
     },
     regexFlags: function(){
         var input = this.normalizedInput;
-        var rex = this.rex.identifier;
+        var rex = this.rexIdentifier;
         while (this.pos < input.length) {
             var c = input.charAt(this.pos);
             rex.lastIndex = 0;
@@ -303,7 +330,7 @@ Tok.prototype = {
                 // it can be a unicode escape...
                 // manually excavating this edge case
                 var pos = this.pos+1;
-                var hex = this.rex.hex;
+                var hex = this.rexHex;
                 if (input.charAt(pos) == 'u' && hex.test(input.charAt(pos+1)) && hex.test(input.charAt(pos+2)) && hex.test(input.charAt(pos+3)) && hex.test(input.charAt(pos+4))) {
                     this.pos += 6;
                 } else {
@@ -324,7 +351,7 @@ Tok.prototype = {
         return result;
     },
     identifier: function(){
-        var regex = this.rex.identifier;
+        var regex = this.rexIdentifier;
 
         regex.lastIndex = this.pos;
         regex.test(this.normalizedInput);
