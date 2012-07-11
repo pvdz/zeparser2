@@ -21,8 +21,6 @@ var VALUE = 17; // STRING NUMBER REGEX IDENTIFIER
 var Tok = function(input, options){
     options = options || {};
 
-    this.originalInput = input;
-
     this.tokens = [];
 
     // normalized input means all the newlines have been normalized to just '\n'
@@ -31,7 +29,7 @@ var Tok = function(input, options){
     // to the desync of original input and normalized input for windows style
     // line terminators (two characters; cr+lf), the tokenizer cannot properly
     // maintain the original type of newline...
-    this.normalizedInput = (input||''); //.replace(this.rexNormalizeNewlines, '\n');
+    this.input = (input||'');
 };
 
 // reverse lookup
@@ -54,8 +52,7 @@ Tok[ERROR] = 'error';
 Tok[VALUE] = 'value';
 
 Tok.prototype = {
-    originalInput: null,
-    normalizedInput: null,
+    input: null,
     pos: 0,
 
     errorStack: null,
@@ -113,7 +110,7 @@ Tok.prototype = {
             if (nextIsExpr) this.nextExpr();
             else this.next();
         } else {
-            throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.normalizedInput.substring(this.pos-2000, this.pos+2000)+'`';
+            throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
         }
     },
 
@@ -126,7 +123,7 @@ Tok.prototype = {
         this.lastValue = null;
         this.lastNewline = false;
 
-        if (this.pos >= this.normalizedInput.length) {
+        if (this.pos >= this.input.length) {
             this.lastType = EOF;
             this.lastStart = this.lastStop = this.pos;
             return EOF;
@@ -139,7 +136,7 @@ Tok.prototype = {
 
             //this.tokens.push({type:type, /*value:this.getLastValue(),*/ start:this.lastStart, stop:this.pos});
 
-//            console.log('token:', type, Tok[type], '`'+this.normalizedInput.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
+//            console.log('token:', type, Tok[type], '`'+this.input.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
         } while (type === true);
 
         this.lastType = type;
@@ -147,9 +144,9 @@ Tok.prototype = {
     },
     nextWhiteToken: function(expressionStart){
         this.lastValue = null;
-        if (this.pos >= this.normalizedInput.length) return EOF;
+        if (this.pos >= this.input.length) return EOF;
 
-        var nextStart = this.normalizedInput.substring(this.pos,this.pos+4);
+        var nextStart = this.input.substring(this.pos,this.pos+4);
         var part = this.rexStartSubstring.exec(nextStart);
         ++this.tokenCount;
 
@@ -170,34 +167,64 @@ Tok.prototype = {
         return this.identifierOrBust();
     },
 
+    nextStart: function(){
+        var getSubstringStartRegex = function(testing){
+            // note: punctuators should be parsed long to short. regex picks longest first, parser wants that too.
+            var punc = [
+                '>>>=',
+                '===','!==','>>>','<<=','>>=',
+                '<=','>=','==','!=','\\+\\+','--','<<','>>','\\&\\&','\\|\\|','\\+=','-=','\\*=','%=','\\&=','\\|=','\\^=','\\/=',
+                '\\{','\\}','\\(','\\)','\\[','\\]','\\.',';',',','<','>','\\+','-','\\*','%','\\|','\\&','\\|','\\^','!','~','\\?',':','=','\\/'
+            ];
+
+
+            // everything is wrapped in (<start>)?
+            var starts = [
+                '[\\u0009\\u000B\\u000C\\u0020\\u00A0\\uFFFF]', // whitespace: http://es5.github.com/#WhiteSpace
+                '[\\u000A\\u000D\\u2028\\u2029]', // lineterminators: http://es5.github.com/#LineTerminator
+                '\\/\\/', // single comment
+                '\\/\\*', // multi comment
+                '\'', // single string
+                '"', // double string
+                '\\.?[0-9]', // numbers
+                '\\/=?', // regex
+                punc.join('|')
+            ];
+
+            // basic structure: /^(token)?(token)?(token)?.../
+            // match need to start left but might not match entire input part
+            var s = '^' + starts.map(function(start){ return '('+start+')?'; }).join('') + (testing?'$':'');
+
+            return new RegExp(s);
+        };
+
+    },
+
     whitespace: function(){
         ++this.pos;
         return true;
     },
     lineTerminator: function(c){
         ++this.pos;
-        if (c == '\u000D' && this.normalizedInput[this.pos] == '\u000A') ++this.pos;
+        if (c == '\u000D' && this.input[this.pos] == '\u000A') ++this.pos;
         return true;
     },
     commentSingle: function(){
         var rex = this.rexNewlines;
         rex.lastIndex = this.pos;
-        rex.test(this.normalizedInput);
+        rex.test(this.input);
         this.pos = rex.lastIndex-1;
-        if (this.pos == -1) this.pos = this.normalizedInput.length;
-
-//        this.pos = this.normalizedInput.indexOf('\n', this.pos);
-//        if (this.pos == -1) this.pos = this.normalizedInput.length;
+        if (this.pos == -1) this.pos = this.input.length;
         return true;
     },
     commentMulti: function(){
-        var end = this.normalizedInput.indexOf('*/',this.pos+2)+2;
+        var end = this.input.indexOf('*/',this.pos+2)+2;
         if (end == -1) throw new Error('Unable to find end of multiline comment started on pos '+this.pos);
 
         // search for newline (important for ASI)
         var nls = this.rexNewlineSearchInMultilineComment;
         nls.lastIndex = this.pos+2;
-        nls.test(this.normalizedInput);
+        nls.test(this.input);
         if (nls.lastIndex != end) this.lastNewline = true;
 
         this.pos = end;
@@ -211,7 +238,7 @@ Tok.prototype = {
     },
     string: function(regex){
         regex.lastIndex = this.pos; // start from here...
-        var matches = regex.test(this.normalizedInput);
+        var matches = regex.test(this.input);
 
         if (!matches) throw new Error('String not terminated or contained invalid escape, started at '+this.pos);
 
@@ -230,7 +257,7 @@ Tok.prototype = {
         var regex = this.rexNumbers;
 
         regex.lastIndex = this.pos;
-        var matches = regex.test(this.normalizedInput);
+        var matches = regex.test(this.input);
 
         if (!matches) throw new Error('Invalid number parsed, starting at '+this.pos);
 
@@ -258,7 +285,7 @@ Tok.prototype = {
         return REGEX;
     },
     regexBody: function(){
-        var input = this.normalizedInput;
+        var input = this.input;
         while (this.pos < input.length) {
             switch (input.charAt(this.pos++)) {
                 case '\\':
@@ -294,7 +321,7 @@ Tok.prototype = {
         throw new Error('Unterminated regular expression at eof');
     },
     regexClass: function(){
-        var input = this.normalizedInput;
+        var input = this.input;
         do {
             switch (input.charAt(this.pos++)) {
                 case '\u000D':
@@ -320,7 +347,7 @@ Tok.prototype = {
         throw new Error('Unterminated regular expression at eof');
     },
     regexFlags: function(){
-        var input = this.normalizedInput;
+        var input = this.input;
         var rex = this.rexIdentifier;
         while (this.pos < input.length) {
             var c = input.charAt(this.pos);
@@ -354,15 +381,15 @@ Tok.prototype = {
         var regex = this.rexIdentifier;
 
         regex.lastIndex = this.pos;
-        regex.test(this.normalizedInput);
+        regex.test(this.input);
         var end = regex.lastIndex;
         if (!end) return false;
 
         // regex might have skipped some characters at first, make sure the first character is part of the match
         regex.lastIndex = 0;
-        if (!regex.test(this.normalizedInput.charAt(this.pos))) {
+        if (!regex.test(this.input.charAt(this.pos))) {
             // also have to check for unicode escape as start...
-            if (this.normalizedInput.charAt(this.pos) != '\\' || !regex.test(this.normalizedInput.substring(this.pos,6))) {
+            if (this.input.charAt(this.pos) != '\\' || !regex.test(this.input.substring(this.pos,6))) {
                 return false;
             }
         }
@@ -373,7 +400,7 @@ Tok.prototype = {
     },
 
     getLastValue: function(){
-        return this.lastValue || (this.lastValue = this.normalizedInput.substring(this.lastStart, this.lastStop));
+        return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
     },
 
     debug: function(){
