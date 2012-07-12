@@ -23,12 +23,6 @@ var Tok = function(input, options){
 
   this.tokens = [];
 
-  // normalized input means all the newlines have been normalized to just '\n'
-  // this makes searching strings and comments for newlines much faster/simpler
-  // and it makes the position being reported properly. it does mean that, due
-  // to the desync of original input and normalized input for windows style
-  // line terminators (two characters; cr+lf), the tokenizer cannot properly
-  // maintain the original type of newline...
   this.input = (input||'');
 };
 
@@ -186,54 +180,54 @@ Tok.prototype = {
   nextWithSwitch: function(expressionStart){
     if (this.pos >= this.input.length) return EOF;
 
-    var c = this.input.charAt(this.pos);
+    var c = this.input.charCodeAt(this.pos);
     switch (c) {
-      case '\u0009':
-      case '\u000B':
-      case '\u000C':
-      case '\u0020':
-      case '\u00A0':
-      case '\uFFFF':
+      case 0x0009: // whitespaces
+      case 0x000B:
+      case 0x000C:
+      case 0x0020:
+      case 0x00A0:
+      case 0xFFFF:
         return this.whitespace();
-      case '\u000A':
-      case '\u000D':
-      case '\u2028':
-      case '\u2029':
+      case 0x000A: // newlines
+      case 0x000D:
+      case 0x2028:
+      case 0x2029:
         return this.lineTerminator(c);
-      case '\'':
+      case 0x0027: // single quote
         return this.stringSingle();
-      case '"':
+      case 0x0022: // double quote
         return this.stringDouble();
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
+      case 0x0030: // 0 ~ 9
+      case 0x0031:
+      case 0x0032:
+      case 0x0033:
+      case 0x0034:
+      case 0x0035:
+      case 0x0036:
+      case 0x0037:
+      case 0x0038:
+      case 0x0039:
         return this.number();
-      case '.':
-        switch (this.input.charAt(this.pos+1)) {
-          case '0':
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-          case '8':
-          case '9':
+      case 0x002e: // . (dot)
+        switch (this.input.charCodeAt(this.pos+1)) {
+          case 0x0030: // 0 ~ 9
+          case 0x0031:
+          case 0x0032:
+          case 0x0033:
+          case 0x0034:
+          case 0x0035:
+          case 0x0036:
+          case 0x0037:
+          case 0x0038:
+          case 0x0039:
             return this.number();
         }
         break;
-      case '/':
-        var n = this.input.charAt(this.pos+1);
-        if (n == '/') return this.commentSingle();
-        if (n == '*') return this.commentMulti();
+      case 0x002f: // / (forward slash)
+        var n = this.input.charCodeAt(this.pos+1);
+        if (n === 0x002f) return this.commentSingle(); // 0x002f=/
+        if (n === 0x002a) return this.commentMulti(); // 0x002f=*
         if (expressionStart) return this.regex();
         break;
     }
@@ -250,16 +244,16 @@ Tok.prototype = {
     if (punc) return this.punctuator(punc[0]);
     return false;
   },
-  checkNumber: function(c){
-    // alternative attempt for number. seems to be slower on chrome
-    var n = parseInt(c);
-    if (n >= 0) return this.number();
-    if (c == '.') {
-      var n = parseInt(this.input.charAt(this.pos+1));
-      if (n >= 0) return this.number();
-    }
-    return false;
-  },
+//  checkNumber: function(c){
+//    // alternative attempt for number. seems to be slower on chrome
+//    var n = parseInt(c);
+//    if (n >= 0) return this.number();
+//    if (c == '.') {
+//      var n = parseInt(this.input.charAt(this.pos+1));
+//      if (n >= 0) return this.number();
+//    }
+//    return false;
+//  },
 
 //  whites: ['\u0009', '\u000B', '\u000C', '\u0020', '\u00A0', '\uFFFF'],
 //  newlines: ['\u000A', '\u000D', '\u2028', '\u2029'],
@@ -295,7 +289,7 @@ Tok.prototype = {
   lineTerminator: function(c){
     this.lastNewline = true;
     ++this.pos;
-    if (c == '\u000D' && this.input[this.pos] == '\u000A') ++this.pos;
+    if (c == 0x000D && this.input[this.pos] == 0x000A) ++this.pos;
     return true;
   },
   commentSingle: function(){
@@ -323,19 +317,20 @@ Tok.prototype = {
     var pos = this.pos + 1;
     var input = this.input;
     while (true) {
-      switch (input.charAt(pos++)) {
-        case '\'':
+      switch (input.charCodeAt(pos++)) {
+        case 0x0027: // ' (single quote)
           this.pos = pos;
           return STRING;
-        case '\\':
+        case 0x005c: // \ (backslash)
           pos = this.stringEscape(pos);
           break;
-        case '\u000A':
-        case '\u000D':
-        case '\u2028':
-        case '\u2029':
+        case 0x000A: // newlines
+        case 0x000D:
+        case 0x2028:
+        case 0x2029:
           throw 'No newlines in strings!';
-        case void 0: throw 'Unterminated string found at '+pos;
+        default:
+          if (pos >= input.length) throw 'Unterminated string found at '+pos;
       }
     }
 
@@ -345,19 +340,20 @@ Tok.prototype = {
     var pos = this.pos + 1;
     var input = this.input;
     while (true) {
-      switch (input.charAt(pos++)) {
-        case '\"':
+      switch (input.charCodeAt(pos++)) {
+        case 0x0022: // ' (single quote)
           this.pos = pos;
           return STRING;
-        case '\\':
+        case 0x005c: // \ (backslash)
           pos = this.stringEscape(pos);
           break;
-        case '\u000A':
-        case '\u000D':
-        case '\u2028':
-        case '\u2029':
+        case 0x000A: // newlines
+        case 0x000D:
+        case 0x2028:
+        case 0x2029:
           throw 'No newlines in strings!';
-        case void 0: throw 'Unterminated string found at '+pos;
+        default:
+          if (pos >= input.length) throw 'Unterminated string found at '+pos;
       }
     }
 
@@ -365,21 +361,20 @@ Tok.prototype = {
   },
   stringEscape: function(pos){
     var input = this.input;
-//    console.log(input.charCodeAt(pos), input.charCodeAt(pos+1), input.charCodeAt(pos-1))
-    switch (input.charAt(pos)) {
+    switch (input.charCodeAt(pos)) {
       // unicode escapes
-      case 'u':
+      case 0x0075: // u
         if (this.unicode(pos+1)) pos += 4;
         else throw 'Invalid unicode escape';
         break;
       // hex escapes
-      case 'x':
-        if (this.hexicode(this.input.charAt(pos+1)) && this.hexicode(this.input.charAt(pos+2))) pos += 2;
+      case 0x0078: // x
+        if (this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2))) pos += 2;
         else throw 'Invalid hex escape';
         break;
       // skip windows newlines as if they're one char
-      case '\r':
-        if (input.charAt(pos+1) == '\n') ++pos;
+      case 0x000D: // \r
+        if (input.charCodeAt(pos+1) === 0x000A) ++pos;
         break;
     }
     return pos+1;
@@ -387,32 +382,32 @@ Tok.prototype = {
   unicode: function(pos){
     var input = this.input;
 
-    return this.hexicode(this.input.charAt(pos)) && this.hexicode(this.input.charAt(pos+1)) && this.hexicode(this.input.charAt(pos+2)) && this.hexicode(this.input.charAt(pos+3));
+    return this.hexicode(this.input.charCodeAt(pos)) && this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2)) && this.hexicode(this.input.charCodeAt(pos+3));
   },
   hexicode: function(c){
     switch (c) {
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-      case 'a':
-      case 'b':
-      case 'c':
-      case 'd':
-      case 'e':
-      case 'f':
-      case 'A':
-      case 'B':
-      case 'C':
-      case 'D':
-      case 'E':
-      case 'F':
+      case 0x0030: // 0 ~ 9
+      case 0x0031:
+      case 0x0032:
+      case 0x0033:
+      case 0x0034:
+      case 0x0035:
+      case 0x0036:
+      case 0x0037:
+      case 0x0038:
+      case 0x0039:
+      case 0x0061: // a-f
+      case 0x0062:
+      case 0x0063:
+      case 0x0064:
+      case 0x0065:
+      case 0x0066:
+      case 0x0041: // A-F
+      case 0x0042:
+      case 0x0043:
+      case 0x0044:
+      case 0x0045:
+      case 0x0046:
         return true;
     }
     return false;
@@ -442,24 +437,31 @@ Tok.prototype = {
 
     var input = this.input;
     var pos = this.pos;
-    var c = input.charAt(pos);
-    var d = input.charAt(pos+1);
+    var c = input.charCodeAt(pos);
+    var d = input.charCodeAt(pos+1);
 
-    if (d === 'x' || d === 'X') {
-    pos += 2;
-    // hex
-    while (this.hexicode(input.charAt(pos))) ++pos;
+    if (d === 0x0058 || d === 0x0078) { // x or X
+      pos += 2;
+      // hex
+      while (this.hexicode(input.charCodeAt(pos))) ++pos;
     } else {
-    if (c !== '.') pos = this.numberSub(pos+1); // skip the first, you already know it's a number
-    c = input.charAt(pos);
-    if (c === '.') pos = this.numberSub(pos+1); // skip the dot
-    c = input.charAt(pos);
-    if (c === 'e' || c === 'E') {
-      ++pos;
-      c = input.charAt(pos);
-      if (c === '+' || c === '-') ++pos; // optional
-      pos = this.numberSub(pos);
-    }
+
+      if (c !== 0x002e) { // if not dot?
+        pos = this.numberSub(pos+1); // +1 => skip the first, you already know it's a number
+        c = input.charCodeAt(pos);
+      }
+
+      if (c === 0x002e) { // dot
+        pos = this.numberSub(pos+1); // +1 => skip the dot
+        c = input.charCodeAt(pos);
+      }
+
+      if (c === 0x0045 || c === 0x0065) { // e or E
+        ++pos;
+        c = input.charCodeAt(pos);
+        if (c === 0x002b || c === 0x002d) ++pos; // + or -, optional
+        pos = this.numberSub(pos);
+      }
     }
     this.pos = pos;
 
@@ -480,20 +482,19 @@ Tok.prototype = {
   },
   numberSub: function(pos){
     var input = this.input;
-    var c = input.charAt(pos);
 
     while (true) {
-      switch (c=input.charAt(pos)) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
+      switch (input.charCodeAt(pos)) {
+        case 0x0030: // 0 ~ 9
+        case 0x0031:
+        case 0x0032:
+        case 0x0033:
+        case 0x0034:
+        case 0x0035:
+        case 0x0036:
+        case 0x0037:
+        case 0x0038:
+        case 0x0039:
           ++pos;
           break;
         default:
@@ -520,31 +521,31 @@ Tok.prototype = {
   regexBody: function(){
     var input = this.input;
     while (this.pos < input.length) {
-      switch (input.charAt(this.pos++)) {
-        case '\\':
-          switch (input.charAt(this.pos)) {
-            case '\u000D':
-            case '\u000A':
-            case '\u2028':
-            case '\u2029':
+      switch (input.charCodeAt(this.pos++)) {
+        case 0x005c: // \ (backslash)
+          switch (input.charCodeAt(this.pos)) {
+            case 0x000D:
+            case 0x000A:
+            case 0x2028:
+            case 0x2029:
               throw new Error('Newline can not be escaped in regular expression at '+this.pos);
           }
           ++this.pos;
           break;
-        case '(':
+        case 0x0028: // ( (opening paren)
           this.regexBody();
           break;
-        case ')':
+        case 0x0029: // ) (closing paren)
           return;
-        case '[':
+        case 0x005b: // [ (opening sq bracket)
           this.regexClass();
           break;
-        case '/':
+        case 0x002f: // / (forward slash)
           return;
-        case '\u000D':
-        case '\u000A':
-        case '\u2028':
-        case '\u2029':
+        case 0x000D:
+        case 0x000A:
+        case 0x2028:
+        case 0x2029:
           throw new Error('Newline not allowed in regular expression at '+(this.pos-1));
 //        default:
 //          console.log("ignored", input[this.pos-1]);
@@ -556,23 +557,23 @@ Tok.prototype = {
   regexClass: function(){
     var input = this.input;
     do {
-      switch (input.charAt(this.pos++)) {
-        case '\u000D':
-        case '\u000A':
-        case '\u2028':
-        case '\u2029':
+      switch (input.charCodeAt(this.pos++)) {
+        case 0x000D:
+        case 0x000A:
+        case 0x2028:
+        case 0x2029:
           throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
-        case '\\':
-          switch (input.charAt(this.pos)) {
-            case '\u000D':
-            case '\u000A':
-            case '\u2028':
-            case '\u2029':
+        case 0x005c: // \ (backslash)
+          switch (input.charCodeAt(this.pos)) {
+            case 0x000D:
+            case 0x000A:
+            case 0x2028:
+            case 0x2029:
               throw new Error('Newline can not be escaped in regular expression at '+this.pos);
           }
           ++this.pos;
           break;
-        case ']':
+        case 0x005d: // ] (closing sq bracket)
           return;
       }
     } while (this.pos <= input.length);
@@ -627,7 +628,7 @@ Tok.prototype = {
     regex.lastIndex = 0;
     if (!regex.test(this.input.charAt(this.pos))) {
       // also have to check for unicode escape as start...
-      if (this.input.charAt(this.pos) != '\\' || !regex.test(this.input.substring(this.pos,6))) {
+      if (this.input.charCodeAt(this.pos) != 0x005c || !regex.test(this.input.substring(this.pos,6))) {
         return false;
       }
     }

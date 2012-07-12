@@ -527,10 +527,10 @@ var good = [
 ["foo <!-- bar;", 8, "html comment is okay like this"],
 
 ["'foo\\\r\nbar';", 2, "string with windows rn newline escape"],
-["'foo\\\rbar';", 2, "string with windows rn newline escape r"],
-["'foo\\\nbar';", 2, "string with windows rn newline escape n"],
-["'foo\\\u2028bar';", 2, "string with windows rn newline escape 28"],
-["'foo\\\u2029bar';", 2, "string with windows rn newline escape 29"],
+["'foo\\\rbar';", 2, "string with mac newline escape r"],
+["'foo\\\nbar';", 2, "string with unix newline escape n"],
+["'foo\\\u2028bar';", 2, "string with newline escape 28"],
+["'foo\\\u2029bar';", 2, "string with newline escape 29"],
 ];
 
 // these are mainly for the parser, of course...
