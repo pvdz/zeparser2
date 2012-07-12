@@ -352,9 +352,9 @@ Par.prototype = {
         if (this.tok.nextIf(';')) return PUNCTUATOR;
         if (this.parseAsi()) return ASI;
         throw 'Unable to parse semi, unable to apply ASI: '+this.tok.debug()+' #### '+
-            this.tok.normalizedInput.substring(this.tok.lastStart-2000, this.tok.lastStart)+
+            this.tok.input.substring(this.tok.lastStart-2000, this.tok.lastStart)+
             '###'+
-            this.tok.normalizedInput.substring(this.tok.lastStart, this.tok.lastStart+2000);
+            this.tok.input.substring(this.tok.lastStart, this.tok.lastStart+2000);
     },
     parseAsi: function(){
         if (this.tok.is(EOF) || this.tok.is('}') || this.tok.lastNewline) {
