@@ -24,6 +24,17 @@ var Tok = function(input, options){
   this.tokens = [];
 
   this.input = (input||'');
+
+  // v8 "appreciates" to be set all instance properties explicitly
+  this.pos = 0;
+
+  this.lastStart = 0;
+  this.lastStop = 0;
+  this.lastType = null;
+  this.lastValue = null;
+  this.lastNewline = -1;
+
+  this.tokenCount = 0;
 };
 
 // reverse lookup
@@ -48,8 +59,6 @@ Tok[VALUE] = 'value';
 Tok.prototype = {
   input: null,
   pos: 0,
-
-  errorStack: null,
 
   // parser can look at these positions to see where in the input the last token was
   // this way the tokenizer can simply return number-constants-as-types.
@@ -139,10 +148,9 @@ Tok.prototype = {
       this.lastStart = this.pos;
       var type = this.nextWhiteToken(expressionStart);
       this.lastStop = this.pos;
-
 //      this.tokens.push({type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos});
 
-//      if (this.pos > 151000) console.log('token:', type, Tok[type], '`'+this.input.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
+//      console.log('token:', type, Tok[type], '`'+this.input.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
     } while (type === true);
 
     this.lastType = type;
@@ -154,133 +162,145 @@ Tok.prototype = {
 
     ++this.tokenCount;
 
-//    return this.nextWithRegex(expressionStart);
-    return this.nextWithSwitch(expressionStart);
-//    return this.nextWithArray(expressionStart);
+    return this.nextToken(expressionStart);
   },
 
-//  nextWithRegex: function(expressionStart){
-//    var nextStart = this.input.substring(this.pos,this.pos+4);
-//    var part = this.rexStartSubstring.exec(nextStart);
-//
-//    if (part[WHITE_SPACE]) return this.whitespace();
-//    if (part[LINETERMINATOR]) return this.lineTerminator(part[LINETERMINATOR]);
-//    if (part[COMMENT_SINGLE]) return this.commentSingle();
-//    if (part[COMMENT_MULTI]) return this.commentMulti();
-//    if (part[STRING_SINGLE]) return this.stringSingle();
-//    if (part[STRING_DOUBLE]) return this.stringDouble();
-//    if (part[NUMBER]) return this.number();
-//    if (expressionStart && part[REGEX]) return this.regex();
-//    // in case this is not an expression start, regex is a punctuator (division operator)
-//    if (part[PUNCTUATOR] || part[REGEX]) return this.punctuator(part[REGEX] || part[PUNCTUATOR]);
-//
-//    return this.identifierOrBust();
-//  },
-
-  nextWithSwitch: function(expressionStart){
+  nextToken: function(expressionStart){
     if (this.pos >= this.input.length) return EOF;
 
     var c = this.input.charCodeAt(this.pos);
-    switch (c) {
-      case 0x0009: // whitespaces
-      case 0x000B:
-      case 0x000C:
-      case 0x0020:
-      case 0x00A0:
-      case 0xFFFF:
-        return this.whitespace();
-      case 0x000A: // newlines
-      case 0x000D:
-      case 0x2028:
-      case 0x2029:
-        return this.lineTerminator(c);
-      case 0x0027: // single quote
-        return this.stringSingle();
-      case 0x0022: // double quote
-        return this.stringDouble();
-      case 0x0030: // 0 ~ 9
-      case 0x0031:
-      case 0x0032:
-      case 0x0033:
-      case 0x0034:
-      case 0x0035:
-      case 0x0036:
-      case 0x0037:
-      case 0x0038:
-      case 0x0039:
-        return this.number();
-      case 0x002e: // . (dot)
-        switch (this.input.charCodeAt(this.pos+1)) {
-          case 0x0030: // 0 ~ 9
-          case 0x0031:
-          case 0x0032:
-          case 0x0033:
-          case 0x0034:
-          case 0x0035:
-          case 0x0036:
-          case 0x0037:
-          case 0x0038:
-          case 0x0039:
-            return this.number();
-        }
-        break;
-      case 0x002f: // / (forward slash)
+
+    if (c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x0020 || c === 0x00A0 || c === 0xFFFF) return this.whitespace();
+    if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) return this.lineTerminator(c);
+    if (c === 0x0027) return this.stringSingle();
+    if (c === 0x0022) return this.stringDouble();
+    if (c >= 0x0030 && c <= 0x0039) return this.number();
+    if (c === 0x002e) { // . (dot)
+      var d = this.input.charCodeAt(this.pos+1);
+      if (d >= 0x0030 && d <= 0x0039) return this.number();
+    }
+    if (c === 0x002f) { // / (forward slash)
         var n = this.input.charCodeAt(this.pos+1);
         if (n === 0x002f) return this.commentSingle(); // 0x002f=/
         if (n === 0x002a) return this.commentMulti(); // 0x002f=*
         if (expressionStart) return this.regex();
-        break;
     }
 
-    if (this.checkPunctuator()) return PUNCTUATOR;
+    if (this.punctuator(c)) return PUNCTUATOR;
 
     // only thing left it might be is an identifier
     return this.identifierOrBust();
   },
-  checkPunctuator: function(){
-    // check punctuator
-    var rex = this.rexPunctuator;
-    var punc = rex.exec(this.input.substring(this.pos, this.pos+4));
-    if (punc) return this.punctuator(punc[0]);
+
+  punctuator: function(c){
+    var input = this.input;
+    var pos = this.pos;
+
+//    >>>=,
+//    === !== >>> <<= >>=
+//    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
+//    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
+
+    if (c === 0x28) return this.puncToken(1, '(');
+    if (c === 0x29) return this.puncToken(1, ')');
+    if (c === 0x7b) return this.puncToken(1, '{');
+    if (c === 0x7d) return this.puncToken(1, '}');
+    if (c === 0x5b) return this.puncToken(1, '[');
+    if (c === 0x5d) return this.puncToken(1, ']');
+    if (c === 0x2e) return this.puncToken(1, '.');
+    if (c === 0x3b) return this.puncToken(1, ';');
+    if (c === 0x2c) return this.puncToken(1, ',');
+    if (c === 0x3f) return this.puncToken(1, '?');
+    if (c === 0x3a) return this.puncToken(1, ':');
+
+    var d = input.charCodeAt(pos+1);
+
+    if (c === 0x3d) {
+      if (d === 0x3d) {
+        if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '===');
+        return this.puncToken(2, '==');
+      }
+      return this.puncToken(1, '=');
+    }
+    if (c === 0x3c) {
+      if (d === 0x3d) return this.puncToken(2, '<=');
+      if (d === 0x3c) {
+        if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '<<=');
+        return this.puncToken(2, '<<');
+      }
+      return this.puncToken(1, '<');
+    }
+
+    if (c === 0x3e) {
+      if (d === 0x3d) return this.puncToken(2, '>=');
+      if (d === 0x3e) {
+        var e = input.charCodeAt(pos+2);
+        if (e === 0x3d) return this.puncToken(3, '>>=');
+        if (e === 0x3e) {
+          if (input.charCodeAt(pos+3) === 0x3d) return this.puncToken(4, '>>>=');
+          return this.puncToken(3, '>>>');
+        }
+        return this.puncToken(2, '>>');
+      }
+      return this.puncToken(1, '>');
+    }
+
+    if (c === 0x2b) {
+      if (d === 0x3d) return this.puncToken(2, '+=');
+      if (d === 0x2b) return this.puncToken(2, '++');
+      return this.puncToken(1, '+');
+    }
+    if (c === 0x2d) {
+      if (d === 0x3d) return this.puncToken(2, '-=');
+      if (d === 0x2d) return this.puncToken(2, '--');
+      return this.puncToken(1, '-');
+    }
+    if (c === 0x2a) {
+      if (d === 0x3d) return this.puncToken(2, '*=');
+      return this.puncToken(1, '*');
+    }
+    if (c === 0x25) {
+      if (d === 0x3d) return this.puncToken(2, '%=');
+      return this.puncToken(1, '%');
+    }
+    if (c === 0x7c) {
+      if (d === 0x3d) return this.puncToken(2, '+=');
+      if (d === 0x7c) return this.puncToken(2, '+=');
+      return this.puncToken(1, '|');
+    }
+    if (c === 0x26) {
+      if (d === 0x3d) return this.puncToken(2, '&=');
+      if (d === 0x26) return this.puncToken(2, '&&');
+      return this.puncToken(1, '&');
+    }
+    if (c === 0x5e) {
+      if (d === 0x3d) return this.puncToken(2, '^=');
+      return this.puncToken(1, '^');
+    }
+    if (c === 0x21) {
+      if (d === 0x3d) {
+        if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '!==');
+        return this.puncToken(2, '!=');
+      }
+      return this.puncToken(1, '~');
+    }
+    if (c === 0x7e) {
+      if (d === 0x3d) return this.puncToken(2, '~=');
+      return this.puncToken(1, '~');
+    }
+    if (c === 0x2f) {
+      // cant really be a //, /* or regex because they should have been checked before calling this function
+      if (d === 0x3d) return this.puncToken(2, '/=');
+      return this.puncToken(1, '/');
+    }
+
     return false;
   },
-//  checkNumber: function(c){
-//    // alternative attempt for number. seems to be slower on chrome
-//    var n = parseInt(c);
-//    if (n >= 0) return this.number();
-//    if (c == '.') {
-//      var n = parseInt(this.input.charAt(this.pos+1));
-//      if (n >= 0) return this.number();
-//    }
-//    return false;
-//  },
-
-//  whites: ['\u0009', '\u000B', '\u000C', '\u0020', '\u00A0', '\uFFFF'],
-//  newlines: ['\u000A', '\u000D', '\u2028', '\u2029'],
-//  nums: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-//  nextWithArray: function(expressionStart){
-//    if (this.pos >= this.input.length) return EOF;
-//
-//    var c = this.input.charAt(this.pos);
-//
-//    if (this.whites.indexOf(c) >= 0) return this.whitespace();
-//    if (this.newlines.indexOf(c) >= 0) return this.lineTerminator(c);
-//    if (c === '\'') return this.stringSingle();
-//    if (c === '"') return this.stringDouble();
-//    if (this.nums.indexOf(c) >= 0) return this.number();
-//    if (c === '.' && this.nums.indexOf(this.input.charAt(this.pos+1)) >= 0) return this.number();
-//    if (c == '/') {
-//      var n = this.input.charAt(this.pos+1);
-//      if (n == '/') return this.commentSingle();
-//      if (n == '*') return this.commentMulti();
-//      if (expressionStart) return this.regex();
-//    }
-//
-//    if (this.checkPunctuator()) return PUNCTUATOR;
-//
-//    // only thing left it might be is an identifier
-//    return this.identifierOrBust();
-//  },
+  puncToken: function(len, value){
+    this.pos += len;
+    return PUNCTUATOR;
+//    return value;
+  },
 
   whitespace: function(){
     ++this.pos;
@@ -289,7 +309,7 @@ Tok.prototype = {
   lineTerminator: function(c){
     this.lastNewline = true;
     ++this.pos;
-    if (c == 0x000D && this.input[this.pos] == 0x000A) ++this.pos;
+    if (c === 0x000D && this.input.charCodeAt(this.pos) === 0x000A) ++this.pos;
     return true;
   },
   commentSingle: function(){
@@ -301,6 +321,24 @@ Tok.prototype = {
     return true;
   },
   commentMulti: function(){
+    // two ways: regex or character loop. dunno which is faster.
+
+//    var input = this.input;
+//    var len = input.length;
+//    var pos = this.pos+2;
+//    var nonl = true;
+//    while (pos < len) {
+//      var c = input.charCodeAt(pos++);
+//      if (c === 0x2a && input.charCodeAt(pos) === 0x2f) break;
+//      else if (nonl && c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) nonl = false;
+//    }
+//
+//    if (pos >= len) throw 'unterminated line comment at '+pos;
+//    this.pos = pos+1;
+//    if (!nonl) this.lastNewline = true;
+//
+//    return true;
+
     var end = this.input.indexOf('*/',this.pos+2)+2;
     if (end == 1) throw new Error('Unable to find end of multiline comment started on pos '+this.pos);
 
@@ -316,46 +354,39 @@ Tok.prototype = {
   stringSingle: function(){
     var pos = this.pos + 1;
     var input = this.input;
-    while (true) {
-      switch (input.charCodeAt(pos++)) {
-        case 0x0027: // ' (single quote)
+    var len = input.length;
+
+    while (pos < len) {
+      var c = input.charCodeAt(pos++);
+      if (c === 0x0027) { // ' (single quote)
           this.pos = pos;
           return STRING;
-        case 0x005c: // \ (backslash)
-          pos = this.stringEscape(pos);
-          break;
-        case 0x000A: // newlines
-        case 0x000D:
-        case 0x2028:
-        case 0x2029:
-          throw 'No newlines in strings!';
-        default:
-          if (pos >= input.length) throw 'Unterminated string found at '+pos;
       }
+      if (c === 0x005c) pos = this.stringEscape(pos); // \ (backslash)
+      if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
     }
+
+    throw 'Unterminated string found at '+pos;
 
 //    return this.string(this.rexStringBodySingle);
   },
   stringDouble: function(){
     var pos = this.pos + 1;
     var input = this.input;
-    while (true) {
-      switch (input.charCodeAt(pos++)) {
-        case 0x0022: // ' (single quote)
-          this.pos = pos;
-          return STRING;
-        case 0x005c: // \ (backslash)
-          pos = this.stringEscape(pos);
-          break;
-        case 0x000A: // newlines
-        case 0x000D:
-        case 0x2028:
-        case 0x2029:
-          throw 'No newlines in strings!';
-        default:
-          if (pos >= input.length) throw 'Unterminated string found at '+pos;
+    var len = input.length;
+
+    while (pos < len) {
+      var c = input.charCodeAt(pos++);
+
+      if (c === 0x0022) { // " (double quote)
+        this.pos = pos;
+        return STRING;
       }
+      if (c === 0x005c) pos = this.stringEscape(pos); // \ (backslash)
+      if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
     }
+
+    throw 'Unterminated string found at '+pos;
 
 //    return this.string(this.rexStringBodyDouble);
   },
@@ -385,32 +416,8 @@ Tok.prototype = {
     return this.hexicode(this.input.charCodeAt(pos)) && this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2)) && this.hexicode(this.input.charCodeAt(pos+3));
   },
   hexicode: function(c){
-    switch (c) {
-      case 0x0030: // 0 ~ 9
-      case 0x0031:
-      case 0x0032:
-      case 0x0033:
-      case 0x0034:
-      case 0x0035:
-      case 0x0036:
-      case 0x0037:
-      case 0x0038:
-      case 0x0039:
-      case 0x0061: // a-f
-      case 0x0062:
-      case 0x0063:
-      case 0x0064:
-      case 0x0065:
-      case 0x0066:
-      case 0x0041: // A-F
-      case 0x0042:
-      case 0x0043:
-      case 0x0044:
-      case 0x0045:
-      case 0x0046:
-        return true;
-    }
-    return false;
+    // 0-9, a-f, A-F
+    return ((c >= 0x30 && c <= 0x39) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
   },
 
 //  string: function(regex){
@@ -465,42 +472,29 @@ Tok.prototype = {
     }
     this.pos = pos;
 
-/*
-    var regex = this.rexNumbers;
-
-    regex.lastIndex = this.pos;
-    var matches = regex.test(this.input);
-
-    if (!matches) throw new Error('Invalid number parsed, starting at '+this.pos);
-
-    // we dont have to check whether the first character is part of the match because we already know
-    // that it is a zero and therefor has to be part of the match.
-
-    this.pos = regex.lastIndex;
-*/
     return NUMBER;
+
+
+
+//    var regex = this.rexNumbers;
+//
+//    regex.lastIndex = this.pos;
+//    var matches = regex.test(this.input);
+//
+//    if (!matches) throw new Error('Invalid number parsed, starting at '+this.pos);
+//
+//    // we dont have to check whether the first character is part of the match because we already know
+//    // that it is a zero and therefor has to be part of the match.
+//
+//    this.pos = regex.lastIndex;
+//
+//    return NUMBER;
   },
   numberSub: function(pos){
     var input = this.input;
-
-    while (true) {
-      switch (input.charCodeAt(pos)) {
-        case 0x0030: // 0 ~ 9
-        case 0x0031:
-        case 0x0032:
-        case 0x0033:
-        case 0x0034:
-        case 0x0035:
-        case 0x0036:
-        case 0x0037:
-        case 0x0038:
-        case 0x0039:
-          ++pos;
-          break;
-        default:
-          return pos;
-      }
-    }
+    var c = this.input.charCodeAt(pos);
+    while (c >= 0x30 & c <= 0x39) c = this.input.charCodeAt(++pos);
+    return pos;
   },
   regex: function(){
     // /foo/
@@ -511,7 +505,6 @@ Tok.prototype = {
     // /foo(!:foo)/
     // /foo(?!foo)bar/
     // /foo\dbar/
-
     var pos = this.pos++;
     this.regexBody();
     this.regexFlags();
@@ -520,35 +513,24 @@ Tok.prototype = {
   },
   regexBody: function(){
     var input = this.input;
-    while (this.pos < input.length) {
-      switch (input.charCodeAt(this.pos++)) {
-        case 0x005c: // \ (backslash)
-          switch (input.charCodeAt(this.pos)) {
-            case 0x000D:
-            case 0x000A:
-            case 0x2028:
-            case 0x2029:
-              throw new Error('Newline can not be escaped in regular expression at '+this.pos);
-          }
-          ++this.pos;
-          break;
-        case 0x0028: // ( (opening paren)
-          this.regexBody();
-          break;
-        case 0x0029: // ) (closing paren)
-          return;
-        case 0x005b: // [ (opening sq bracket)
-          this.regexClass();
-          break;
-        case 0x002f: // / (forward slash)
-          return;
-        case 0x000D:
-        case 0x000A:
-        case 0x2028:
-        case 0x2029:
-          throw new Error('Newline not allowed in regular expression at '+(this.pos-1));
-//        default:
-//          console.log("ignored", input[this.pos-1]);
+    var len = input.length;
+    var pos = this.pos;
+    while (this.pos < len) {
+      var c = input.charCodeAt(this.pos++);
+
+      if (c === 0x005c) { // backslash
+        var d = input.charCodeAt(this.pos++);
+        if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+          throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+        }
+      } else if (c === 0x0028) { // opening paren
+        this.regexBody();
+      } else if (c === 0x0029 || c === 0x002f) { // closing paren or forward slash
+        return;
+      } else if (c === 0x005b) { // opening square bracket
+        this.regexClass();
+      } else if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) { // newlines
+        throw new Error('Newline can not be escaped in regular expression at '+this.pos);
       }
     }
 
@@ -556,55 +538,46 @@ Tok.prototype = {
   },
   regexClass: function(){
     var input = this.input;
-    do {
-      switch (input.charCodeAt(this.pos++)) {
-        case 0x000D:
-        case 0x000A:
-        case 0x2028:
-        case 0x2029:
-          throw new Error('Newline can not be escaped in regular expression at '+(this.pos-1));
-        case 0x005c: // \ (backslash)
-          switch (input.charCodeAt(this.pos)) {
-            case 0x000D:
-            case 0x000A:
-            case 0x2028:
-            case 0x2029:
-              throw new Error('Newline can not be escaped in regular expression at '+this.pos);
-          }
-          ++this.pos;
-          break;
-        case 0x005d: // ] (closing sq bracket)
-          return;
+    var len = input.length;
+    while (this.pos < len) {
+      var c = input.charCodeAt(this.pos++);
+
+      if (c === 0x005d) return; // ]
+      if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) {
+        throw 'Illegal newline in regex char class at '+this.pos;
       }
-    } while (this.pos <= input.length);
+      if (c === 0x005c) { // backslash
+        var d = input.charCodeAt(this.pos++);
+        if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+          throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+        }
+      }
+    }
 
     throw new Error('Unterminated regular expression at eof');
   },
   regexFlags: function(){
     var input = this.input;
+    var len = input.length;
     var rex = this.rexIdentifier;
-    while (this.pos < input.length) {
-      var c = input.charAt(this.pos);
+    while (this.pos < len) {
+      var c = input.charCodeAt(this.pos);
       rex.lastIndex = 0;
       if (rex.test(c)) ++this.pos;
-      else if (c == '\\') {
+      else if (c == 0x5c) { // \
         // it can be a unicode escape...
         // manually excavating this edge case
         var pos = this.pos+1;
         var hex = this.rexHex;
-        if (input.charAt(pos) == 'u' && hex.test(input.charAt(pos+1)) && hex.test(input.charAt(pos+2)) && hex.test(input.charAt(pos+3)) && hex.test(input.charAt(pos+4))) {
+        if (input.charCodeAt(pos) == 0x75 && hex.test(input.charAt(pos+1)) && hex.test(input.charAt(pos+2)) && hex.test(input.charAt(pos+3)) && hex.test(input.charAt(pos+4))) {
           this.pos += 6;
         } else {
-          return;
+          break;
         }
+      } else {
+        break;
       }
-      else return;
     }
-  },
-  punctuator: function(str){
-    this.pos += str.length;
-
-    return PUNCTUATOR;
   },
   identifierOrBust: function(){
     var result = this.identifier();
