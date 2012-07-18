@@ -75,34 +75,11 @@ Tok.prototype = {
   // write scripts to construct them. the only way to keep my sanity
 
   // replace windows' CRLF with a single LF, as well as the weird newlines. this fixes positional stuff.
-  rexNewlines: /[\u000A\u000d\u2028\u2029]/g,
-  rexNormalizeNewlines: /(?:\u000D\u000A)|[\u000d\u2028\u2029]/g,
-  // some are so complex that we build them to keep our own sanity
-  // get start from next four bytes (substringing)
-  rexStartSubstring: getSubstringStartRegex(),
-  // get the remainder of a string literal, after the opening quote
-  rexStringBodySingle: getStringBodyRegex('\''),
-  rexStringBodyDouble: getStringBodyRegex('"'),
+  rexNewlines: /[\u000A\u000d\u2028\u2029]/g, // used by comment parsers if in regex mode
   // full number parser, both decimal and hex
-  rexNumbers: getNumberRegex(),
-  // full identifier, except for non-ascii ranged characters...
-  rexIdentifier: getIdentifierRegex(), // note: \w also includes underscore
-  rexHex: /[\da-f]/i,
+//  rexNumbers: getNumberRegex(),
   // after having found the */ (indexOf), apply this to quickly test for a newline in the comment
-  rexNewlineSearchInMultilineComment:/[\u000A\u000D\u2028\u2029]|\*\//g,
-  // tests for all punctuators
-  rexPunctuator: new function(){
-    // note: punctuators should be parsed long to short. regex picks longest first, parser wants that too.
-    var punc = [
-      '>>>=',
-      '===','!==','>>>','<<=','>>=',
-      '<=','>=','==','!=','\\+\\+','--','<<','>>','\\&\\&','\\|\\|','\\+=','-=','\\*=','%=','\\&=','\\|=','\\^=','\\/=',
-      '\\{','\\}','\\(','\\)','\\[','\\]','\\.',';',',','<','>','\\+','-','\\*','%','\\|','\\&','\\|','\\^','!','~','\\?',':','=','\\/'
-    ];
-
-    return new RegExp('^(?:'+punc.join('|')+')');
-  },
-
+  rexNewlineSearchInMultilineComment:/[\u000A\u000D\u2028\u2029]|\*\//g, // used by m-comment parser if in regex mode
 
   is: function(v){
     if (typeof v == 'number') {
@@ -320,6 +297,18 @@ Tok.prototype = {
     return true;
   },
   commentSingle: function(){
+//    var input = this.input;
+//    var len = input.length;
+//    var pos = this.pos;
+//    var c = input.charCodeAt(pos);
+//    while (pos < len && c !== 0x000A && c !== 0x000D && c !== 0x2028 && c !== 0x2029) {
+//      var c = input.charCodeAt(++pos);
+//    }
+//
+//    this.pos = pos;
+//
+//    return true;
+
     var rex = this.rexNewlines;
     rex.lastIndex = this.pos;
     rex.test(this.input);
@@ -374,8 +363,6 @@ Tok.prototype = {
     }
 
     throw 'Unterminated string found at '+pos;
-
-//    return this.string(this.rexStringBodySingle);
   },
   stringDouble: function(){
     var pos = this.pos + 1;
@@ -394,26 +381,22 @@ Tok.prototype = {
     }
 
     throw 'Unterminated string found at '+pos;
-
-//    return this.string(this.rexStringBodyDouble);
   },
   stringEscape: function(pos){
     var input = this.input;
-    switch (input.charCodeAt(pos)) {
-      // unicode escapes
-      case 0x0075: // u
-        if (this.unicode(pos+1)) pos += 4;
-        else throw 'Invalid unicode escape';
-        break;
-      // hex escapes
-      case 0x0078: // x
-        if (this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2))) pos += 2;
-        else throw 'Invalid hex escape';
-        break;
-      // skip windows newlines as if they're one char
-      case 0x000D: // \r
-        if (input.charCodeAt(pos+1) === 0x000A) ++pos;
-        break;
+    var c = input.charCodeAt(pos);
+
+    // unicode escapes
+    if (c === 0x0075) { // u
+      if (this.unicode(pos+1)) pos += 4;
+      else throw 'Invalid unicode escape';
+    // hex escapes
+    } else if (c === 0x0078) {
+      if (this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2))) pos += 2;
+      else throw 'Invalid hex escape';
+    // skip windows newlines as if they're one char
+    } else if (c === 0x000D) {
+      if (input.charCodeAt(pos+1) === 0x000A) ++pos;
     }
     return pos+1;
   },
@@ -427,57 +410,21 @@ Tok.prototype = {
     return ((c >= 0x30 && c <= 0x39) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
   },
 
-//  string: function(regex){
-//    // depricated; this used to be the central string handler for regex matching
-//    //    return this.string(this.rexStringBodySingle);
-//    regex.lastIndex = this.pos; // start from here...
-//    var matches = regex.test(this.input);
-//
-//    if (!matches) throw new Error('String not terminated or contained invalid escape, started at '+this.pos);
-//
-//    // i just wanna know where it ended...
-//    this.pos = regex.lastIndex;
-//
-//    // since the leading quote is part of the match, we know that the match
-//    // started at pos, no need to check for that. (otherwise we would have had to check)
-//
-//    // actual type doesnt matter for now...
-//    return STRING;
-//  },
-
   number: function(){
     // numeric is either a decimal or hex
     // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
     var input = this.input;
     var pos = this.pos;
+
     var c = input.charCodeAt(pos);
     var d = input.charCodeAt(pos+1);
 
-    if (d === 0x0058 || d === 0x0078) { // x or X
-      pos += 2;
-      // hex
-      while (this.hexicode(input.charCodeAt(pos))) ++pos;
+    if (c === 0x0030 && (d === 0x0058 || d === 0x0078)) { // x or X
+      this.hexNumber(pos+2);
     } else {
-
-      if (c !== 0x002e) { // if not dot?
-        pos = this.numberSub(pos+1); // +1 => skip the first, you already know it's a number
-        c = input.charCodeAt(pos);
-      }
-
-      if (c === 0x002e) { // dot
-        pos = this.numberSub(pos+1); // +1 => skip the dot
-        c = input.charCodeAt(pos);
-      }
-
-      if (c === 0x0045 || c === 0x0065) { // e or E
-        ++pos;
-        c = input.charCodeAt(pos);
-        if (c === 0x002b || c === 0x002d) ++pos; // + or -, optional
-        pos = this.numberSub(pos);
-      }
+      this.decimalNumber(c, pos);
     }
-    this.pos = pos;
 
     return NUMBER;
 
@@ -497,11 +444,39 @@ Tok.prototype = {
 //
 //    return NUMBER;
   },
-  numberSub: function(pos){
+  decimalNumber: function(c, pos){
+    var input = this.input;
+
+    if (c !== 0x002e) { // if not dot?
+      pos = this.decimalSub(pos+1); // +1 => skip the first, you already know it's a number
+      c = input.charCodeAt(pos);
+    }
+
+    if (c === 0x002e) { // dot
+      pos = this.decimalSub(pos+1); // +1 => skip the dot
+      c = input.charCodeAt(pos);
+    }
+
+    if (c === 0x0045 || c === 0x0065) { // e or E
+      c = input.charCodeAt(++pos);
+      if (c === 0x002b || c === 0x002d) ++pos; // + or -, optional
+      pos = this.decimalSub(pos);
+    }
+
+    this.pos = pos;
+  },
+  decimalSub: function(pos){
     var input = this.input;
     var c = this.input.charCodeAt(pos);
     while (c >= 0x30 & c <= 0x39) c = this.input.charCodeAt(++pos);
     return pos;
+  },
+  hexNumber: function(pos){
+    var input = this.input;
+    var len = input.length;
+    // hex
+    while (pos < len && this.hexicode(input.charCodeAt(pos))) ++pos;
+    this.pos = pos;
   },
   regex: function(){
     // /foo/
@@ -568,7 +543,7 @@ Tok.prototype = {
     this.asciiIdentifier();
   },
   identifierOrBust: function(){
-    var result = this.identifier();
+    var result = this.asciiIdentifier();
     if (result === false) throw 'Expecting identifier here at pos '+this.pos;
     return result;
   },
@@ -576,7 +551,6 @@ Tok.prototype = {
     var input = this.input;
     var len = input.length;
     var pos = this.pos;
-    var hex = this.rexHex;
     while (pos < len) {
       var c = input.charCodeAt(++pos);
       // a-z A-Z 0-9 $ _
@@ -590,129 +564,13 @@ Tok.prototype = {
         }
       }
     }
+    if (this.pos === pos) return false;
     this.pos = pos;
     return IDENTIFIER;
-  },
-  identifier: function(){
-    /* actually; this is slower. i guess big switches kill it.
-     while (this.identifierSwitch()) ++this.pos;
-     return IDENTIFIER;
-   */
-
-    var regex = this.rexIdentifier;
-
-    regex.lastIndex = this.pos;
-    regex.test(this.input);
-    var end = regex.lastIndex;
-    if (!end) return false;
-
-    // regex might have skipped some characters at first, make sure the first character is part of the match
-    regex.lastIndex = 0;
-    if (!regex.test(this.input.charAt(this.pos))) {
-      // also have to check for unicode escape as start...
-      if (this.input.charCodeAt(this.pos) != 0x005c || !regex.test(this.input.substring(this.pos,6))) {
-        return false;
-      }
-    }
-
-    this.pos = end;
-    return IDENTIFIER;
-  },
-
-  identifierSwitch: function(){
-    var c = this.input.charAt(this.pos);
-    switch (c) {
-      case 'a':
-      case 'b':
-      case 'c':
-      case 'd':
-      case 'e':
-      case 'f':
-      case 'g':
-      case 'h':
-      case 'i':
-      case 'j':
-      case 'k':
-      case 'l':
-      case 'm':
-      case 'n':
-      case 'o':
-      case 'p':
-      case 'q':
-      case 'r':
-      case 's':
-      case 't':
-      case 'u':
-      case 'v':
-      case 'w':
-      case 'x':
-      case 'y':
-      case 'z':
-      case 'A':
-      case 'B':
-      case 'C':
-      case 'D':
-      case 'E':
-      case 'F':
-      case 'G':
-      case 'H':
-      case 'I':
-      case 'J':
-      case 'K':
-      case 'L':
-      case 'M':
-      case 'N':
-      case 'O':
-      case 'P':
-      case 'Q':
-      case 'R':
-      case 'S':
-      case 'T':
-      case 'U':
-      case 'V':
-      case 'W':
-      case 'X':
-      case 'Y':
-      case 'Z':
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-      case '$':
-      case '_':
-      return true;
-
-      default:
-      if (c == '\\' && this.input.charAt(this.pos+1) == 'u' && this.unicode(this.pos)) {
-        this.pos += 5;
-        return true;
-      }
-      return false;
-    }
   },
 
   getLastValue: function(){
     return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
-
-/* alternative substring attempt using regexes
-    if (this.lastValue) return this.lastValue;
-
-    if (!this.rexes[this.lastStop-this.lastStart]) {
-      this.rexes[this.lastStop-this.lastStart] = new RegExp('[\\s\\S]{'+(this.lastStop-this.lastStart)+'}','g');
-    }
-    var r = this.rexes[this.lastStop-this.lastStart];
-    r.lastIndex = this.lastStart;
-    var result = r.exec(this.input);
-
-    return this.lastValue = result[0];
-*/
-
   },
 
   debug: function(){

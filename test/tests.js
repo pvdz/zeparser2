@@ -579,6 +579,9 @@ var bad = [
     'foo\n<!--\nbar = 5;', // assignment after prefix decr is bad
     'foo</script> <script>bar', // yeah, uh
 
+    '1x54', // malformed hex...
+    '2X54', // malformed hex...
+
     // TOFIX: add tests for various keywords that should fail
 
 ];

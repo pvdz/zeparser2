@@ -13,7 +13,7 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script>
-        var testString = 'foo\\u00d8bar;';
+        var testString = 'hi; // moo\n;';
         console.log("testing", [testString.replace(/\n/g,'\u23CE')]);
         var par = new Par(testString);
         par.run();
