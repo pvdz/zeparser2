@@ -169,24 +169,27 @@ Tok.prototype = {
     if (this.pos >= this.input.length) return EOF;
 
     var c = this.input.charCodeAt(this.pos);
+    // https://twitter.com/ariyahidayat/status/225447566815395840
+    // Punctuator, Identifier, Keyword, String, Numeric, Boolean, Null, RegularExpression
+    // so:
+    // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
 
     if (c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x0020 || c === 0x00A0 || c === 0xFFFF) return this.whitespace();
     if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) return this.lineTerminator(c);
+    // forward slash before generic punctuators!
+    if (c === 0x002f) { // / (forward slash)
+      var n = this.input.charCodeAt(this.pos+1);
+      if (n === 0x002f) return this.commentSingle(); // 0x002f=/
+      if (n === 0x002a) return this.commentMulti(); // 0x002f=*
+      if (expressionStart) return this.regex();
+    }
+    if (this.punctuator(c)) return PUNCTUATOR;
+    if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x24 || c === 0x5f) return this.asciiIdentifier();
     if (c === 0x0027) return this.stringSingle();
     if (c === 0x0022) return this.stringDouble();
-    if (c >= 0x0030 && c <= 0x0039) return this.number();
-    if (c === 0x002e) { // . (dot)
-      var d = this.input.charCodeAt(this.pos+1);
-      if (d >= 0x0030 && d <= 0x0039) return this.number();
-    }
-    if (c === 0x002f) { // / (forward slash)
-        var n = this.input.charCodeAt(this.pos+1);
-        if (n === 0x002f) return this.commentSingle(); // 0x002f=/
-        if (n === 0x002a) return this.commentMulti(); // 0x002f=*
-        if (expressionStart) return this.regex();
-    }
+    if ((c >= 0x0030 && c <= 0x0039) || c === 0x2e) return this.number(); // do this after punctuator...
 
-    if (this.punctuator(c)) return PUNCTUATOR;
+    // tofix: non-ascii identifiers...
 
     // only thing left it might be is an identifier
     return this.identifierOrBust();
@@ -207,13 +210,17 @@ Tok.prototype = {
     if (c === 0x7d) return this.puncToken(1, '}');
     if (c === 0x5b) return this.puncToken(1, '[');
     if (c === 0x5d) return this.puncToken(1, ']');
-    if (c === 0x2e) return this.puncToken(1, '.');
     if (c === 0x3b) return this.puncToken(1, ';');
     if (c === 0x2c) return this.puncToken(1, ',');
     if (c === 0x3f) return this.puncToken(1, '?');
     if (c === 0x3a) return this.puncToken(1, ':');
 
     var d = input.charCodeAt(pos+1);
+
+    if (c === 0x2e) {
+      if (d >= 0x0030 && d <= 0x0039) return false;
+      return this.puncToken(1, '.');
+    }
 
     if (c === 0x3d) {
       if (d === 0x3d) {
@@ -505,7 +512,7 @@ Tok.prototype = {
     // /foo(!:foo)/
     // /foo(?!foo)bar/
     // /foo\dbar/
-    var pos = this.pos++;
+    this.pos++;
     this.regexBody();
     this.regexFlags();
 
@@ -557,38 +564,40 @@ Tok.prototype = {
     throw new Error('Unterminated regular expression at eof');
   },
   regexFlags: function(){
-    var input = this.input;
-    var len = input.length;
-    var rex = this.rexIdentifier;
-    while (this.pos < len) {
-      var c = input.charCodeAt(this.pos);
-      rex.lastIndex = 0;
-      if (rex.test(c)) ++this.pos;
-      else if (c == 0x5c) { // \
-        // it can be a unicode escape...
-        // manually excavating this edge case
-        var pos = this.pos+1;
-        var hex = this.rexHex;
-        if (input.charCodeAt(pos) == 0x75 && hex.test(input.charAt(pos+1)) && hex.test(input.charAt(pos+2)) && hex.test(input.charAt(pos+3)) && hex.test(input.charAt(pos+4))) {
-          this.pos += 6;
-        } else {
-          break;
-        }
-      } else {
-        break;
-      }
-    }
+    --this.pos;
+    this.asciiIdentifier();
   },
   identifierOrBust: function(){
     var result = this.identifier();
     if (result === false) throw 'Expecting identifier here at pos '+this.pos;
     return result;
   },
+  asciiIdentifier: function(){
+    var input = this.input;
+    var len = input.length;
+    var pos = this.pos;
+    var hex = this.rexHex;
+    while (pos < len) {
+      var c = input.charCodeAt(++pos);
+      // a-z A-Z 0-9 $ _
+      if (!((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x24 || c === 0x5f)) {
+        // \uxxxx
+        if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
+          pos += 5;
+        } else {
+          // tofix: non-ascii identifiers
+          break;
+        }
+      }
+    }
+    this.pos = pos;
+    return IDENTIFIER;
+  },
   identifier: function(){
     /* actually; this is slower. i guess big switches kill it.
-    while (this.identifierSwitch()) ++this.pos;
-    return IDENTIFIER;
-    */
+     while (this.identifierSwitch()) ++this.pos;
+     return IDENTIFIER;
+   */
 
     var regex = this.rexIdentifier;
 
@@ -609,6 +618,7 @@ Tok.prototype = {
     this.pos = end;
     return IDENTIFIER;
   },
+
   identifierSwitch: function(){
     var c = this.input.charAt(this.pos);
     switch (c) {
