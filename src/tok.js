@@ -88,6 +88,15 @@ Tok.prototype = {
     }
     return this.getLastValue() == v;
   },
+  isType: function(t){
+    return this.lastType === t;
+  },
+  isValue: function(){
+    return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
+  },
+  isNum: function(n){
+    return this.getLastValue().charCodeAt(0) === n;
+  },
   nextIf: function(value){
     var equals = this.is(value);
     if (equals) this.next();
@@ -104,6 +113,22 @@ Tok.prototype = {
       else this.next();
     } else {
       throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
+    }
+  },
+  mustBeNum: function(num, nextIsExpr){
+    if (this.isNum(num)) {
+      if (nextIsExpr) this.nextExpr();
+      else this.next();
+    } else {
+      throw 'A syntax error at pos='+this.pos+' expected '+String.fromCharCode(num)+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
+    }
+  },
+  mustBeType: function(type, nextIsExpr){
+    if (this.isType(type)) {
+      if (nextIsExpr) this.nextExpr();
+      else this.next();
+    } else {
+      throw 'A syntax error at pos='+this.pos+' expected type='+Tok[value]+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
     }
   },
 

@@ -5,7 +5,7 @@ var Par = function(input){
 Par.prototype = {
     regexUnary: /^(?:delete|void|typeof|new|\+\+?|--?|~|!)$/,
     regexAssignmentOp: /^(?:[+*%&|^\/-]|<<|>>>?)?=$/,
-    regexNonAssignBinaryOp: /^(?:[+*%|^&?\/-]|[=!]==?|<=|>=|<<?|>>?>?|&&|instanceof|in|\|\|)$/,
+    regexNonAssignBinaryOp: /^(?:[+*%|^&\/-]|[=!]==?|<=|>=|<<?|>>?>?|&&|instanceof|in|\|\|)$/,
 
     run: function(){
         // prepare
@@ -17,64 +17,77 @@ Par.prototype = {
 
     parseStatements: function(){
         var protect = 100000;
-        while (--protect && !this.tok.is(EOF) && this.parseStatement());
+        while (--protect && !this.tok.isType(EOF) && this.parseStatement());
         if (!protect) throw 'loop protection triggered '+this.tok.debug();
     },
     parseStatement: function(){
-        if (this.tok.is(IDENTIFIER)) {
-            switch (this.tok.getLastValue()) {
-                case 'var': this.parseVar(); break;
-                case 'if': this.parseIf(); break;
-                case 'do': this.parseDo(); break;
-                case 'while': this.parseWhile(); break;
-                case 'for': this.parseFor(); break;
-                case 'continue': this.parseContinue(); break;
-                case 'break': this.parseBreak(); break;
-                case 'return': this.parseReturn(); break;
-                case 'throw': this.parseThrow(); break;
-                case 'switch': this.parseSwitch(); break;
-                case 'try': this.parseTry(); break;
-                case 'debugger': this.parseDebugger(); break;
-                case 'with': this.parseWith(); break;
-                case 'function': this.parseFunction(); break;
-                default:
-                    if (
-                        this.tok.is('case') ||
-                        this.tok.is('default')
-                    ) {
-                        // case and default are handled elsewhere
-                        return false;
-                    }
+      if (this.tok.isType(IDENTIFIER)) {
+        // dont "just" return true. case and default still return false
+        return this.parseIdentifierStatement();
+      }
 
-                    this.parseExpressionOrLabel();
-                    break;
-            }
+      if (this.tok.isValue()) {
+        this.parseExpressionStatement();
+        return true;
+      }
 
-            return true;
-        }
+      var val = this.tok.getLastValue();
+      var c = val.charCodeAt(0);
+      if (
+          c === 0x28 || // (
+          c === 0x5b || // [
+          c === 0x7e || // ~
+          c === 0x21    // !
+      ) {
+        this.parseExpressionStatement();
+        return true;
+      }
 
-        if (
-            this.tok.is(VALUE) ||
-            this.tok.is('(') ||
-            this.tok.is('[') ||
-            this.tok.is('++') ||
-            this.tok.is('--') ||
-            this.tok.is('+') ||
-            this.tok.is('-') ||
-            this.tok.is('~') ||
-            this.tok.is('!')
-        ) {
-            return this.parseExpressionStatement();
-        }
+      var d = val.charCodeAt(0); // ++ --
+      if ((c === 0x2b && d === 0x2b) || (c === 0x2d || d === 0x2d)) {
+        this.parseExpressionStatement();
+        return true;
+      }
 
-        if (this.tok.nextExprIf('{')) return this.parseBlock();
-        if (this.tok.nextExprIf(';')) return true; // empty statement
-        if (this.tok.is(EOF)) return false;
+      if (c === 0x7b) { // {
+        this.tok.nextExpr();
+        this.parseBlock();
+        return true;
+      }
+      if (c === 0x3b) { // [
+        this.tok.nextExpr();
+        return true;
+      } // empty statement
+
+      if (this.tok.isType(EOF)) return false;
+    },
+    parseIdentifierStatement: function(){
+      var val = this.tok.getLastValue();
+
+      if (val === 'var') this.parseVar();
+      else if (val === 'if') this.parseIf();
+      else if (val === 'do') this.parseDo();
+      else if (val === 'while') this.parseWhile();
+      else if (val === 'for') this.parseFor();
+      else if (val === 'continue') this.parseContinue();
+      else if (val === 'break') this.parseBreak();
+      else if (val === 'return') this.parseReturn();
+      else if (val === 'throw') this.parseThrow();
+      else if (val === 'switch') this.parseSwitch();
+      else if (val === 'try') this.parseTry();
+      else if (val === 'debugger') this.parseDebugger();
+      else if (val === 'with') this.parseWith();
+      else if (val === 'function') this.parseFunction();
+      // case and default are handled elsewhere
+      else if (val === 'case' || val === 'default') return false;
+      else this.parseExpressionOrLabel();
+
+      return true;
     },
     parseStatementHeader: function(){
-        this.tok.mustBe('(', true);
+        this.tok.mustBeNum(0x28, true); // (
         this.parseExpressions();
-        this.tok.mustBe(')', true);
+        this.tok.mustBeNum(0x29, true); // )
     },
 
     parseVar: function(){
@@ -142,28 +155,21 @@ Par.prototype = {
         this.parseStatement();
     },
     parseFor: function(){
-        // for ( <expr-no-in-=> in <exprs> ) <stmt>
-        // for ( var <idntf> in <exprs> ) <stmt>
-        // for ( var <idntf> = <exprs> in <exprs> ) <stmt>
-        // for ( <expr-no-in> ; <expr> ; <expr> ) <stmt>
+      // for ( <expr-no-in-=> in <exprs> ) <stmt>
+      // for ( var <idntf> in <exprs> ) <stmt>
+      // for ( var <idntf> = <exprs> in <exprs> ) <stmt>
+      // for ( <expr-no-in> ; <expr> ; <expr> ) <stmt>
 
-        // need to excavate this... investigate specific edge cases for `for-in`
+      // need to excavate this... investigate specific edge cases for `for-in`
 
-        this.tok.next();
-        this.tok.mustBe('(');
+      this.tok.next();
+      this.tok.mustBe('(');
 
-        var parsedAssignment = false;
-        if (this.tok.is('var')) this.parseVarPartNoIn();
-        else parsedAssignment = this.parseExpressionsNoIn();
+      if (this.tok.is('var')) this.parseVarPartNoIn();
+      else this.parseExpressionsNoIn();
 
-        if (this.tok.nextIf(';')) this.parseForEach();
-        else {
-            if (parsedAssignment) {
-                // TOFIX: this is a syntax error...
-                console.warn("Syntax error, illegal assignment in for-in", this.tok.debug());
-            }
-            this.parseForIn();
-        }
+      if (this.tok.nextIf(';')) this.parseForEach();
+      else this.parseForIn();
     },
     parseForEach: function(){
         // <expr> ; <expr> ) <stmt>
@@ -351,18 +357,18 @@ Par.prototype = {
     parseSemi: function(){
         if (this.tok.nextIf(';')) return PUNCTUATOR;
         if (this.parseAsi()) return ASI;
-        throw 'Unable to parse semi, unable to apply ASI: '+this.tok.debug()+' #### '+
-            this.tok.input.substring(this.tok.lastStart-2000, this.tok.lastStart)+
-            '###'+
-            this.tok.input.substring(this.tok.lastStart, this.tok.lastStart+2000);
+        throw 'Unable to parse semi, unable to apply ASI';
+//      : '+this.tok.debug()+' #### '+
+//            this.tok.input.substring(this.tok.lastStart-2000, this.tok.lastStart)+
+//            '###'+
+//            this.tok.input.substring(this.tok.lastStart, this.tok.lastStart+2000);
     },
     parseAsi: function(){
-        if (this.tok.is(EOF) || this.tok.is('}') || this.tok.lastNewline) {
-            return this.addAsi();
-        }
-        return false;
-
-        // need to fix the newline-in-comment-or-string one...
+      // 0x7d=}
+      if (this.tok.isType(EOF) || this.tok.isNum(0x7d) || this.tok.lastNewline) {
+          return this.addAsi();
+      }
+      return false;
     },
     addAsi: function(){
 //        console.log("Aplying ASI");
@@ -386,7 +392,7 @@ Par.prototype = {
 
     parseExpressionForLabel: function(){
         // dont check for label if you can already see it'll fail
-        var checkLabel = this.tok.is(IDENTIFIER);
+        var checkLabel = this.tok.isType(IDENTIFIER);
 
         this.parsePrimary(checkLabel);
 
@@ -404,9 +410,10 @@ Par.prototype = {
         }
 
         // keep parsing non-assignment binary/ternary ops
-        while (this.parseBinaryOperator()) {
-            if (this.tok.is('?')) this.parseTernary();
-            else this.parsePrimaryAfter();
+        while (true) {
+          if (this.parseBinaryOperator()) this.parsePrimaryAfter();
+          else if (this.tok.isNum(0x3f)) this.parseTernary();
+          else break;
         }
     },
 
@@ -416,25 +423,32 @@ Par.prototype = {
         } while (this.tok.nextExprIf(','));
     },
     parseExpression: function(){
-        this.parsePrimary();
+      this.parsePrimary();
 
-        // assignment ops are allowed until the first non-assignment binary op
-        while (this.parseAssignmentOperator()) {
-            this.parsePrimaryAfter();
-        }
+      // assignment ops are allowed until the first non-assignment binary op
+      while (this.parseAssignmentOperator()) {
+        this.parsePrimaryAfter();
+      }
 
-        // keep parsing non-assignment binary/ternary ops
-        while (this.parseBinaryOperator()) {
-            if (this.tok.is('?')) this.parseTernary();
-            else this.parsePrimaryAfter();
-        }
+      // keep parsing non-assignment binary/ternary ops
+      while (true) {
+        if (this.parseBinaryOperator()) this.parsePrimaryAfter();
+        else if (this.tok.isNum(0x3f)) this.parseTernary();
+        else break;
+      }
     },
-    parseTernary: function(){
-        this.tok.nextExpr();
-        this.parseExpression();
-        this.tok.mustBe(':',true);
-        this.parseExpression();
-    },
+  parseTernary: function(){
+    this.tok.nextExpr();
+    this.parseExpression();
+    this.tok.mustBe(':',true);
+    this.parseExpression();
+  },
+  parseTernaryNoIn: function(){
+    this.tok.nextExpr();
+    this.parseExpression();
+    this.tok.mustBe(':',true);
+    this.parseExpressionNoIn();
+  },
     parsePrimaryAfter: function(){
         this.tok.nextExpr();
         this.parsePrimary();
@@ -445,41 +459,46 @@ Par.prototype = {
         } while (this.tok.nextExprIf(','));
     },
     parseExpressionNoIn: function(){
-        var parsedAssignment = false; // not allowed in for-in
+      this.parsePrimary();
+
+      // TOFIX: i think i should drop first while to fix `illegal bare assignment in for-in`
+      //        because `for (x=y in z);` is not valid syntax (`for ((x=y)in z);` would be)
+      //        but note that this is used for both var and non-var for-in's, so check for that.
+
+      // assignment ops are allowed until the first non-assignment binary op
+      while (this.parseAssignmentOperator()) {
+        this.tok.nextExpr();
         this.parsePrimary();
+      }
 
-        // assignment ops are allowed until the first non-assignment binary op
-        while (this.parseAssignmentOperator() && !this.tok.is('in')) {
-            this.tok.nextExpr();
-            this.parsePrimary();
-            parsedAssignment = true; // wruh-oh
+      // keep parsing non-assignment binary/ternary ops unless `in`
+      while (true) {
+        if (this.parseBinaryOperator()) {
+          if (this.tok.is('in')) break;
+          else this.parsePrimaryAfter();
         }
-
-        // keep parsing non-assignment binary ops
-        while (this.parseBinaryOperator() && !this.tok.is('in')) {
-            if (this.tok.is('?')) this.parseTernary();
-            else this.parsePrimaryAfter();
-        }
-
-        return parsedAssignment;
+        else if (this.tok.isNum(0x3f)) this.parseTernaryNoIn();
+        else break;
+      }
     },
     parsePrimary: function(checkLabel){
-        // parses parts of an expression without any binary operators
+      // parses parts of an expression without any binary operators
 
-        this.parseUnary();
+      this.parseUnary();
 
-        if (this.tok.is('function')) {
-            this.parseFunction();
-        } else if (!this.tok.nextIf(VALUE)) {
-            if (this.tok.nextExprIf('[')) this.parseArray();
-            else if (this.tok.nextIf('{')) this.parseObject();
-            else if (this.tok.nextExprIf('(')) this.parseGroup();
-        } else if (checkLabel) {
-            // now's the time... you just ticked off an identifier, check the current token for being a colon!
-            if (this.tok.is(':')) return;
-        }
+      if (this.tok.is('function')) {
+        this.parseFunction();
+      } else if (!this.tok.nextIf(VALUE)) {
+        if (this.tok.nextExprIf('[')) this.parseArray();
+        else if (this.tok.nextIf('{')) this.parseObject();
+        else if (this.tok.nextExprIf('(')) this.parseGroup();
+      } else if (checkLabel) {
+        // now's the time... you just ticked off an identifier, check the current token for being a colon!
+        // 3a = :
+        if (this.tok.isNum(0x3a)) return;
+      }
 
-        this.parsePrimarySuffixes();
+      this.parsePrimarySuffixes();
     },
     parseUnary: function(){
         // start with unary
@@ -487,7 +506,7 @@ Par.prototype = {
         if (rex.test(this.tok.getLastValue())) {
             do {
                 this.tok.nextExpr();
-            } while (!this.tok.is(EOF) && rex.test(this.tok.getLastValue()));
+            } while (!this.tok.isType(EOF) && rex.test(this.tok.getLastValue()));
         }
     },
     parsePrimarySuffixes: function(){
@@ -539,16 +558,16 @@ Par.prototype = {
     },
     parseObject: function(){
         do {
-            if (this.tok.is(VALUE)) this.parsePair();
+            if (this.tok.isValue()) this.parsePair();
         } while (this.tok.nextExprIf(',')); // elision
         this.tok.mustBe('}');
     },
     parsePair: function(){
         if (this.tok.nextIf('get')) {
-            if (this.tok.is(IDENTIFIER)) this.parseFunction();
+            if (this.tok.isType(IDENTIFIER)) this.parseFunction();
             else this.parseDataPart();
         } else if (this.tok.nextIf('set')) {
-            if (this.tok.is(IDENTIFIER)) this.parseFunction();
+            if (this.tok.isType(IDENTIFIER)) this.parseFunction();
             else this.parseDataPart();
         } else {
             this.parseData();

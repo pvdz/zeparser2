@@ -531,11 +531,23 @@ var good = [
 ["'foo\\\nbar';", 2, "string with unix newline escape n"],
 ["'foo\\\u2028bar';", 2, "string with newline escape 28"],
 ["'foo\\\u2029bar';", 2, "string with newline escape 29"],
+
+["(a?b:c);", 8, "ternary expression that's not at the start"],
+["x=(a?b:c);", 10, "ternary expression that's not at the start, after assignment"],
+["for ((a?b:c) in y)z;", 17, "ternary expression as left but not start for-in"],
+["for ((x=a?b:c) in y)z;", 19, "ternary expression as left after assignment for-in"],
+["for (var x=a?b:c in y)z;", 19, "ternary expression as left after var init for-in"],
+["for (x in (a?b:c))z;", 17, "ternary expression right but not start of for-in"],
+["for (x in y=(a?b:c))z;", 19, "ternary expression right of for-in after assignment"],
+
 ];
 
 // these are mainly for the parser, of course...
 var bad = [
     'for (x = 5 in y) ;', // initialization (dead code) in for-in is only allowed with var keyword or with parens
+    "for (a?b:(c in y))z;", // invalid
+    "for (a?b:(c in y) in d)z;", // even if you wrap the `in`, still invalid
+
     'break 5+5;', // break arg, if any, must be a valid label identifier
     'continue 5+5;', // break arg, if any, must be a valid label identifier
     'break if;', // break arg, if any, must be a valid label identifier
@@ -582,6 +594,11 @@ var bad = [
     '1x54', // malformed hex...
     '2X54', // malformed hex...
 
+    '+xyz: debugger;', // label with prefix
+    'xyz--: debugger;', // label with suffix
+
     // TOFIX: add tests for various keywords that should fail
+
+
 
 ];
