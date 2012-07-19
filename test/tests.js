@@ -509,6 +509,14 @@ var good = [
 ["x?/y/:z;", 6, [false,false,true], "regex middle of ternary"],
 ["x?y:/z/;", 6, [false,false,false,false,true], "regex end of ternary"],
 ["/=/;", 2, [true], "regex that looks like the start of a compound division assignment"],
+["function f(){ return /foo/; }", 13, "regex after return keyword"],
+["switch(x){}/foo/;", 8, "regex after switch"],
+["function x(){}/foo/;", 9, "regex after function decl"],
+["while(x){}/foo/;", 8, "regex after block"],
+["try{}catch(e){}/foo/;", 11, "regex after catch"],
+["try{}finally{}/foo/;", 8, "regex after catch"],
+["throw /foo/;", 4, "regex after throw"],
+["(x)\n/y;", [6,7], "division with asi (not to be confused with regex, would be illegal)"],
 
 ["!--foo;", 4, "prefix decr after bang"],
 ["!++foo;", 4, "prefix incr after bang"],
@@ -587,6 +595,7 @@ var bad = [
     '/foo\\\\rbar/', // escaped newline in regex 2
     '/foo[\\\\n]bar/', // escaped newline in regex char class
     '/foo[\\\\r]bar/', // escaped newline in regex char class 2
+    '(x)\n/foo/;', // no asi when regex starts on next line
 
     'foo\n<!--\nbar = 5;', // assignment after prefix decr is bad
     'foo</script> <script>bar', // yeah, uh
@@ -596,6 +605,8 @@ var bad = [
 
     '+xyz: debugger;', // label with prefix
     'xyz--: debugger;', // label with suffix
+
+    'return foo;', // return outside of function
 
     // TOFIX: add tests for various keywords that should fail
 

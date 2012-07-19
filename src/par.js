@@ -99,8 +99,8 @@ Par.prototype = {
 
         this.tok.next();
         do {
-            this.tok.mustBe(IDENTIFIER, true);
-            if (this.tok.nextExprIf('=')) {
+            this.tok.mustBeType(IDENTIFIER, true);
+            if (this.tok.nextExprIfNum(0x3d)) { // =
                 this.parseExpression();
             }
         } while(this.tok.nextIfNum(0x2c)); // ,
@@ -111,8 +111,8 @@ Par.prototype = {
     parseVarPartNoIn: function(){
         this.tok.next();
         do {
-            this.tok.mustBe(IDENTIFIER,true);
-            if (this.tok.nextExprIf('=')) {
+            this.tok.mustBeType(IDENTIFIER,true);
+            if (this.tok.nextExprIfNum(0x3d)) { // =
                 this.parseExpressionNoIn();
             }
         } while(this.tok.nextIfNum(0x2c)); // ,
@@ -142,9 +142,9 @@ Par.prototype = {
         this.tok.nextExpr();
         this.parseStatement();
         this.tok.mustBe('while');
-        this.tok.mustBe('(');
+        this.tok.mustBeNum(0x28); // (
         this.parseExpressions();
-        this.tok.mustBe(')');
+        this.tok.mustBeNum(0x29); // )
         this.parseSemi();
     },
     parseWhile: function(){
@@ -163,7 +163,7 @@ Par.prototype = {
       // need to excavate this... investigate specific edge cases for `for-in`
 
       this.tok.next();
-      this.tok.mustBe('(');
+      this.tok.mustBeNum(0x28); // (
 
       if (this.tok.is('var')) this.parseVarPartNoIn();
       else this.parseExpressionsNoIn();
@@ -176,9 +176,9 @@ Par.prototype = {
         // <expr> ; <expr> ) <stmt>
 
         this.parseExpressions();
-        this.tok.mustBe(';');
+        this.tok.mustBeNum(0x3b); // ;
         this.parseExpressions();
-        this.tok.mustBe(')');
+        this.tok.mustBeNum(0x29); // )
         this.parseStatement();
     },
     parseForIn: function(){
@@ -186,7 +186,7 @@ Par.prototype = {
 
         this.tok.mustBe('in');
         this.parseExpressions();
-        this.tok.mustBe(')');
+        this.tok.mustBeNum(0x29); // )
         this.parseStatement();
     },
     parseContinue: function(){
@@ -240,9 +240,9 @@ Par.prototype = {
 
         this.tok.next();
         this.parseStatementHeader();
-        this.tok.mustBe('{', true);
+        this.tok.mustBeNum(0x7b, true); // {
         this.parseSwitchBody();
-        this.tok.mustBe('}');
+        this.tok.mustBeNum(0x7d, true); // }
     },
     parseSwitchBody: function(){
         // [<cases>] [<default>] [<cases>]
@@ -262,12 +262,12 @@ Par.prototype = {
     parseCase: function(){
         // case <value> : <stmts-no-case-default>
         this.parseExpressions();
-        this.tok.mustBe(':',true);
+        this.tok.mustBeNum(0x3a,true); // :
         this.parseStatements();
     },
     parseDefault: function(){
         // default <value> : <stmts-no-case-default>
-        this.tok.mustBe(':',true);
+        this.tok.mustBeNum(0x3a,true); // :
         this.parseStatements();
     },
     parseTry: function(){
@@ -287,9 +287,9 @@ Par.prototype = {
         // catch ( <idntf> ) { <stmts> }
 
         if (this.tok.nextIf('catch')) {
-            this.tok.mustBe('(');
-            this.tok.mustBe(IDENTIFIER);
-            this.tok.mustBe(')');
+            this.tok.mustBeNum(0x28); // (
+            this.tok.mustBeType(IDENTIFIER);
+            this.tok.mustBeNum(0x29); // )
             this.parseCompleteBlock();
 
             return true;
@@ -328,13 +328,13 @@ Par.prototype = {
         // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
         this.tok.next(); // 'function'
-        this.tok.mustBe(IDENTIFIER); // name
+        this.tok.mustBeType(IDENTIFIER); // name
         this.parseFunctionRemainder();
     },
     parseFunctionRemainder: function(){
-        this.tok.mustBe('(');
+        this.tok.mustBeNum(0x28); // (
         this.parseParameters();
-        this.tok.mustBe(')');
+        this.tok.mustBeNum(0x29); // )
         this.parseCompleteBlock();
     },
     parseParameters: function(){
@@ -342,17 +342,17 @@ Par.prototype = {
 
         if (this.tok.nextIfType(IDENTIFIER)) {
             while (this.tok.nextIfNum(0x2c)) { // ,
-                this.tok.mustBe(IDENTIFIER);
+                this.tok.mustBeType(IDENTIFIER);
             }
         }
     },
     parseBlock: function(){
         this.parseStatements();
-        this.tok.mustBe('}', true);
+        this.tok.mustBeNum(0x7d, true); // }
         return true;
     },
     parseCompleteBlock: function(){
-        this.tok.mustBe('{', true);
+        this.tok.mustBeNum(0x7b, true); // {
         this.parseBlock();
     },
     parseSemi: function(){
@@ -365,8 +365,11 @@ Par.prototype = {
 //            this.tok.input.substring(this.tok.lastStart, this.tok.lastStart+2000);
     },
     parseAsi: function(){
+      // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
+      // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
+
       // 0x7d=}
-      if (this.tok.isType(EOF) || this.tok.isNum(0x7d) || this.tok.lastNewline) {
+      if (this.tok.isType(EOF) || this.tok.isNum(0x7d) || (this.tok.lastNewline && !this.tok.isType(REGEX))) {
           return this.addAsi();
       }
       return false;
@@ -386,7 +389,7 @@ Par.prototype = {
     parseExpressionOrLabel: function(){
         var found = this.parseExpressionForLabel();
         if (!found) {
-            if (this.tok.nextExprIf(',')) this.parseExpressions();
+            if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions();
             this.parseSemi();
         }
     },
@@ -421,7 +424,7 @@ Par.prototype = {
     parseExpressions: function(){
         do {
             this.parseExpression();
-        } while (this.tok.nextExprIf(','));
+        } while (this.tok.nextExprIfNum(0x2c));
     },
     parseExpression: function(){
       this.parsePrimary();
@@ -441,13 +444,13 @@ Par.prototype = {
   parseTernary: function(){
     this.tok.nextExpr();
     this.parseExpression();
-    this.tok.mustBe(':',true);
+    this.tok.mustBeNum(0x3a,true); // :
     this.parseExpression();
   },
   parseTernaryNoIn: function(){
     this.tok.nextExpr();
     this.parseExpression();
-    this.tok.mustBe(':',true);
+    this.tok.mustBeNum(0x3a,true); // :
     this.parseExpressionNoIn();
   },
     parsePrimaryAfter: function(){
@@ -457,7 +460,7 @@ Par.prototype = {
     parseExpressionsNoIn: function(){
         do {
             this.parseExpressionNoIn();
-        } while (this.tok.nextExprIf(','));
+        } while (this.tok.nextExprIfNum(0x2c));
     },
     parseExpressionNoIn: function(){
       this.parsePrimary();
@@ -490,9 +493,9 @@ Par.prototype = {
       if (this.tok.is('function')) {
         this.parseFunction();
       } else if (!this.tok.nextIfValue(VALUE)) {
-        if (this.tok.nextExprIf('[')) this.parseArray();
+        if (this.tok.nextExprIfNum(0x5b)) this.parseArray();
         else if (this.tok.nextIfNum(0x7b)) this.parseObject();
-        else if (this.tok.nextExprIf('(')) this.parseGroup();
+        else if (this.tok.nextExprIfNum(0x28)) this.parseGroup();
       } else if (checkLabel) {
         // now's the time... you just ticked off an identifier, check the current token for being a colon!
         // 3a = :
@@ -519,15 +522,15 @@ Par.prototype = {
 
         while (true) {
             if (this.tok.nextIfNum(0x2e)) {
-                this.tok.mustBe(IDENTIFIER);
+                this.tok.mustBeType(IDENTIFIER);
             }
-            else if (this.tok.nextExprIf('(')) {
+            else if (this.tok.nextExprIfNum(0x28)) {
                 this.parseExpressions();
-                this.tok.mustBe(')');
+                this.tok.mustBeNum(0x29); // )
             }
-            else if (this.tok.nextExprIf('[')) {
+            else if (this.tok.nextExprIfNum(0x5b)) {
                 this.parseExpressions();
-                this.tok.mustBe(']');
+                this.tok.mustBeNum(0x5d); // ]
             }
             else if (this.tok.nextIf('--')) break; // ends primary expressions
             else if (this.tok.nextIf('++')) break; // ends primary expressions
@@ -548,20 +551,20 @@ Par.prototype = {
 
     parseGroup: function(){
         this.parseExpressions();
-        this.tok.mustBe(')');
+        this.tok.mustBeNum(0x29); // )
     },
     parseArray: function(){
         do {
             this.parseExpressions();
-        } while (this.tok.nextExprIf(',')); // elision
+        } while (this.tok.nextExprIfNum(0x2c)); // elision
 
-        this.tok.mustBe(']');
+        this.tok.mustBeNum(0x5d); // ]
     },
     parseObject: function(){
         do {
             if (this.tok.isValue()) this.parsePair();
-        } while (this.tok.nextExprIf(',')); // elision
-        this.tok.mustBe('}');
+        } while (this.tok.nextExprIfNum(0x2c)); // elision
+        this.tok.mustBeNum(0x7d); // }
     },
     parsePair: function(){
         if (this.tok.nextIf('get')) {
@@ -579,7 +582,7 @@ Par.prototype = {
         this.parseDataPart();
     },
     parseDataPart: function(){
-        this.tok.mustBe(':',true);
+        this.tok.mustBeNum(0x3a,true); // :
         this.parseExpression();
     },
 };

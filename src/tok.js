@@ -120,35 +120,29 @@ Tok.prototype = {
     return equals;
   },
 
-  nextExprIf: function(value){
-    var equals = this.is(value);
+  nextExprIfNum: function(num){
+    var equals = this.isNum(num);
     if (equals) this.next(true);
     return equals;
   },
 
-
-
-
   mustBe: function(value, nextIsExpr){
     if (this.is(value)) {
-      if (nextIsExpr) this.nextExpr();
-      else this.next();
+      this.next(nextIsExpr);
     } else {
       throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
     }
   },
   mustBeNum: function(num, nextIsExpr){
     if (this.isNum(num)) {
-      if (nextIsExpr) this.nextExpr();
-      else this.next();
+      this.next(nextIsExpr);
     } else {
       throw 'A syntax error at pos='+this.pos+' expected '+String.fromCharCode(num)+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
     }
   },
   mustBeType: function(type, nextIsExpr){
     if (this.isType(type)) {
-      if (nextIsExpr) this.nextExpr();
-      else this.next();
+      this.next(nextIsExpr);
     } else {
       throw 'A syntax error at pos='+this.pos+' expected type='+Tok[value]+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
     }
