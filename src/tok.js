@@ -32,6 +32,7 @@ var Tok = function(input, options){
   this.lastStop = 0;
   this.lastType = null;
   this.lastValue = null;
+  this.lastNum = null;
   this.lastNewline = -1;
 
   this.tokenCount = 0;
@@ -95,18 +96,39 @@ Tok.prototype = {
     return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
   },
   isNum: function(n){
-    return this.getLastValue().charCodeAt(0) === n;
+    return this.getLastNum() === n;
   },
+
   nextIf: function(value){
     var equals = this.is(value);
     if (equals) this.next();
     return equals;
   },
+  nextIfNum: function(num){
+    var equals = this.isNum(num);
+    if (equals) this.next();
+    return equals;
+  },
+  nextIfType: function(type){
+    var equals = this.isType(type);
+    if (equals) this.next();
+    return equals;
+  },
+  nextIfValue: function(){
+    var equals = this.isValue();
+    if (equals) this.next();
+    return equals;
+  },
+
   nextExprIf: function(value){
     var equals = this.is(value);
     if (equals) this.next(true);
     return equals;
   },
+
+
+
+
   mustBe: function(value, nextIsExpr){
     if (this.is(value)) {
       if (nextIsExpr) this.nextExpr();
@@ -138,6 +160,7 @@ Tok.prototype = {
 
   next: function(expressionStart){
     this.lastValue = null;
+    this.lastNum = null;
     this.lastNewline = false;
 
     if (this.pos >= this.input.length) {
@@ -160,6 +183,7 @@ Tok.prototype = {
   },
   nextWhiteToken: function(expressionStart){
     this.lastValue = null;
+    this.lastNum = null;
     if (this.pos >= this.input.length) return EOF;
 
     ++this.tokenCount;
@@ -596,6 +620,10 @@ Tok.prototype = {
 
   getLastValue: function(){
     return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
+  },
+  getLastNum: function(){
+    if (this.lastNum === null) return this.lastNum = this.input.charCodeAt(this.lastStart);
+    return this.lastNum;
   },
 
   debug: function(){

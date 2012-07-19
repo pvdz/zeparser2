@@ -103,7 +103,7 @@ Par.prototype = {
             if (this.tok.nextExprIf('=')) {
                 this.parseExpression();
             }
-        } while(this.tok.nextIf(','));
+        } while(this.tok.nextIfNum(0x2c)); // ,
         this.parseSemi();
 
         return true;
@@ -115,7 +115,7 @@ Par.prototype = {
             if (this.tok.nextExprIf('=')) {
                 this.parseExpressionNoIn();
             }
-        } while(this.tok.nextIf(','));
+        } while(this.tok.nextIfNum(0x2c)); // ,
     },
     parseIf: function(){
         // if (<exprs>) <stmt>
@@ -168,7 +168,8 @@ Par.prototype = {
       if (this.tok.is('var')) this.parseVarPartNoIn();
       else this.parseExpressionsNoIn();
 
-      if (this.tok.nextIf(';')) this.parseForEach();
+      // 3b = ;
+      if (this.tok.nextIfNum(0x3b)) this.parseForEach();
       else this.parseForIn();
     },
     parseForEach: function(){
@@ -196,7 +197,7 @@ Par.prototype = {
         this.tok.next();
         if (this.tok.lastNewline) this.addAsi();
         else {
-            this.tok.nextIf(IDENTIFIER);
+            this.tok.nextIfType(IDENTIFIER);
             this.parseSemi();
         }
     },
@@ -208,7 +209,7 @@ Par.prototype = {
         this.tok.next();
         if (this.tok.lastNewline) this.addAsi();
         else {
-            this.tok.nextIf(IDENTIFIER);
+            this.tok.nextIfType(IDENTIFIER);
             this.parseSemi();
         }
     },
@@ -254,7 +255,7 @@ Par.prototype = {
         }
     },
     parseCases: function(){
-        while (this.tok.nextIf('case',true)) {
+        while (this.tok.nextIf('case')) {
             this.parseCase();
         }
     },
@@ -320,7 +321,7 @@ Par.prototype = {
         // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
         this.tok.next(); // 'function'
-        this.tok.nextIf(IDENTIFIER); // name
+        this.tok.nextIfType(IDENTIFIER); // name
         this.parseFunctionRemainder();
     },
     parseNamedFunction: function(hasName){
@@ -339,8 +340,8 @@ Par.prototype = {
     parseParameters: function(){
         // [<idntf> [, <idntf>]]
 
-        if (this.tok.nextIf(IDENTIFIER)) {
-            while (this.tok.nextIf(',')) {
+        if (this.tok.nextIfType(IDENTIFIER)) {
+            while (this.tok.nextIfNum(0x2c)) { // ,
                 this.tok.mustBe(IDENTIFIER);
             }
         }
@@ -355,7 +356,7 @@ Par.prototype = {
         this.parseBlock();
     },
     parseSemi: function(){
-        if (this.tok.nextIf(';')) return PUNCTUATOR;
+        if (this.tok.nextIfNum(0x3b)) return PUNCTUATOR; // ;
         if (this.parseAsi()) return ASI;
         throw 'Unable to parse semi, unable to apply ASI';
 //      : '+this.tok.debug()+' #### '+
@@ -399,7 +400,7 @@ Par.prototype = {
         // ugly but mandatory label check
         // if this is a label, the primary parser
         // will have bailed when seeing the colon.
-        if (checkLabel && this.tok.nextIf(':')) {
+        if (checkLabel && this.tok.nextIfNum(0x3a)) { // :
             this.parseStatement();
             return true;
         }
@@ -488,9 +489,9 @@ Par.prototype = {
 
       if (this.tok.is('function')) {
         this.parseFunction();
-      } else if (!this.tok.nextIf(VALUE)) {
+      } else if (!this.tok.nextIfValue(VALUE)) {
         if (this.tok.nextExprIf('[')) this.parseArray();
-        else if (this.tok.nextIf('{')) this.parseObject();
+        else if (this.tok.nextIfNum(0x7b)) this.parseObject();
         else if (this.tok.nextExprIf('(')) this.parseGroup();
       } else if (checkLabel) {
         // now's the time... you just ticked off an identifier, check the current token for being a colon!
@@ -517,7 +518,7 @@ Par.prototype = {
         // (<exprs>)
 
         while (true) {
-            if (this.tok.nextIf('.')) {
+            if (this.tok.nextIfNum(0x2e)) {
                 this.tok.mustBe(IDENTIFIER);
             }
             else if (this.tok.nextExprIf('(')) {
