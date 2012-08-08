@@ -92,6 +92,7 @@ Par.prototype = {
 
         this.tok.next();
         do {
+            if (this.isReservedIdentifier(this.tok.getLastValue())) throw 'var name is reserved';
             this.tok.mustBeType(IDENTIFIER, true);
             if (this.tok.nextExprIfNum(0x3d)) { // =
                 this.parseExpression();
@@ -104,6 +105,7 @@ Par.prototype = {
     parseVarPartNoIn: function(){
         this.tok.next();
         do {
+            if (this.isReservedIdentifier(this.tok.getLastValue())) throw 'var name is reserved';
             this.tok.mustBeType(IDENTIFIER,true);
             if (this.tok.nextExprIfNum(0x3d)) { // =
                 this.parseExpressionNoIn();
@@ -191,6 +193,7 @@ Par.prototype = {
         this.tok.next();
         if (this.tok.lastNewline) this.addAsi();
         else {
+            // todo: assert that label exists in labelSet
             this.tok.nextIfType(IDENTIFIER);
             this.parseSemi();
         }
@@ -205,6 +208,7 @@ Par.prototype = {
           if (!inLoop && !inSwitch) throw 'You can only use breaks without a label in a switch or a loop (asi)';
           this.addAsi();
         } else {
+            // todo: assert that label exists in labelSet
             if (!this.tok.nextIfType(IDENTIFIER)) { // label name
               if (!inLoop && !inSwitch) throw 'You can only use breaks without a label in a switch or a loop';
             }
@@ -321,7 +325,10 @@ Par.prototype = {
         // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
         this.tok.next(); // 'function'
-        this.tok.nextIfType(IDENTIFIER); // name
+        if (this.tok.isType(IDENTIFIER)) { // name
+          if (this.isReservedIdentifier(this.tok.getLastValue())) throw 'function name is reserved';
+          this.tok.next();
+        }
         this.parseFunctionRemainder();
     },
     parseNamedFunction: function(hasName){
@@ -331,19 +338,24 @@ Par.prototype = {
         this.tok.mustBeType(IDENTIFIER); // name
         this.parseFunctionRemainder();
     },
-    parseFunctionRemainder: function(){
+    parseFunctionRemainder: function(paramCount){
         this.tok.mustBeNum(0x28); // (
-        this.parseParameters();
+        this.parseParameters(paramCount);
         this.tok.mustBeNum(0x29); // )
         this.parseCompleteBlock(true, false, false); // this resets loop and switch status
     },
-    parseParameters: function(){
+    parseParameters: function(paramCount){
         // [<idntf> [, <idntf>]]
-
-        if (this.tok.nextIfType(IDENTIFIER)) {
-            while (this.tok.nextIfNum(0x2c)) { // ,
-                this.tok.mustBeType(IDENTIFIER);
-            }
+        if (this.tok.isType(IDENTIFIER)) {
+          if (paramCount === 0) throw 'Getters have no parameters';
+          if (this.isReservedIdentifier(this.tok.getLastValue())) throw 'param name is reserved';
+          this.tok.next();
+          while (this.tok.nextIfNum(0x2c)) { // ,
+            if (paramCount === 1) throw 'Setters have exactly one param';
+            this.tok.mustBeType(IDENTIFIER);
+          }
+        } else if (paramCount === 1) {
+          throw 'Setters have exactly one param';
         }
     },
     parseBlock: function(inFunction, inLoop, inSwitch){
@@ -397,8 +409,9 @@ Par.prototype = {
     parseExpressionForLabel: function(inFunction, inLoop, inSwitch){
         // dont check for label if you can already see it'll fail
         var checkLabel = this.tok.isType(IDENTIFIER);
+        if (checkLabel) var labelName = this.tok.getLastValue();
 
-        this.parsePrimary(checkLabel);
+        checkLabel = this.parsePrimary(checkLabel);
 
         // ugly but mandatory label check
         // if this is a label, the primary parser
@@ -488,26 +501,41 @@ Par.prototype = {
     parsePrimary: function(checkLabel){
       // parses parts of an expression without any binary operators
 
-      this.parseUnary();
+      // if we parse any unary, we wont have to check for label
+      checkLabel = this.parseUnary(checkLabel);
 
-      if (this.tok.is('function')) {
-        this.parseFunction();
+      if (this.tok.isType(IDENTIFIER)) {
+        var identifier = this.tok.getLastValue();
+        if (identifier === 'function') {
+          this.parseFunction();
+        } else {
+          if (this.isReservedNonValueIdentifier(identifier)) throw 'Reserved identifier found in expression';
+          this.tok.next();
+
+          // now's the time... you just ticked off an identifier, check the current token for being a colon!
+          if (checkLabel) {
+            // 3a = :
+            if (this.tok.isNum(0x3a)) {
+              if (this.isValueKeyword(identifier)) throw 'Reserved identifier found in label';
+              return true;
+            }
+          }
+        }
       } else if (!this.tok.nextIfValue(VALUE)) {
         if (this.tok.nextExprIfNum(0x5b)) this.parseArray();
         else if (this.tok.nextIfNum(0x7b)) this.parseObject();
         else if (this.tok.nextExprIfNum(0x28)) this.parseGroup();
-      } else if (checkLabel) {
-        // now's the time... you just ticked off an identifier, check the current token for being a colon!
-        // 3a = :
-        if (this.tok.isNum(0x3a)) return;
       }
 
       this.parsePrimarySuffixes();
+      return false;
     },
-    parseUnary: function(){
+    parseUnary: function(checkLabel){
       while (!this.tok.isType(EOF) && this.testUnary()) {
         this.tok.nextExpr();
+        checkLabel = false; // if we parsed a prefix, we cant parse a label
       }
+      return checkLabel;
     },
     testUnary: function(){
       // this method works under the assumption that the current token is
@@ -682,10 +710,10 @@ Par.prototype = {
     },
     parsePair: function(){
         if (this.tok.nextIf('get')) {
-            if (this.tok.isType(IDENTIFIER)) this.parseFunction();
+            if (this.tok.nextIfType(IDENTIFIER)) this.parseFunctionRemainder(0);
             else this.parseDataPart();
         } else if (this.tok.nextIf('set')) {
-            if (this.tok.isType(IDENTIFIER)) this.parseFunction();
+            if (this.tok.nextIfType(IDENTIFIER)) this.parseFunctionRemainder(1);
             else this.parseDataPart();
         } else {
             this.parseData();
@@ -699,4 +727,62 @@ Par.prototype = {
         this.tok.mustBeNum(0x3a,true); // :
         this.parseExpression();
     },
+
+  isReservedIdentifier: function(identifier){
+    // note that this function will return false most of the time
+    // if it returns true, a syntax error will probably be thrown
+
+    return this.isValueKeyword(identifier) || this.isReservedNonValueIdentifier(identifier);
+  },
+  isReservedNonValueIdentifier: function(identifier){
+    // returns true for any non-value holding keyword or future reserved word
+
+    return (
+      // keywords:
+      identifier === 'break' ||
+      identifier === 'do' ||
+      identifier === 'instanceof' ||
+      identifier === 'typeof' ||
+      identifier === 'case' ||
+      identifier === 'else' ||
+      identifier === 'new' ||
+      identifier === 'var' ||
+      identifier === 'catch' ||
+      identifier === 'finally' ||
+      identifier === 'return' ||
+      identifier === 'continue' ||
+      identifier === 'for' ||
+      identifier === 'switch' ||
+      identifier === 'while' ||
+      identifier === 'debugger' ||
+      identifier === 'with' ||
+      identifier === 'default' ||
+      identifier === 'if' ||
+      identifier === 'throw' ||
+      identifier === 'delete' ||
+      identifier === 'in' ||
+      identifier === 'try' ||
+      // reserved words:
+      identifier === 'class' ||
+      identifier === 'enum' ||
+      identifier === 'extends' ||
+      identifier === 'super' ||
+      identifier === 'const' ||
+      identifier === 'export' ||
+      identifier === 'import'
+    );
+  },
+  isValueKeyword: function(identifier){
+    // returns true if identifier is a value-holding keyword
+
+    return (
+      // keywords:
+      identifier === 'function' ||
+      identifier === 'this' ||
+      identifier === 'void' ||
+      identifier === 'true' ||
+      identifier === 'false' ||
+      identifier === 'null'
+    );
+  }
 };

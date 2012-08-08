@@ -468,7 +468,7 @@ var good = [
 ["/abc\//no_comment", [3, 4], [true, false, false], "RegExp Followed By Line Comment"],
 ["a: b; c;", 8, "ASI Regression Test (failing asi for label being expr statement): Labeled Identifier, `;`, Identifier, `;`"],
 ["var x; function f(){ x; function g(){}}", 23, "Function Declaration Within Function Body"],
-["if (x) { break }", [11, 12], "ASI: `if` Statement, `break`"],
+["while (x) { break }", [11, 12], "ASI: `while` Statement, `break`"],
 ["x.hasOwnProperty()", [5, 6], "Regression Test: Object Property Named `hasOwnProperty`"],
 ["(x) = 5", [7, 8], "LHS of Expression Contains Grouping Operator"],
 ["(x,x) = 5", [9, 10], "Syntactically Valid LHS Grouping Operator (Expression Will Produce A `ReferenceError` When Interpreted)"],
@@ -580,10 +580,11 @@ var bad = [
   ["for (a?b:(c in y))z;", "invalid"],
   ["for (a?b:(c in y) in d)z;", "even if you wrap the `in`, still invalid"],
 
-  ['break 5+5;', "break arg, if any, must be a valid label identifier"],
-  ['continue 5+5;', "break arg, if any, must be a valid label identifier"],
-  ['break if;', "break arg, if any, must be a valid label identifier"],
-  ['continue if;', "break arg, if any, must be a valid label identifier"],
+  ['while(true)break 5+5;', "break arg, if any, must be a valid label identifier"],
+  ['while(true)continue 5+5;', "break arg, if any, must be a valid label identifier"],
+  ['while(true)break if;', "break arg, if any, must be a valid label identifier"],
+  ['while(true)continue if;', "break arg, if any, must be a valid label identifier"],
+
   ['do {} while() fail;', "semi after while is required"],
   ["foo--.toString();", "postfix ops effectively end the primary expression"],
   ["foo++.toString();", "postfix ops effectively end the primary expression"],
@@ -629,9 +630,18 @@ var bad = [
 
   ['+xyz: debugger;', "label with prefix"],
   ['xyz--: debugger;', "label with suffix"],
+  ['delete: ;', 'delete as label'],
+  ['typeof: ;', 'typeof as label'],
+  ['new: ;', 'new as label'],
+  ['if: ;', 'if as label'],
 
   ['return foo;', "return outside of function"],
 
   // TOFIX: add tests for various keywords that should fail
+
+  ['var if = 5;', 'keyword as varname'],
+  ['x?if:y;', 'keyword in expression'],
+  ['function if(){}', 'keyword as function name'],
+  ['function f(if){}', 'keyword as param name'],
 
 ];
