@@ -13,7 +13,7 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script>
-        var testString = 'for (var x=a?b:c in y)z;';
+        var testString = 'for(var e in d)/#|#^dom_/.test(e)?x:y';
         console.log("testing", [testString.replace(/\n/g,'\u23CE')]);
         var par = new Par(testString);
         par.run();

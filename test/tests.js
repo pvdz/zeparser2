@@ -345,15 +345,15 @@ var good = [
 ["for (x in a, b, c);", 16, "`for...in` With Multiple Comma-Separated Object References"],
 
 // Flow of Control: `continue`, `break`, and `return` Statements.
-["continue;", 2, "`continue` Statement"],
-["continue label;", 4, "`continue` Statement With Identifier Label"],
-["break;", 2, "`break` Statement"],
-["break somewhere;", 4, "`break` Statement With Identifier Label"],
-["continue /* comment */ ;", 5, "`continue` Statement, Block Comment, `;`"],
-["continue \n;", [4, 5], "`continue` Statement, Space, Linefeed, `;`"],
-["return;", 2, "`return` Statement"],
-["return 0;", 4, "`return` Statement, Integer, `;`"],
-["return 0 + \n 1;", 10, "`return` Statement, Additive Expression Containing Linefeed, `;`"],
+["while(true)continue;", 6, "`continue` Statement"],
+["while(true)continue label;", 8, "`continue` Statement With Identifier Label"],
+["while(true)break;", 6, "`break` Statement"],
+["while(true)break somewhere;", 8, "`break` Statement With Identifier Label"],
+["while(true)continue /* comment */ ;", 9, "`continue` Statement, Block Comment, `;`"],
+["while(true)continue \n;", [8, 9], "`continue` Statement, Space, Linefeed, `;`"],
+["function f(){return;}", 9, "`return` Statement"],
+["function f(){return 0;}", 11, "`return` Statement, Integer, `;`"],
+["function f(){return 0 + \n 1;}", 17, "`return` Statement, Additive Expression Containing Linefeed, `;`"],
 
 // `with` Statement.
 ["with (e) s;", 8, "`with` Statement, `;`"],
@@ -399,14 +399,14 @@ var good = [
 ["x;\n/*foo*/\n\t;", 7, "Program: Identifier, Linefeed, Block Comment, Linefeed"],
 
 // Automatic Semicolon Insertion
-["continue \n foo;", [6, 7], "Restricted Production: `continue` Statement"],
-["break \n foo;", [6, 7], "Restricted Production: `break` Statement"],
-["return\nfoo;", [4, 5], "Restricted Production: `return` Statement"],
+["while(true)continue \n foo;", [10, 11], "Restricted Production: `continue` Statement"],
+["while(true)break \n foo;", [10, 11], "Restricted Production: `break` Statement"],
+["function f(){return\nfoo;}", [11, 12], "Restricted Production: `return` Statement"],
 ["throw\nfoo;", [4, 5], "Restricted Production: `throw` Statement"],
 ["var x; { 1 \n 2 } 3", [16, 19], "Classic Automatic Semicolon Insertion Case"],
 ["ab \t /* hi */\ncd", [7, 9], "Automatic Semicolon Insertion: Block Comment"],
 ["ab/*\n*/cd", [3, 5], "Automatic Semicolon Insertion Triggered by Multi-Line Block Comment"],
-["continue /* wtf \r busta */ foo;", [6, 7], "Automatic Semicolon Insertion: `continue` Statement Preceding Multi-Line Block Comment"],
+["while(true)continue /* wtf \r busta */ foo;", [10, 11], "Automatic Semicolon Insertion: `continue` Statement Preceding Multi-Line Block Comment"],
 ["function f() { s }", [11, 12], "Automatic Semicolon Insertion: Statement Within Function Declaration"],
 ["function f() { return }", [11, 12], "Automatic Semicolon Insertion: `return` Statement Within Function Declaration"],
 
@@ -475,12 +475,12 @@ var good = [
 ["switch(x){case 1:}", 10, "Single-`case` `switch` Statement Without Body"],
 ["while (x) { ++a\t}", [12, 13], "Prefix Increment Operator, Tab Character Within `while` Loop"],
 
-["{break}", [3, 4], "ASI: `break`"],
-["{continue}", [3, 4], "ASI: `continue`"],
-["{return}", [3, 4], "ASI: `return`"],
-["{continue a}", [5, 6], "ASI: `continue`, Identifier"],
-["{break b}", [5, 6], "ASI: `break`, Identifier"],
-["{return c}", [5, 6], "ASI: `return`, Identifier"],
+["while(true){break}", [7, 8], "ASI: `break`"],
+["while(true){continue}", [7, 8], "ASI: `continue`"],
+["function f(){return}", [8, 9], "ASI: `return`"],
+["while(true){continue a}", [9, 10], "ASI: `continue`, Identifier"],
+["while(true){break b}", [9, 10], "ASI: `break`, Identifier"],
+["function f(){return c}", [10, 11], "ASI: `return`, Identifier"],
 
 ["this.charsX = Gui.getSize(this.textarea).w / this.fontSize.w;", 25, "Complex Division Not Treated as RegExp"],
 ["x=y.a/z;",8,"simplified case of above"],
@@ -495,6 +495,7 @@ var good = [
 
 ["a:b:c:nested;",8,"nested labels"],
 
+//whole section of regexes in any kind of valid place
 ["{}/foo/;", 4, [false,false,true],"regex after block"],
 ["var x=/foo/;", 6, [false,false,false,false,true],"regex after var initalizer"],
 ["+{x:/y/};", 7, [false,false,false,false,true],"regex in objlit"],
@@ -509,14 +510,28 @@ var good = [
 ["x?/y/:z;", 6, [false,false,true], "regex middle of ternary"],
 ["x?y:/z/;", 6, [false,false,false,false,true], "regex end of ternary"],
 ["/=/;", 2, [true], "regex that looks like the start of a compound division assignment"],
-["function f(){ return /foo/; }", 13, "regex after return keyword"],
-["switch(x){}/foo/;", 8, "regex after switch"],
-["function x(){}/foo/;", 9, "regex after function decl"],
-["while(x){}/foo/;", 8, "regex after block"],
-["try{}catch(e){}/foo/;", 11, "regex after catch"],
-["try{}finally{}/foo/;", 8, "regex after catch"],
-["throw /foo/;", 4, "regex after throw"],
-["(x)\n/y;", [6,7], "division with asi (not to be confused with regex, would be illegal)"],
+["function f(){ return /foo/; }", 13, [true,true,true,true,true,true,true,true,true,true,true,true], "regex after return keyword"],
+["switch(x){}/foo/;", 8, [true,true,true,true,true,true,true,true,true], "regex after switch"],
+["function x(){}/foo/;", 9, [true,true,true,true,true,true,true,true,true,true], "regex after function decl"],
+["while(x){}/foo/;", 8, [true,true,true,true,true,true,true,true,true], "regex after block"],
+["try{}catch(e){}/foo/;", 11, [true,true,true,true,true,true,true,true,true,true,true], "regex after catch"],
+["try{}finally{}/foo/;", 8, [true,true,true,true,true,true,true,true,true], "regex after catch"],
+["throw /foo/;", 4, [true,true,true], "regex after throw"],
+["(x)\n/y;", 7, "division with asi (not to be confused with regex, would be illegal)"],
+["x\n/y/\nz;",8,"long multi-line division, no asi's applied"],
+["{x;/x/;}", 6, [false, false, false, true], "regex after semi in block"],
+["if(x)/y/;", 6, [false, false, false, false, true], "regex after if statement header"],
+["for(;;)/y/;", 7, [false, false, false, false, false, true], "regex in for-each statement header"],
+["for(/x/;;);", 7, [false, false, true, true, true, true, true, true, true], "regex in for-each statement header"],
+["for(;/x/;);", 7, [false, false, true, true, true, true, true, true, true], "regex in for-each statement header"],
+["for(;;/x/);", 7, [false, false, true, true, true, true, true, true, true], "regex in for-each statement header"],
+["for(/x/;;/x/);", 8, [false, false, true, true, true, true, true, true, true], "regex in for-each statement header"],
+["for(/x/;/x/;/x/);", 9, [false, false, true, true, true, true, true, true, true, true], "regex in for-each statement header"],
+["for(x in y)/y/;", 10, [false, false, false, false, false, false, false, false, true], "regex after for-in statement header"],
+["for(var a=/x/ in y)/y/;", 14, [false, false, true, true, true, true, true, true, true, true, true, true, true], "regex after for-in statement header"],
+["for(x in /y/)/z/;", 10, [false, false, true, true, true, true, true, true, true], "regex after for-in statement header"],
+["function f(){return /foo/;}", 11, [false, false, false, false, false, false, false, true], "returning a regex"],
+["function f(){}/foo/;", 9, [false, false, false, false, false, false, false, true], "regex after a func def"],
 
 ["!--foo;", 4, "prefix decr after bang"],
 ["!++foo;", 4, "prefix incr after bang"],
@@ -548,68 +563,75 @@ var good = [
 ["for (x in (a?b:c))z;", 17, "ternary expression right but not start of for-in"],
 ["for (x in y=(a?b:c))z;", 19, "ternary expression right of for-in after assignment"],
 
+["function f(){ foo: return; }", 14, "label must not make forget function-context-state for return"],
+["for(;;)foo:break;", 9, "label must not make forget for-each-context-state for break"],
+["for(x in y)foo:break;", 12, "label must not make forget for-in-context-state for break"],
+["while(true)foo:break;", 8, "label must not make forget while-context-state for break"],
+["switch(x){case x:foo:break;}", 14, "label must not make forget switch-context-state for break"],
+["for(;;)foo:continue;", 9, "label must not make forget for-each-context-state for continue"],
+["for(x in y)foo:continue;", 12, "label must not make forget for-in-context-state for continue"],
+["while(true)foo:continue;", 8, "label must not make forget while-context-state for continue"],
+
 ];
 
 // these are mainly for the parser, of course...
 var bad = [
-    'for (x = 5 in y) ;', // initialization (dead code) in for-in is only allowed with var keyword or with parens
-    "for (a?b:(c in y))z;", // invalid
-    "for (a?b:(c in y) in d)z;", // even if you wrap the `in`, still invalid
+  ['for (x = 5 in y) ;', "initialization (dead code) in for-in is only allowed with var keyword or with parens"],
+  ["for (a?b:(c in y))z;", "invalid"],
+  ["for (a?b:(c in y) in d)z;", "even if you wrap the `in`, still invalid"],
 
-    'break 5+5;', // break arg, if any, must be a valid label identifier
-    'continue 5+5;', // break arg, if any, must be a valid label identifier
-    'break if;', // break arg, if any, must be a valid label identifier
-    'continue if;', // break arg, if any, must be a valid label identifier
-    'do {} while() fail;', // semi after while is required
-    "foo--.toString();", // postfix ops effectively end the primary expression
-    "foo++.toString();", // postfix ops effectively end the primary expression
-    "foo--['toString'];", // postfix ops effectively end the primary expression
-    "foo++['toString'];", // postfix ops effectively end the primary expression
-    "foo--('toString');", // now you're just being silly (there's _no_ way this can lead to valid runtime code.)
-    "foo++('toString');", // now you're just being silly (there's _no_ way this can lead to valid runtime code.)
+  ['break 5+5;', "break arg, if any, must be a valid label identifier"],
+  ['continue 5+5;', "break arg, if any, must be a valid label identifier"],
+  ['break if;', "break arg, if any, must be a valid label identifier"],
+  ['continue if;', "break arg, if any, must be a valid label identifier"],
+  ['do {} while() fail;', "semi after while is required"],
+  ["foo--.toString();", "postfix ops effectively end the primary expression"],
+  ["foo++.toString();", "postfix ops effectively end the primary expression"],
+  ["foo--['toString'];", "postfix ops effectively end the primary expression"],
+  ["foo++['toString'];", "postfix ops effectively end the primary expression"],
+  ["foo--('toString');", "now you're just being silly (there's _no_ way this can lead to valid runtime code.)"],
+  ["foo++('toString');", "now you're just being silly (there's _no_ way this can lead to valid runtime code.)"],
 
-    'x={get foo(x){}};', // getters have no params
-    'x={get foo(x,y){}};', // getters have no params
-    'x={set foo(){}};', // setters have one param
-    'x={set foo(x,y){}};', // setters have one param
+  ['x={get foo(x){}};', "getters have no params"],
+  ['x={get foo(x,y){}};', "getters have no params"],
+  ['x={set foo(){}};', "setters have one param"],
+  ['x={set foo(x,y){}};', "setters have one param"],
 
-    'x={get (){}};', // getters must have a name
-    'x={set (x){}};', // setters must have a name
+  ['x={get (){}};', "getters must have a name"],
+  ['x={set (x){}};', "setters must have a name"],
 
-    '{a:1,\"b\":2,c:c}', // old test, not sure how this never crashed anything. this is a block, not an objlit
+  ['{a:1,\"b\":2,c:c}', "old test, not sure how this never crashed anything. this is a block, not an objlit"],
 
-    "switch(x){ default: foo; break; case x: break; default: fail; }", // double default
+  ["switch(x){ default: foo; break; case x: break; default: fail; }", "double default"],
 
-    'foo/', // make sure this doesnt pass..
+  ['foo/', "make sure this doesnt pass.."],
 
-    '`', // backticks do not occur in js syntax
-    '#', // hashes do not occur in js syntax
-    '@', // at signs do not occur in js syntax
+  ['`', "backticks do not occur in js syntax"],
+  ['#', "hashes do not occur in js syntax"],
+  ['@', "at signs do not occur in js syntax"],
 
-    'x/**/bar;', // asi not applied
-    'x/*      */bar;', // asi not applied
+  ['x/**/bar;', "asi not applied"],
+  ['x/*      */bar;', "asi not applied"],
 
-    '/foo\nbar/', // newline in regex
-    '/foo\u2029bar/', // newline in regex 2
-    '/foo\\\\nbar/', // escaped newline in regex
-    '/foo\\\\rbar/', // escaped newline in regex 2
-    '/foo[\\\\n]bar/', // escaped newline in regex char class
-    '/foo[\\\\r]bar/', // escaped newline in regex char class 2
-    '(x)\n/foo/;', // no asi when regex starts on next line
+  ['/foo\nbar/', "newline in regex"],
+  ['/foo\u2029bar/', "newline in regex 2"],
+  ['/foo\\\nbar/', "escaped newline in regex"],
+  ['/foo\\\rbar/', "escaped newline in regex 2"],
+  ['/foo[\\\n]bar/', "escaped newline in regex char class"],
+  ['/foo[\\\r]bar/', "escaped newline in regex char class 2"],
+  ['(x)\n/foo/;', "no asi when forward slash starts on next line"],
 
-    'foo\n<!--\nbar = 5;', // assignment after prefix decr is bad
-    'foo</script> <script>bar', // yeah, uh
+  ['foo\n<!--\nbar = 5;', "assignment after prefix decr is bad"],
+  ['foo</script> <script>bar', "yeah, uh"],
 
-    '1x54', // malformed hex...
-    '2X54', // malformed hex...
+  ['1x54', "malformed hex..."],
+  ['2X54', "malformed hex..."],
 
-    '+xyz: debugger;', // label with prefix
-    'xyz--: debugger;', // label with suffix
+  ['+xyz: debugger;', "label with prefix"],
+  ['xyz--: debugger;', "label with suffix"],
 
-    'return foo;', // return outside of function
+  ['return foo;', "return outside of function"],
 
-    // TOFIX: add tests for various keywords that should fail
-
-
+  // TOFIX: add tests for various keywords that should fail
 
 ];

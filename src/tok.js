@@ -130,21 +130,21 @@ Tok.prototype = {
     if (this.is(value)) {
       this.next(nextIsExpr);
     } else {
-      throw 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
+      throw this.syntaxError(value);
     }
   },
   mustBeNum: function(num, nextIsExpr){
     if (this.isNum(num)) {
       this.next(nextIsExpr);
     } else {
-      throw 'A syntax error at pos='+this.pos+' expected '+String.fromCharCode(num)+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
+      throw this.syntaxError(num);
     }
   },
   mustBeType: function(type, nextIsExpr){
     if (this.isType(type)) {
       this.next(nextIsExpr);
     } else {
-      throw 'A syntax error at pos='+this.pos+' expected type='+Tok[value]+' is `'+this.getLastValue()+'` ('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos+2000)+'`';
+      throw this.syntaxError(type);
     }
   },
 
@@ -510,8 +510,8 @@ Tok.prototype = {
   },
   decimalSub: function(pos){
     var input = this.input;
-    var c = this.input.charCodeAt(pos);
-    while (c >= 0x30 & c <= 0x39) c = this.input.charCodeAt(++pos);
+    var c = input.charCodeAt(pos);
+    while (c >= 0x30 & c <= 0x39) c = input.charCodeAt(++pos);
     return pos;
   },
   hexNumber: function(pos){
@@ -622,5 +622,9 @@ Tok.prototype = {
 
   debug: function(){
     return '`'+this.getLastValue()+'` @ '+this.pos+' ('+Tok[this.lastType]+')';
+  },
+  syntaxError: function(value){
+    return 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` '+
+        '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
   },
 };
