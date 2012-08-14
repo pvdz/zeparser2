@@ -346,11 +346,11 @@ var good = [
 
 // Flow of Control: `continue`, `break`, and `return` Statements.
 ["while(true)continue;", 6, "`continue` Statement"],
-["while(true)continue label;", 8, "`continue` Statement With Identifier Label"],
+["label:while(true)continue label;", 10, "`continue` Statement With Identifier Label"],
 ["while(true)break;", 6, "`break` Statement"],
-["while(true)break somewhere;", 8, "`break` Statement With Identifier Label"],
+["somewhere:while(true)break somewhere;", 10, "`break` Statement With Identifier Label"],
 ["while(true)continue /* comment */ ;", 9, "`continue` Statement, Block Comment, `;`"],
-["while(true)continue \n;", [8, 9], "`continue` Statement, Space, Linefeed, `;`"],
+["while(true)continue \n;", 8, "`continue` Statement, Space, Linefeed, `;`"],
 ["function f(){return;}", 9, "`return` Statement"],
 ["function f(){return 0;}", 11, "`return` Statement, Integer, `;`"],
 ["function f(){return 0 + \n 1;}", 17, "`return` Statement, Additive Expression Containing Linefeed, `;`"],
@@ -478,8 +478,8 @@ var good = [
 ["while(true){break}", [7, 8], "ASI: `break`"],
 ["while(true){continue}", [7, 8], "ASI: `continue`"],
 ["function f(){return}", [8, 9], "ASI: `return`"],
-["while(true){continue a}", [9, 10], "ASI: `continue`, Identifier"],
-["while(true){break b}", [9, 10], "ASI: `break`, Identifier"],
+["a:while(true){continue a}", [11, 12], "ASI: `continue`, Identifier"],
+["b:while(true){break b}", [11, 12], "ASI: `break`, Identifier"],
 ["function f(){return c}", [10, 11], "ASI: `return`, Identifier"],
 
 ["this.charsX = Gui.getSize(this.textarea).w / this.fontSize.w;", 25, "Complex Division Not Treated as RegExp"],
@@ -519,6 +519,7 @@ var good = [
 ["throw /foo/;", 4, [true,true,true], "regex after throw"],
 ["(x)\n/y;", 7, "division with asi (not to be confused with regex, would be illegal)"],
 ["x\n/y/\nz;",8,"long multi-line division, no asi's applied"],
+['n = 1\n/1*"\\/\\//.test(n + \'"//\')',[11, 12],"from wtfjs crash report (https://github.com/brianleroux/wtfjs/pull/37/files)"],
 ["{x;/x/;}", 6, [false, false, false, true], "regex after semi in block"],
 ["if(x)/y/;", 6, [false, false, false, false, true], "regex after if statement header"],
 ["for(;;)/y/;", 7, [false, false, false, false, false, true], "regex in for-each statement header"],
@@ -530,7 +531,7 @@ var good = [
 ["for(x in y)/y/;", 10, [false, false, false, false, false, false, false, false, true], "regex after for-in statement header"],
 ["for(var a=/x/ in y)/y/;", 14, [false, false, true, true, true, true, true, true, true, true, true, true, true], "regex after for-in statement header"],
 ["for(x in /y/)/z/;", 10, [false, false, true, true, true, true, true, true, true], "regex after for-in statement header"],
-["function f(){return /foo/;}", 11, [false, false, false, false, false, false, false, true], "returning a regex"],
+["function f(){return /foo/;}", 11, [false, false, false, false, false, false, false, false, true], "returning a regex"],
 ["function f(){}/foo/;", 9, [false, false, false, false, false, false, false, true], "regex after a func def"],
 
 ["!--foo;", 4, "prefix decr after bang"],
@@ -572,6 +573,26 @@ var good = [
 ["for(x in y)foo:continue;", 12, "label must not make forget for-in-context-state for continue"],
 ["while(true)foo:continue;", 8, "label must not make forget while-context-state for continue"],
 
+["while(true)break\n;", 7, "No ASI after break because semi is ok by parser"],
+["{while(true)break}", [7, 8], "ASI after break because of }"],
+["while(true)break\n", [6, 7], "ASI because of newline/EOF"],
+["while(true)break", [5, 6], "ASI because of EOF"],
+["while(true)break\nx;", [8, 9], "ASI because of newline"],
+
+  ["while(true)continue\n;", 7, "just a continue"],
+  ["{while(true)continue}", [7, 8], "ASI because of }"],
+  ["while(true)continue\n", [6, 7], "ASI because of EOF"],
+  ["while(true)continue", [5, 6], "ASI because of EOF"],
+  ["while(true)continue\nx;", [8, 9], "ASI because of newline"],
+
+
+["function f(){return\n;}", [10, 11], "ASI after break with return, ignoring the semi-colon on next line"],
+["function f(){return\n}", [9, 10], "ASI after break because of }"],
+["function f(){return}", [8, 9], "ASI after break because of }"],
+["function f(){return\nx;}", [11, 12], "ASI because of newline"],
+
+["x", [1,2], "eof applies asi..."],
+
 ];
 
 // these are mainly for the parser, of course...
@@ -605,7 +626,38 @@ var bad = [
 
   ["switch(x){ default: foo; break; case x: break; default: fail; }", "double default"],
 
+  // a few partial tests if incomplete structures
   ['foo/', "make sure this doesnt pass.."],
+  ['if(foo)', 'incomplete if'],
+  ['for(;;)', 'incomplete for-each'],
+  ['for(x in y)', 'incomplete for-in'],
+  ['while(x)', 'incomplete while'],
+  ['do while();', 'incomplete while'],
+  ['if(x);else', 'incomplete else'],
+  ['try catch(e){}', 'incomplete try'],
+  ['try {} catch(e)', 'incomplete catch'],
+  ['try {} finally', 'incomplete finally'],
+  ['with(x)', 'incomplete with'],
+  ['label:', 'incomplete labelled statement'],
+  ['throw', 'incomplete throw'],
+  ['x?y', 'incomplete ternary'],
+  ['function f(){', 'incomplete function'],
+  // incompletes at eof but where comment follows it (prevents simple pos checks to pass)
+  ['foo/ //x', "make sure this doesnt pass.."],
+  ['if(foo)//x', 'incomplete if'],
+  ['for(;;)//x', 'incomplete for-each'],
+  ['for(x in y)//x', 'incomplete for-in'],
+  ['while(x)//x', 'incomplete while'],
+  ['do while();//x', 'incomplete while'],
+  ['if(x);else//x', 'incomplete else'],
+  ['try catch(e){}//x', 'incomplete try'],
+  ['try {} catch(e)//x', 'incomplete catch'],
+  ['try {} finally//x', 'incomplete finally'],
+  ['with(x)//x', 'incomplete with'],
+  ['label://x', 'incomplete labelled statement'],
+  ['throw//x', 'incomplete throw'],
+  ['x?y//x', 'incomplete ternary'],
+  ['function f(){//x', 'incomplete function'],
 
   ['`', "backticks do not occur in js syntax"],
   ['#', "hashes do not occur in js syntax"],
@@ -643,5 +695,16 @@ var bad = [
   ['x?if:y;', 'keyword in expression'],
   ['function if(){}', 'keyword as function name'],
   ['function f(if){}', 'keyword as param name'],
+
+  ['5 = 10;', 'Assignment to number, which doesnt return a reference'],
+  ['null = 10;', 'Assignment to null, which doesnt return a reference'],
+  ['true = 10;', 'Assignment to true, which doesnt return a reference'],
+  ['false = 10;', 'Assignment to false, which doesnt return a reference'],
+  ['this = 10;', 'Assignment to this, which is stupid and illegal'],
+  ['eval = 10;', 'Assignment to eval, which is poisoned'],
+  ['arguments = 10;', 'Assignment to arguments, which is poisoned'],
+
+  ["while(true){continue a}", "label a not found"],
+  ["while(true){break b}", "label b not found"],
 
 ];

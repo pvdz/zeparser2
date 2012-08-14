@@ -532,6 +532,7 @@ Tok.prototype = {
     // /foo\dbar/
     this.pos++;
     this.regexBody();
+    this.pos++;
     this.regexFlags();
 
     return REGEX;
@@ -587,27 +588,28 @@ Tok.prototype = {
   },
   identifierOrBust: function(){
     var result = this.asciiIdentifier();
-    if (result === false) throw 'Expecting identifier here at pos '+this.pos;
+    if (result === false) throw 'Unable to parse input '+this.pos;
     return result;
   },
   asciiIdentifier: function(){
     var input = this.input;
     var len = input.length;
     var pos = this.pos;
+    var start = pos;
     while (pos < len) {
-      var c = input.charCodeAt(++pos);
+      var c = input.charCodeAt(pos);
       // a-z A-Z 0-9 $ _
-      if (!((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x24 || c === 0x5f)) {
-        // \uxxxx
-        if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
-          pos += 5;
-        } else {
-          // tofix: non-ascii identifiers
-          break;
-        }
+      if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x24 || c === 0x5f) {
+        ++pos;
+      // \uxxxx
+      } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
+        pos += 6;
+      } else {
+        // tofix: non-ascii identifiers
+        break;
       }
     }
-    if (this.pos === pos) return false;
+    if (pos === start) return false;
     this.pos = pos;
     return IDENTIFIER;
   },
