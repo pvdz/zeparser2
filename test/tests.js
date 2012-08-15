@@ -335,7 +335,6 @@ var good = [
 ["for (i;i<len;++i){};", 15, "Empty `for` Loop: Empty; Initialization, Test, and Increment Conditions Specified"],
 ["for (var i=0;i<len;++i) {};", 20, "Empty `for` Loop: Variable Declaration in Initialization Condition"],
 ["for (var i=0,j=0;;){};", 18, "`Empty for` Loop: Empty Test and Increment Conditions"],
-["for ((x in b); c; u) {};", 21, "Empty `for` Loop: `in` Expression in Initialization Condition"],
 ["for (x in a);", 10, "Empty `for...in` Loop"],
 ["for (var x in a){};", 14, "Empty `for...in` Loop: Variable Declaration in Loop Header"],
 ["for (var x=5 in a) {};", 17, "Empty `for...in` Loop: Variable Initialization in Assignment Header"],
@@ -491,6 +490,7 @@ var good = [
 ["/foo/\\u0069", [1, 2], [true], "regular expression with unicode escape as flag. yes, i went there"],
 
 ["for ((x=5)in y);", 13, "initialization of for-in var is not allowed without var, but okay if you wrap it in parens"],
+["for (var x=y=z in a);", 16, "assignment as initializer"],
 ["do{}while(x)\nok;", [10, 11], "ASI after do-while because the semi is required"],
 
 ["a:b:c:nested;",8,"nested labels"],
@@ -537,7 +537,7 @@ var good = [
 ["!--foo;", 4, "prefix decr after bang"],
 ["!++foo;", 4, "prefix incr after bang"],
 
-["for(i=0,j=1;;);", 13, "for with multiple expressions but no var in lead"],
+["for(i,j;;);", 9, "for with multiple expressions but no var in lead"],
 ["for(var i=x?y:z;;);", 15, "for with var and ternary initializer"],
 
 ["switch(x){case 1,2:}", 12, "switch cases can have multiple expressions as key"],
@@ -563,6 +563,8 @@ var good = [
 ["for (var x=a?b:c in y)z;", 19, "ternary expression as left after var init for-in"],
 ["for (x in (a?b:c))z;", 17, "ternary expression right but not start of for-in"],
 ["for (x in y=(a?b:c))z;", 19, "ternary expression right of for-in after assignment"],
+["x?y:z=5;", 8, "assignment in ternary part"],
+["for(x=5;;);", 9, "just making sure this still works (such assignment is illegal with for-in)"],
 
 ["function f(){ foo: return; }", 14, "label must not make forget function-context-state for return"],
 ["for(;;)foo:break;", 9, "label must not make forget for-each-context-state for break"],
@@ -579,11 +581,11 @@ var good = [
 ["while(true)break", [5, 6], "ASI because of EOF"],
 ["while(true)break\nx;", [8, 9], "ASI because of newline"],
 
-  ["while(true)continue\n;", 7, "just a continue"],
-  ["{while(true)continue}", [7, 8], "ASI because of }"],
-  ["while(true)continue\n", [6, 7], "ASI because of EOF"],
-  ["while(true)continue", [5, 6], "ASI because of EOF"],
-  ["while(true)continue\nx;", [8, 9], "ASI because of newline"],
+["while(true)continue\n;", 7, "just a continue"],
+["{while(true)continue}", [7, 8], "ASI because of }"],
+["while(true)continue\n", [6, 7], "ASI because of EOF"],
+["while(true)continue", [5, 6], "ASI because of EOF"],
+["while(true)continue\nx;", [8, 9], "ASI because of newline"],
 
 
 ["function f(){return\n;}", [10, 11], "ASI after break with return, ignoring the semi-colon on next line"],
@@ -600,6 +602,8 @@ var bad = [
   ['for (x = 5 in y) ;', "initialization (dead code) in for-in is only allowed with var keyword or with parens"],
   ["for (a?b:(c in y))z;", "invalid"],
   ["for (a?b:(c in y) in d)z;", "even if you wrap the `in`, still invalid"],
+  ["for ((x in b); c; u) {};", "`in` wrapped in parens as first part of for-each"],
+  ["for ((x in b) in u) {};", "`in` wrapped in parens as first part of for-in"],
 
   ['while(true)break 5+5;', "break arg, if any, must be a valid label identifier"],
   ['while(true)continue 5+5;', "break arg, if any, must be a valid label identifier"],
@@ -706,5 +710,6 @@ var bad = [
 
   ["while(true){continue a}", "label a not found"],
   ["while(true){break b}", "label b not found"],
+
 
 ];

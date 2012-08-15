@@ -340,18 +340,6 @@ Tok.prototype = {
     return true;
   },
   commentSingle: function(){
-//    var input = this.input;
-//    var len = input.length;
-//    var pos = this.pos;
-//    var c = input.charCodeAt(pos);
-//    while (pos < len && c !== 0x000A && c !== 0x000D && c !== 0x2028 && c !== 0x2029) {
-//      var c = input.charCodeAt(++pos);
-//    }
-//
-//    this.pos = pos;
-//
-//    return true;
-
     var rex = this.rexNewlines;
     rex.lastIndex = this.pos;
     rex.test(this.input);
@@ -360,24 +348,6 @@ Tok.prototype = {
     return true;
   },
   commentMulti: function(){
-    // two ways: regex or character loop. dunno which is faster.
-
-//    var input = this.input;
-//    var len = input.length;
-//    var pos = this.pos+2;
-//    var nonl = true;
-//    while (pos < len) {
-//      var c = input.charCodeAt(pos++);
-//      if (c === 0x2a && input.charCodeAt(pos) === 0x2f) break;
-//      else if (nonl && c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) nonl = false;
-//    }
-//
-//    if (pos >= len) throw 'unterminated line comment at '+pos;
-//    this.pos = pos+1;
-//    if (!nonl) this.lastNewline = true;
-//
-//    return true;
-
     var end = this.input.indexOf('*/',this.pos+2)+2;
     if (end == 1) throw new Error('Unable to find end of multiline comment started on pos '+this.pos);
 
@@ -470,22 +440,6 @@ Tok.prototype = {
     }
 
     return NUMBER;
-
-
-
-//    var regex = this.rexNumbers;
-//
-//    regex.lastIndex = this.pos;
-//    var matches = regex.test(this.input);
-//
-//    if (!matches) throw new Error('Invalid number parsed, starting at '+this.pos);
-//
-//    // we dont have to check whether the first character is part of the match because we already know
-//    // that it is a zero and therefor has to be part of the match.
-//
-//    this.pos = regex.lastIndex;
-//
-//    return NUMBER;
   },
   decimalNumber: function(c, pos){
     var input = this.input;
