@@ -565,6 +565,8 @@ var good = [
 ["for (x in y=(a?b:c))z;", 19, "ternary expression right of for-in after assignment"],
 ["x?y:z=5;", 8, "assignment in ternary part"],
 ["for(x=5;;);", 9, "just making sure this still works (such assignment is illegal with for-in)"],
+["for ((x = [x in y]) in z);", 22, "odd in construct even though array clearly incorrect"],
+["for ((x = {x:x in y}) in z);", 24, "odd in construct even though array clearly incorrect"],
 
 ["function f(){ foo: return; }", 14, "label must not make forget function-context-state for return"],
 ["for(;;)foo:break;", 9, "label must not make forget for-each-context-state for break"],
