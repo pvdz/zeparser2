@@ -71,6 +71,7 @@
 
         for (var i=0; i<bad.length; ++i) {
           var test = bad[i];
+          if (!test) console.warn("Probably missing a comma...");
           var input = test[0];
           var desc = test[1];
 

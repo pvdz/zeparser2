@@ -5,10 +5,11 @@ var Par = function(input){
 Par.prototype = {
   run: function(){
     // prepare
+//    if (this.tok.input === '500') debugger
     this.tok.nextExpr();
-
     // go!
     this.parseStatements(false, false, false, []);
+    if (this.tok.pos != this.tok.len) throw 'Did not complete parsing... '+this.tok.syntaxError();
   },
 
   parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
@@ -16,17 +17,18 @@ Par.prototype = {
     while (!this.tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, true));
   },
   parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
-    if (this.tok.isType(IDENTIFIER)) {
+    var tok = this.tok;
+    if (tok.isType(IDENTIFIER)) {
       // dont "just" return true. case and default still return false
       return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
     }
 
-    if (this.tok.isValue()) {
+    if (tok.isValue()) {
       this.parseExpressionStatement();
       return true;
     }
 
-    var c = this.tok.getLastNum();
+    var c = tok.getLastNum();
     if (
       c === 0x28 || // (
       c === 0x5b || // [
@@ -40,48 +42,49 @@ Par.prototype = {
     }
 
     if (c === 0x7b) { // {
-      this.tok.nextExpr();
+      tok.nextExpr();
       this.parseBlock(inFunction, inLoop, inSwitch, labelSet);
       return true;
     }
     if (c === 0x3b) { // [
-      this.tok.nextExpr();
+      tok.nextExpr();
       return true;
     } // empty statement
 
     if (!optional) throw 'Expected more input...';
-    if (this.tok.isType(EOF)) return false;
+    return false;
   },
   parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet){
-    var val = this.tok.getLastValue();
+    var tok = this.tok;
 
     // yes, this makes "huge" difference
     var c = this.tok.getLastNum();
 
-    if (c === 0x76 && val === 'var') this.parseVar();
-    else if (c === 0x69 && val === 'if') this.parseIf(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x64 && val === 'do') this.parseDo(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x77 && val === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x66 && val === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x74 && val === 'throw') this.parseThrow();
-    else if (c === 0x73 && val === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x74 && val === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x64 && val === 'debugger') this.parseDebugger();
-    else if (c === 0x77 && val === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x66 && val === 'function') this.parseFunction();
-    else if (c === 0x63 && val === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x62 && val === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x72 && val === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
+    if (c === 0x76 && tok.getLastValue() === 'var') this.parseVar();
+    else if (c === 0x69 && tok.getLastValue() === 'if') this.parseIf(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x64 && tok.getLastValue() === 'do') this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x77 && tok.getLastValue() === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x66 && tok.getLastValue() === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x74 && tok.getLastValue() === 'throw') this.parseThrow();
+    else if (c === 0x73 && tok.getLastValue() === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x74 && tok.getLastValue() === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x64 && tok.getLastValue() === 'debugger') this.parseDebugger();
+    else if (c === 0x77 && tok.getLastValue() === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction();
+    else if (c === 0x63 && tok.getLastValue() === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x62 && tok.getLastValue() === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+    else if (c === 0x72 && tok.getLastValue() === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
     // case and default are handled elsewhere
-    else if ((c === 0x63 && val === 'case') || (c === 0x64 && val === 'default')) return false;
+    else if ((c === 0x63 && tok.getLastValue() === 'case') || (c === 0x64 && tok.getLastValue() === 'default')) return false;
     else this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
 
     return true;
   },
   parseStatementHeader: function(){
-    this.tok.mustBeNum(0x28, true); // (
+    var tok = this.tok;
+    tok.mustBeNum(0x28, true); // (
     this.parseExpressions();
-    this.tok.mustBeNum(0x29, true); // )
+    tok.mustBeNum(0x29, true); // )
   },
 
   parseVar: function(){
@@ -90,27 +93,29 @@ Par.prototype = {
     // - foo=bar
     // - ,foo=bar
 
-    this.tok.nextPunc();
+    var tok = this.tok;
+    tok.nextPunc();
     do {
       if (this.isReservedIdentifier()) throw 'var name is reserved';
-      this.tok.mustBeIdentifier(true);
-      if (this.tok.nextExprIfNum(0x3d)) { // =
+      tok.mustBeIdentifier(true);
+      if (tok.nextExprIfNum(0x3d)) { // =
         this.parseExpression(false);
       }
-    } while(this.tok.nextPuncIfNum(0x2c)); // ,
+    } while(tok.nextPuncIfNum(0x2c)); // ,
     this.parseSemi();
 
     return true;
   },
   parseVarPartNoIn: function(){
-    this.tok.nextPunc();
+    var tok = this.tok;
+    tok.nextPunc();
     do {
       if (this.isReservedIdentifier()) throw 'var name is reserved';
-      this.tok.mustBeIdentifier(true);
-      if (this.tok.nextExprIfNum(0x3d)) { // =
+      tok.mustBeIdentifier(true);
+      if (tok.nextExprIfNum(0x3d)) { // =
           this.parseExpressionNoIn(true);
       }
-    } while(this.tok.nextPuncIfNum(0x2c)); // ,
+    } while(tok.nextPuncIfNum(0x2c)); // ,
   },
   parseIf: function(inFunction, inLoop, inSwitch, labelSet){
     // if (<exprs>) <stmt>
@@ -127,20 +132,22 @@ Par.prototype = {
   parseElse: function(inFunction, inLoop, inSwitch, labelSet){
     // else <stmt>;
 
-    if (this.tok.getLastValue() === 'else') {
-      this.tok.nextExpr();
+    var tok = this.tok;
+    if (tok.getLastValue() === 'else') {
+      tok.nextExpr();
       this.parseStatement(inFunction, inLoop, inSwitch, labelSet);
     }
   },
   parseDo: function(inFunction, inLoop, inSwitch, labelSet){
     // do <stmt> while ( <exprs> ) ;
 
-    this.tok.nextExpr(); // do
+    var tok = this.tok;
+    tok.nextExpr(); // do
     this.parseStatement(inFunction, true, inSwitch, labelSet);
-    this.tok.mustBeString('while', false);
-    this.tok.mustBeNum(0x28, true); // (
+    tok.mustBeString('while', false);
+    tok.mustBeNum(0x28, true); // (
     this.parseExpressions();
-    this.tok.mustBeNum(0x29, false); // ) (no regex following because it's either semi or newline without asi if a forward slash follows it
+    tok.mustBeNum(0x29, false); // ) (no regex following because it's either semi or newline without asi if a forward slash follows it
     this.parseSemi();
   },
   parseWhile: function(inFunction, inLoop, inSwitch, labelSet){
@@ -158,20 +165,21 @@ Par.prototype = {
 
     // need to excavate this... investigate specific edge cases for `for-in`
 
-    this.tok.nextPunc(); // for
-    this.tok.mustBeNum(0x28, true); // (
+    var tok = this.tok;
+    tok.nextPunc(); // for
+    tok.mustBeNum(0x28, true); // (
 
-    if (this.tok.nextExprIfNum(0x3b)) this.parseForEachHeader(); // ; (means empty first expression in for-each)
+    if (tok.nextExprIfNum(0x3b)) this.parseForEachHeader(); // ; (means empty first expression in for-each)
     else {
-      if (this.tok.isString('var')) this.parseVarPartNoIn();
+      if (tok.isString('var')) this.parseVarPartNoIn();
       else this.parseExpressionsNoIn();
 
       // 3b = ;
-      if (this.tok.nextExprIfNum(0x3b)) this.parseForEachHeader();
+      if (tok.nextExprIfNum(0x3b)) this.parseForEachHeader();
       else this.parseForInHeader();
     }
 
-    this.tok.mustBeNum(0x29, true); // )
+    tok.mustBeNum(0x29, true); // )
     this.parseStatement(inFunction, true, inSwitch, labelSet);
   },
   parseForEachHeader: function(){
@@ -194,9 +202,10 @@ Par.prototype = {
 
     if (!inLoop) throw 'Can only continue in a loop. '+this.tok.syntaxError();
 
-    this.tok.nextPunc(); // token after continue cannot be a regex, either way.
+    var tok = this.tok;
+    tok.nextPunc(); // token after continue cannot be a regex, either way.
 
-    if (!this.tok.lastNewline && this.tok.isType(IDENTIFIER)) {
+    if (!tok.lastNewline && tok.isType(IDENTIFIER)) {
       this.parseLabel(labelSet);
     }
 
@@ -208,14 +217,15 @@ Par.prototype = {
     // break \n <idntf> ;
     // newline right after keyword = asi
 
-    this.tok.nextPunc(); // token after break cannot be a regex, either way.
+    var tok = this.tok;
+    tok.nextPunc(); // token after break cannot be a regex, either way.
 
-    var noLabel = this.tok.lastNewline || !this.tok.isType(IDENTIFIER);
+    var noLabel = tok.lastNewline || !tok.isType(IDENTIFIER);
 
     if (noLabel) {
       if (!inLoop && !inSwitch) {
         // break without label
-        throw 'Break without value only in loops or switches. '+this.tok.syntaxError();
+        throw 'Break without value only in loops or switches. '+tok.syntaxError();
       }
     } else {
       this.parseLabel(labelSet);
@@ -224,12 +234,13 @@ Par.prototype = {
     this.parseSemi();
   },
   parseLabel: function(labelSet){
+    var tok = this.tok;
     // next tag must be an identifier
-    var label = this.tok.getLastValue();
+    var label = tok.getLastValue();
     if (labelSet.indexOf(label) >= 0) {
-      this.tok.nextExpr(); // label
+      tok.nextExpr(); // label
     } else {
-      throw 'Label ['+label+'] not found in label set. '+this.tok.syntaxError();
+      throw 'Label ['+label+'] not found in label set. '+tok.syntaxError();
     }
   },
   parseReturn: function(inFunction, inLoop, inSwitch){
@@ -239,8 +250,9 @@ Par.prototype = {
 
     if (!inFunction) throw 'Can only return in a function '+this.tok.syntaxError('break');
 
-    this.tok.nextExpr();
-    if (this.tok.lastNewline) this.addAsi();
+    var tok = this.tok;
+    tok.nextExpr();
+    if (tok.lastNewline) this.addAsi();
     else {
       this.parseOptionalExpressions();
       this.parseSemi();
@@ -249,8 +261,9 @@ Par.prototype = {
   parseThrow: function(){
     // throw <exprs> ;
 
-    this.tok.nextExpr();
-    if (this.tok.lastNewline) this.addAsi();
+    var tok = this.tok;
+    tok.nextExpr();
+    if (tok.lastNewline) this.addAsi();
     else {
       this.parseExpressions();
       this.parseSemi();
@@ -259,11 +272,12 @@ Par.prototype = {
   parseSwitch: function(inFunction, inLoop, inSwitch, labelSet){
     // switch ( <exprs> ) { <switchbody> }
 
-    this.tok.nextPunc();
+    var tok = this.tok;
+    tok.nextPunc();
     this.parseStatementHeader();
-    this.tok.mustBeNum(0x7b, true); // {
+    tok.mustBeNum(0x7b, true); // {
     this.parseSwitchBody(inFunction, inLoop, true, labelSet);
-    this.tok.mustBeNum(0x7d, true); // }
+    tok.mustBeNum(0x7d, true); // }
   },
   parseSwitchBody: function(inFunction, inLoop, inSwitch, labelSet){
     // [<cases>] [<default>] [<cases>]
@@ -307,10 +321,11 @@ Par.prototype = {
   parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
     // catch ( <idntf> ) { <stmts> }
 
-    if (this.tok.nextPuncIfString('catch')) {
-      this.tok.mustBeNum(0x28, false); // (
-      this.tok.mustBeIdentifier(false);
-      this.tok.mustBeNum(0x29, false); // )
+    var tok = this.tok;
+    if (tok.nextPuncIfString('catch')) {
+      tok.mustBeNum(0x28, false); // (
+      tok.mustBeIdentifier(false);
+      tok.mustBeNum(0x29, false); // )
       this.parseCompleteBlock(inFunction, inLoop, inSwitch, labelSet);
 
       return true;
@@ -343,18 +358,20 @@ Par.prototype = {
   parseFunction: function(){
     // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
-    this.tok.nextPunc(); // 'function'
-    if (this.tok.isType(IDENTIFIER)) { // name
+    var tok = this.tok;
+    tok.nextPunc(); // 'function'
+    if (tok.isType(IDENTIFIER)) { // name
       if (this.isReservedIdentifier()) throw 'function name is reserved';
-      this.tok.nextPunc();
+      tok.nextPunc();
     }
     this.parseFunctionRemainder(-1);
   },
   parseNamedFunction: function(hasName){
     // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
-    this.tok.nextPunc(); // 'function'
-    this.tok.mustBeIdentifier(false); // name
+    var tok = this.tok;
+    tok.nextPunc(); // 'function'
+    tok.mustBeIdentifier(false); // name
     this.parseFunctionRemainder(-1);
   },
   /**
@@ -363,20 +380,22 @@ Par.prototype = {
    * @param {number} paramCount Number of expected params, -1/undefined means no requirement. used for getters and setters
    */
   parseFunctionRemainder: function(paramCount){
-    this.tok.mustBeNum(0x28, false); // (
+    var tok = this.tok;
+    tok.mustBeNum(0x28, false); // (
     this.parseParameters(paramCount);
-    this.tok.mustBeNum(0x29, false); // )
+    tok.mustBeNum(0x29, false); // )
     this.parseCompleteBlock(true, false, false, []); // this resets loop and switch status
   },
   parseParameters: function(paramCount){
     // [<idntf> [, <idntf>]]
-    if (this.tok.isType(IDENTIFIER)) {
+    var tok = this.tok;
+    if (tok.isType(IDENTIFIER)) {
       if (paramCount === 0) throw 'Getters have no parameters';
       if (this.isReservedIdentifier()) throw 'param name is reserved';
-      this.tok.nextPunc();
-      while (this.tok.nextPuncIfNum(0x2c)) { // ,
+      tok.nextPunc();
+      while (tok.nextPuncIfNum(0x2c)) { // ,
         if (paramCount === 1) throw 'Setters have exactly one param';
-        this.tok.mustBeIdentifier(false);
+        tok.mustBeIdentifier(false);
       }
     } else if (paramCount === 1) {
       throw 'Setters have exactly one param';
@@ -400,8 +419,9 @@ Par.prototype = {
     // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
     // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
+    var tok = this.tok;
     // 0x7d=}
-    if (this.tok.isType(EOF) || this.tok.isNum(0x7d) || (this.tok.lastNewline && !this.tok.isType(REGEX))) {
+    if (tok.isType(EOF) || tok.isNum(0x7d) || (tok.lastNewline && !tok.isType(REGEX))) {
       return this.addAsi();
     }
     return false;
@@ -440,6 +460,10 @@ Par.prototype = {
         labelSet.pop();
         return true;
       }
+    } else {
+      // parse a value and then just random stuff
+      this.parsePrimary(false, false);
+      this.parseNonAssignments();
     }
 
     this.parseAssignments();
@@ -642,7 +666,7 @@ Par.prototype = {
 
     while (true) {
       // need to check for punctuator because it could also be a number...
-      if (this.tok.isType(PUNCTUATOR) && this.tok.nextPuncIfNum(0x2e)) { // . (is this double che
+      if (this.tok.isType(PUNCTUATOR) && this.tok.nextPuncIfNum(0x2e)) { // .
         this.tok.mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       }
       else if (this.tok.nextExprIfNum(0x28)) { // (
@@ -717,11 +741,9 @@ Par.prototype = {
           var val = this.tok.getLastValue();
           return (val === 'in' || val === 'instanceof');
         }
-
       }
       return false;
     }
-
 
     // so we have a valid punctuator token, checking for binary ops is simple now except
     // that we have to make sure it's not a(n compound) assignment!

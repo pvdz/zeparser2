@@ -549,6 +549,9 @@ var good = [
 
 ["a/*\r*/b;", [4, 5], "asi for multiline comment with only a return"],
 ["/**/", 1, "just an empty multi-line comment"],
+["//", 1, "empty single line comment terminated by eof"],
+["//\n", 2, "empty single line comment terminated by \\n and eof"],
+["//\nfoo;", 4, "empty single line comment terminated by newline"],
 
 ["foo <!-- bar;", 8, "html comment is okay like this"],
 
@@ -598,6 +601,16 @@ var good = [
 ["function f(){return\nx;}", [11, 12], "ASI because of newline"],
 
 ["x", [1,2], "eof applies asi..."],
+
+["0", [1,2], "some number checks i needed to do"],
+["1", [1,2], "some number checks i needed to do"],
+["0.", [1,2], "some number checks i needed to do"],
+["1.", [1,2], "some number checks i needed to do"],
+[".0", [1,2], "some number checks i needed to do"],
+[".1", [1,2], "some number checks i needed to do"],
+["0e1", [1,2], "some number checks i needed to do"],
+["0.e1", [1,2], "some number checks i needed to do"],
+["0,1", [3,4], "uhm, yeah, still just two numbers, right?"],
 
 ];
 
@@ -688,6 +701,7 @@ var bad = [
   ['try{}catch(e)/foo/', "catch body must always be a block"],
   ['try{}finally /foo/', "finally body must always be a block"],
   ['function f(/foo/){}', "function param names cannot be regex"],
+  ['for (var i=0,;;);', "my parser on crack (yeah, this happened to be valid)"],
 
   ['foo\n<!--\nbar = 5;', "assignment after prefix decr is bad"],
   ['foo</script> <script>bar', "yeah, uh"],
@@ -730,4 +744,13 @@ var bad = [
   ["x=5+y>>>=8", ">>>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
 
   ["var f\\uuuuu;", "invalid unicode escape range"],
+
+  ["5e", "e must have suffix"],
+  ["5e+", "e+ must have suffix"],
+  ["5e-", "e- must have suffix"],
+  ["5e-foo", "requires suffix even when it looks like a proper expression"],
+  ["5e+foo", "requires suffix even when it looks like a proper expression"],
+  ["5e*foo", "requires suffix even when it looks like a proper expression"],
+
+  ["=foo;", "due to label crap, this once was a thing"],
 ];
