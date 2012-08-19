@@ -42,10 +42,12 @@
                     var desc = test[3] || test[2];
 
                     try {
-                        var found = 0;
-                        var tok = new Tok(input);
-                        var protect = 1000;
-                        while (--protect && tok.nextWhiteToken(regexHints[found]) != EOF) ++found;
+                      var found = 0;
+                      var tok = new Tok(input);
+                      var protect = 1000;
+                      while (--protect && tok.nextWhiteToken(regexHints[found]) != EOF) {
+                        ++found;
+                      }
                     } catch (e) {
                         console.error('Crash for', input);
                         console.error(e);

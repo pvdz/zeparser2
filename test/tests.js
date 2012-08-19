@@ -533,6 +533,8 @@ var good = [
 ["for(x in /y/)/z/;", 10, [false, false, true, true, true, true, true, true, true], "regex after for-in statement header"],
 ["function f(){return /foo/;}", 11, [false, false, false, false, false, false, false, false, true], "returning a regex"],
 ["function f(){}/foo/;", 9, [false, false, false, false, false, false, false, true], "regex after a func def"],
+["do{}while(/foo/);", 8, [false,false,false,false,false,true],"regex in do-while condition"],
+["if(x)y;else /z/;", 10, [false,false,false,false,false,false,false,false,true],"regex for else"],
 
 ["!--foo;", 4, "prefix decr after bang"],
 ["!++foo;", 4, "prefix incr after bang"],
@@ -679,6 +681,13 @@ var bad = [
   ['/foo[\\\n]bar/', "escaped newline in regex char class"],
   ['/foo[\\\r]bar/', "escaped newline in regex char class 2"],
   ['(x)\n/foo/;', "no asi when forward slash starts on next line"],
+  ['do{}while(x)\n/foo/;', "no asi due to regex"],
+  ['do{}while(x)/foo/;', "do while expects a semi (wont parse /foo/ as regex, regardless)"],
+  ['try{}catch(/foo/){}', "catch argument cannot be a regex, regardless"],
+  ['try /foo/; catch(e){}', "try body must always be a block"],
+  ['try{}catch(e)/foo/', "catch body must always be a block"],
+  ['try{}finally /foo/', "finally body must always be a block"],
+  ['function f(/foo/){}', "function param names cannot be regex"],
 
   ['foo\n<!--\nbar = 5;', "assignment after prefix decr is bad"],
   ['foo</script> <script>bar', "yeah, uh"],
@@ -691,6 +700,7 @@ var bad = [
   ['delete: ;', 'delete as label'],
   ['typeof: ;', 'typeof as label'],
   ['new: ;', 'new as label'],
+  ['void: ;', "void as label"],
   ['if: ;', 'if as label'],
 
   ['return foo;', "return outside of function"],
@@ -702,16 +712,22 @@ var bad = [
   ['function if(){}', 'keyword as function name'],
   ['function f(if){}', 'keyword as param name'],
 
-  ['5 = 10;', 'Assignment to number, which doesnt return a reference'],
-  ['null = 10;', 'Assignment to null, which doesnt return a reference'],
-  ['true = 10;', 'Assignment to true, which doesnt return a reference'],
-  ['false = 10;', 'Assignment to false, which doesnt return a reference'],
-  ['this = 10;', 'Assignment to this, which is stupid and illegal'],
-  ['eval = 10;', 'Assignment to eval, which is poisoned'],
-  ['arguments = 10;', 'Assignment to arguments, which is poisoned'],
+//  ['5 = 10;', 'Assignment to number, which doesnt return a reference'],
+//  ['null = 10;', 'Assignment to null, which doesnt return a reference'],
+//  ['true = 10;', 'Assignment to true, which doesnt return a reference'],
+//  ['false = 10;', 'Assignment to false, which doesnt return a reference'],
+//  ['this = 10;', 'Assignment to this, which is stupid and illegal'],
+//  ['eval = 10;', 'Assignment to eval, which is poisoned'],
+//  ['arguments = 10;', 'Assignment to arguments, which is poisoned'],
 
   ["while(true){continue a}", "label a not found"],
   ["while(true){break b}", "label b not found"],
 
+  ["alert(5+void);", "void is not a value"],
 
+  ["x=5+y<<=8", "<<= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
+  ["x=5+y>>=8", ">>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
+  ["x=5+y>>>=8", ">>>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
+
+  ["var f\\uuuuu;", "invalid unicode escape range"],
 ];

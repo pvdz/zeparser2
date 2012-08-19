@@ -17,28 +17,39 @@ var EOF = 14;
 var ASI = 15;
 var ERROR = 16;
 var VALUE = 17; // STRING NUMBER REGEX IDENTIFIER
+var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
-var Tok = function(input, options){
-  options = options || {};
-
+/**
+ * Tokenizer for JS. After initializing the constructor
+ * you can fetch the next tokens by calling tok.next()
+ * if the next token could be a division, or tok.nextExpr()
+ * if the next token could be a regular expression.
+ * Obviously you'll need a parser (or magic) to determine this.
+ *
+ * @constructor
+ * @param {string} input
+ */
+var Tok = function(input){
   this.tokens = [];
 
   this.input = (input||'');
+  this.len = this.input.length;
 
   // v8 "appreciates" to be set all instance properties explicitly
   this.pos = 0;
 
   this.lastStart = 0;
   this.lastStop = 0;
-  this.lastType = null;
+  this.lastType = -1;
   this.lastValue = null;
-  this.lastNum = null;
+  this.lastNum = -1; // -1 means uninitialized (since charCodeAt can never return this, it's safe to go for -1)
   this.lastNewline = -1;
 
   this.tokenCount = 0;
+  this.tokens = [];
 };
 
-// reverse lookup
+// reverse lookup (only used for error messages..)
 Tok[WHITE_SPACE] = 'whitespace';
 Tok[LINETERMINATOR] = 'lineterminator';
 Tok[COMMENT_SINGLE] = 'comment_single';
@@ -56,83 +67,176 @@ Tok[EOF] = 'eof';
 Tok[ASI] = 'asi';
 Tok[ERROR] = 'error';
 Tok[VALUE] = 'value';
+Tok[WHITE] = 'white';
 
 Tok.prototype = {
+  /** @property {string} input */
   input: null,
+  /** @property {number} len */
+  len: 0,
+  /** @property {number} pos */
   pos: 0,
 
   // parser can look at these positions to see where in the input the last token was
   // this way the tokenizer can simply return number-constants-as-types.
+  /** @property {number} lastStart Start pos of the last token */
   lastStart: 0,
+  /** @property {number} lastStop End pos of the last token */
   lastStop: 0,
+  /** @property {number} lastType Type of the last token */
   lastType: null,
+  /** @property {string|null} lastValue String value of the last token, or null if not yet fetched (see this.getLastValue()) */
   lastValue: null,
-  lastNewline: null,
+  /** @property {number} lastNum Cached value of this.input.charCodeAt(this.lastStart), or -1 if not yet fetched */
+  lastNum: -1,
+  /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
+  lastNewline: false,
 
+  /** @property {number} tokenCount Simple counter, includes whitespace */
   tokenCount: 0,
+  /** @property {Object} tokens List of (all) tokens, if saving them is enabled */
   tokens: null,
 
   // some of these regular expressions are so complex that i had to
   // write scripts to construct them. the only way to keep my sanity
 
-  // replace windows' CRLF with a single LF, as well as the weird newlines. this fixes positional stuff.
+  /** @property {RegExp} rexNewlines Replace windows' CRLF with a single LF, as well as the weird newlines. this fixes positional stuff. */
   rexNewlines: /[\u000A\u000d\u2028\u2029]/g, // used by comment parsers if in regex mode
-  // full number parser, both decimal and hex
-//  rexNumbers: getNumberRegex(),
-  // after having found the */ (indexOf), apply this to quickly test for a newline in the comment
+  /** @property {RegExp} rexNewlineSearchInMultilineComment After having found the * / (indexOf), apply this to quickly test for a newline in the comment */
   rexNewlineSearchInMultilineComment:/[\u000A\u000D\u2028\u2029]|\*\//g, // used by m-comment parser if in regex mode
 
-  is: function(v){
-    if (typeof v == 'number') {
-      if (v === VALUE) return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
-      return this.lastType == v;
-    }
-    return this.getLastValue() == v;
-  },
+//  /**
+//   * Check for value or type
+//   *
+//   * @param {number|string} v
+//   * @return {boolean}
+//   */
+//  is: function(v){
+//    if (typeof v == 'number') {
+//      if (v === VALUE) return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
+//      return this.lastType === v;
+//    }
+//    return this.getLastValue() === v;
+//  },
+  /**
+   * Check whether current token is of certain type
+   *
+   * @param {number} t
+   * @return {boolean}
+   */
   isType: function(t){
     return this.lastType === t;
   },
+  /**
+   * Check whether the current token is of string, number,
+   * regex, or identifier type. These are the "value"
+   * token types, short of arrays and objects.
+   *
+   * @return {boolean}
+   */
   isValue: function(){
     return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
   },
+  /**
+   * Compare the first character of the current token
+   * as a number (for speed).
+   *
+   * @param {number} n
+   * @return {boolean}
+   */
   isNum: function(n){
     return this.getLastNum() === n;
   },
-
-  nextIf: function(value){
-    var equals = this.is(value);
-    if (equals) this.next();
-    return equals;
+  /**
+   * Compare the entire input range of the current
+   * token to the given value.
+   *
+   * @param {string} value
+   * @return {boolean}
+   */
+  isString: function(value){
+    return this.getLastValue() === value;
   },
-  nextIfNum: function(num){
+
+  /**
+   * Parse the next token if the current
+   * token is(value). Next token is parsed
+   * possibly expecting a regex (so not a
+   * division).
+   *
+   * @param {number|string} value
+   * @return {boolean}
+   */
+  nextPuncIfNum: function(num){
     var equals = this.isNum(num);
-    if (equals) this.next();
+    if (equals) this.nextPunc();
     return equals;
   },
-  nextIfType: function(type){
+  /**
+   * Parse the next token if the current
+   * token isType(type). Next token is parsed
+   * possibly expecting a division (so not
+   * a regex).
+   *
+   * @param {number} type
+   * @return {boolean}
+   */
+  nextPuncIfType: function(type){
     var equals = this.isType(type);
-    if (equals) this.next();
+    if (equals) this.nextPunc();
     return equals;
   },
-  nextIfValue: function(){
+  /**
+   * Parse the next token if the current
+   * token a "value". Next token is parsed
+   * possibly expecting a division (so not
+   * a regex).
+   *
+   * @param {number} type
+   * @return {boolean}
+   */
+  nextPuncIfValue: function(){
     var equals = this.isValue();
-    if (equals) this.next();
+    if (equals) this.nextPunc();
     return equals;
   },
-
+  /**
+   * Parse the next token if the first character
+   * of the current starts with a character (as
+   * a number) equal to num. Next token is parsed
+   * possibly expecting a regex (so not a division).
+   *
+   * @param {number} num
+   * @return {boolean}
+   */
   nextExprIfNum: function(num){
     var equals = this.isNum(num);
-    if (equals) this.next(true);
+    if (equals) this.nextExpr();
+    return equals;
+  },
+  /**
+   * Parse the next token if the input range of
+   * the current token matches the given string.
+   * The next token will be parsed expecting a
+   * possible division, not a regex.
+   *
+   * @param {string} str
+   * @return {boolean}
+   */
+  nextPuncIfString: function(str){
+    var equals = this.isString(str);
+    if (equals) this.nextPunc();
     return equals;
   },
 
-  mustBe: function(value, nextIsExpr){
-    if (this.is(value)) {
-      this.next(nextIsExpr);
-    } else {
-      throw this.syntaxError(value);
-    }
-  },
+  /**
+   * Parser requires the current token to start with (or be) a
+   * certain character. Parse the next token if that's the case.
+   * Throw a syntax error otherwise.
+   *
+   * @param {number} num
+   * @param {boolean} nextIsExpr=false
+   */
   mustBeNum: function(num, nextIsExpr){
     if (this.isNum(num)) {
       this.next(nextIsExpr);
@@ -140,6 +244,28 @@ Tok.prototype = {
       throw this.syntaxError(num);
     }
   },
+  /**
+   * Parser requires the current token to be any identifier.
+   * Parse the next token if that's the case. Throw a syntax
+   * error otherwise.
+   *
+   * @param {boolean} nextIsExpr
+   */
+  mustBeIdentifier: function(nextIsExpr){
+    if (this.isType(IDENTIFIER)) {
+      this.next(nextIsExpr);
+    } else {
+      throw this.syntaxError(IDENTIFIER);
+    }
+  },
+  /**
+   * Parser requires the current token to be of
+   * a certain type. Parse the next token if that's
+   * the case. Throw a syntax error otherwise.
+   *
+   * @param {number} type
+   * @param {boolean} nextIsExpr=false
+   */
   mustBeType: function(type, nextIsExpr){
     if (this.isType(type)) {
       this.next(nextIsExpr);
@@ -147,75 +273,202 @@ Tok.prototype = {
       throw this.syntaxError(type);
     }
   },
+  /**
+   * Parser requires the current token to be this
+   * string. Parse the next token if that's the
+   * case. Throw a syntax error otherwise.
+   *
+   * @param {string} str
+   * @param {boolean} nextIsExpr=false
+   */
+  mustBeString: function(str, nextIsExpr){
+    if (this.isString(str)) {
+      this.next(nextIsExpr);
+    } else {
+      throw this.syntaxError(str);
+    }
+  },
 
   nextExpr: function(){
     return this.next(true);
   },
+  nextPunc: function(){
+    return this.next(false);
+  },
 
   next: function(expressionStart){
-    this.lastValue = null;
-    this.lastNum = null;
     this.lastNewline = false;
 
-    if (this.pos >= this.input.length) {
+    var pos = this.pos;
+
+    if (pos >= this.len) {
       this.lastType = EOF;
-      this.lastStart = this.lastStop = this.pos;
+      this.lastStart = this.lastStop = pos;
       return EOF;
     }
 
     do {
-      this.lastStart = this.pos;
       var type = this.nextWhiteToken(expressionStart);
-      this.lastStop = this.pos;
 //      this.tokens.push({type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos});
 
-//      console.log('token:', type, Tok[type], '`'+this.input.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
-    } while (type === true);
+//      console.log('token:', type, Tok[type], '`'+this.input.substring(start, pos).replace(/\n/g,'\u23CE')+'`', 'start:',start, 'len:',this.lastStop-start);
+    } while (type === WHITE);
 
     this.lastType = type;
     return type;
   },
   nextWhiteToken: function(expressionStart){
     this.lastValue = null;
-    this.lastNum = null;
-    if (this.pos >= this.input.length) return EOF;
+    this.lastNum = -1;
+    this.lastStart = this.pos;
+    if (this.pos >= this.len) return EOF;
 
     ++this.tokenCount;
 
-    return this.nextToken(expressionStart);
+    var result = this.nextToken(expressionStart);
+
+    this.lastStop = this.pos;
+
+    return result;
   },
 
   nextToken: function(expressionStart){
-    if (this.pos >= this.input.length) return EOF;
+    var pos = this.pos;
+    if (pos >= this.len) return EOF;
 
-    var c = this.input.charCodeAt(this.pos);
+    var input = this.input;
+    var c = input.charCodeAt(pos);
+
+    var result;
+
     // https://twitter.com/ariyahidayat/status/225447566815395840
     // Punctuator, Identifier, Keyword, String, Numeric, Boolean, Null, RegularExpression
     // so:
     // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
-
-    if (c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x0020 || c === 0x00A0 || c === 0xFFFF) return this.whitespace();
-    if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) return this.lineTerminator(c);
+    if (c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x0020 || c === 0x00A0 || c === 0xFFFF) result = this.whitespace();
+    else if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) result = this.lineTerminator(c);
     // forward slash before generic punctuators!
-    if (c === 0x002f) { // / (forward slash)
-      var n = this.input.charCodeAt(this.pos+1);
-      if (n === 0x002f) return this.commentSingle(); // 0x002f=/
-      if (n === 0x002a) return this.commentMulti(); // 0x002f=*
-      if (expressionStart) return this.regex();
+    else if (c === 0x002f) { // / (forward slash)
+      var n = input.charCodeAt(pos+1);
+      if (n === 0x002f) result = this.commentSingle(); // 0x002f=/
+      else if (n === 0x002a) result = this.commentMulti(); // 0x002f=*
+      else if (expressionStart) result = this.regex();
+      else if (this.punctuator(c)) result = PUNCTUATOR;
+      else throw 'This should never happen... '+this.syntaxError();
     }
-    if (this.punctuator(c)) return PUNCTUATOR;
-    if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x24 || c === 0x5f) return this.asciiIdentifier();
-    if (c === 0x0027) return this.stringSingle();
-    if (c === 0x0022) return this.stringDouble();
-    if ((c >= 0x0030 && c <= 0x0039) || c === 0x2e) return this.number(); // do this after punctuator...
-
-    // tofix: non-ascii identifiers...
-
+    else if (this.punctuator(c)) result = PUNCTUATOR;
+    else if (this.asciiIdentifier()) result = IDENTIFIER; // if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x24 || c === 0x5f) return ;
+    else if (c === 0x0027) result = this.stringSingle();
+    else if (c === 0x0022) result = this.stringDouble();
+    else if ((c >= 0x0030 && c <= 0x0039) || c === 0x2e) result = this.number(); // do this after punctuator...
     // only thing left it might be is an identifier
-    return this.identifierOrBust();
+    else result = this.identifierOrBust();
+
+    return result;
   },
 
   punctuator: function(c){
+    var input = this.input;
+    var pos = this.pos;
+    var len = 0;
+
+//    >>>=,
+//    === !== >>> <<= >>=
+//    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
+//    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
+
+    if (c === 0x28 || c === 0x29 || c === 0x7b || c === 0x7d || c === 0x5b || c === 0x5d || c === 0x3b || c === 0x2c || c === 0x3f || c === 0x3a) len = 1;
+    else {
+      var d = input.charCodeAt(pos+1);
+
+      if (c === 0x2e) {
+        // must check for a number because number parser comes after this
+        if (d < 0x0030 || d > 0x0039) len = 1;
+      }
+      else if (c === 0x3d) {
+        if (d === 0x3d) {
+          if (input.charCodeAt(pos+2) === 0x3d) len = 3;
+          else len = 2;
+        }
+        else len = 1;
+      }
+
+      else if (c === 0x3c) {
+        if (d === 0x3d) len = 2;
+        else if (d === 0x3c) {
+          if (input.charCodeAt(pos+2) === 0x3d) len = 3;
+          else len = 2;
+        }
+        else len = 1;
+      }
+      else if (c === 0x3e) {
+        if (d === 0x3d) len = 2;
+        else if (d === 0x3e) {
+          var e = input.charCodeAt(pos+2);
+          if (e === 0x3d) len = 3;
+          else if (e === 0x3e) {
+            if (input.charCodeAt(pos+3) === 0x3d) len = 4;
+            else len = 3;
+          }
+          else len = 2;
+        }
+        else len = 1;
+      }
+
+      else if (c === 0x2b) {
+        if (d === 0x3d || d === 0x2b) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x2d) {
+        if (d === 0x3d || d === 0x2d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x2a) {
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x25) {
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x7c) {
+        if (d === 0x3d || d === 0x7c) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x26) {
+        if (d === 0x3d || d === 0x26) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x5e) {
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x21) {
+        if (d === 0x3d) {
+          if (input.charCodeAt(pos+2) === 0x3d) len = 3;
+          else len = 2;
+        }
+        else len = 1;
+      }
+      else if (c === 0x7e) {
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x2f) {
+        // cant really be a //, /* or regex because they should have been checked before calling this function
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+    }
+
+    if (len) {
+      this.pos += len;
+      return true;
+    } else {
+      return false;
+    }
+  },
+  punctuatorTok: function(c){
     var input = this.input;
     var pos = this.pos;
 
@@ -225,100 +478,100 @@ Tok.prototype = {
 //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
 
     if (c === 0x28) return this.puncToken(1, '(');
-    if (c === 0x29) return this.puncToken(1, ')');
-    if (c === 0x7b) return this.puncToken(1, '{');
-    if (c === 0x7d) return this.puncToken(1, '}');
-    if (c === 0x5b) return this.puncToken(1, '[');
-    if (c === 0x5d) return this.puncToken(1, ']');
-    if (c === 0x3b) return this.puncToken(1, ';');
-    if (c === 0x2c) return this.puncToken(1, ',');
-    if (c === 0x3f) return this.puncToken(1, '?');
-    if (c === 0x3a) return this.puncToken(1, ':');
+    else if (c === 0x29) return this.puncToken(1, ')');
+    else if (c === 0x7b) return this.puncToken(1, '{');
+    else if (c === 0x7d) return this.puncToken(1, '}');
+    else if (c === 0x5b) return this.puncToken(1, '[');
+    else if (c === 0x5d) return this.puncToken(1, ']');
+    else if (c === 0x3b) return this.puncToken(1, ';');
+    else if (c === 0x2c) return this.puncToken(1, ',');
+    else if (c === 0x3f) return this.puncToken(1, '?');
+    else if (c === 0x3a) return this.puncToken(1, ':');
+    else {
+      var d = input.charCodeAt(pos+1);
 
-    var d = input.charCodeAt(pos+1);
-
-    if (c === 0x2e) {
-      if (d >= 0x0030 && d <= 0x0039) return false;
-      return this.puncToken(1, '.');
-    }
-
-    if (c === 0x3d) {
-      if (d === 0x3d) {
-        if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '===');
-        return this.puncToken(2, '==');
+      if (c === 0x2e) {
+        if (d >= 0x0030 && d <= 0x0039) return false;
+        return this.puncToken(1, '.');
       }
-      return this.puncToken(1, '=');
-    }
-    if (c === 0x3c) {
-      if (d === 0x3d) return this.puncToken(2, '<=');
-      if (d === 0x3c) {
-        if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '<<=');
-        return this.puncToken(2, '<<');
-      }
-      return this.puncToken(1, '<');
-    }
-
-    if (c === 0x3e) {
-      if (d === 0x3d) return this.puncToken(2, '>=');
-      if (d === 0x3e) {
-        var e = input.charCodeAt(pos+2);
-        if (e === 0x3d) return this.puncToken(3, '>>=');
-        if (e === 0x3e) {
-          if (input.charCodeAt(pos+3) === 0x3d) return this.puncToken(4, '>>>=');
-          return this.puncToken(3, '>>>');
+      else if (c === 0x3d) {
+        if (d === 0x3d) {
+          if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '===');
+          return this.puncToken(2, '==');
         }
-        return this.puncToken(2, '>>');
+        return this.puncToken(1, '=');
       }
-      return this.puncToken(1, '>');
-    }
 
-    if (c === 0x2b) {
-      if (d === 0x3d) return this.puncToken(2, '+=');
-      if (d === 0x2b) return this.puncToken(2, '++');
-      return this.puncToken(1, '+');
-    }
-    if (c === 0x2d) {
-      if (d === 0x3d) return this.puncToken(2, '-=');
-      if (d === 0x2d) return this.puncToken(2, '--');
-      return this.puncToken(1, '-');
-    }
-    if (c === 0x2a) {
-      if (d === 0x3d) return this.puncToken(2, '*=');
-      return this.puncToken(1, '*');
-    }
-    if (c === 0x25) {
-      if (d === 0x3d) return this.puncToken(2, '%=');
-      return this.puncToken(1, '%');
-    }
-    if (c === 0x7c) {
-      if (d === 0x3d) return this.puncToken(2, '+=');
-      if (d === 0x7c) return this.puncToken(2, '+=');
-      return this.puncToken(1, '|');
-    }
-    if (c === 0x26) {
-      if (d === 0x3d) return this.puncToken(2, '&=');
-      if (d === 0x26) return this.puncToken(2, '&&');
-      return this.puncToken(1, '&');
-    }
-    if (c === 0x5e) {
-      if (d === 0x3d) return this.puncToken(2, '^=');
-      return this.puncToken(1, '^');
-    }
-    if (c === 0x21) {
-      if (d === 0x3d) {
-        if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '!==');
-        return this.puncToken(2, '!=');
+      else if (c === 0x3c) {
+        if (d === 0x3d) return this.puncToken(2, '<=');
+        if (d === 0x3c) {
+          if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '<<=');
+          return this.puncToken(2, '<<');
+        }
+        return this.puncToken(1, '<');
       }
-      return this.puncToken(1, '~');
-    }
-    if (c === 0x7e) {
-      if (d === 0x3d) return this.puncToken(2, '~=');
-      return this.puncToken(1, '~');
-    }
-    if (c === 0x2f) {
-      // cant really be a //, /* or regex because they should have been checked before calling this function
-      if (d === 0x3d) return this.puncToken(2, '/=');
-      return this.puncToken(1, '/');
+      else if (c === 0x3e) {
+        if (d === 0x3d) return this.puncToken(2, '>=');
+        if (d === 0x3e) {
+          var e = input.charCodeAt(pos+2);
+          if (e === 0x3d) return this.puncToken(3, '>>=');
+          if (e === 0x3e) {
+            if (input.charCodeAt(pos+3) === 0x3d) return this.puncToken(4, '>>>=');
+            return this.puncToken(3, '>>>');
+          }
+          return this.puncToken(2, '>>');
+        }
+        return this.puncToken(1, '>');
+      }
+
+      else if (c === 0x2b) {
+        if (d === 0x3d) return this.puncToken(2, '+=');
+        if (d === 0x2b) return this.puncToken(2, '++');
+        return this.puncToken(1, '+');
+      }
+      else if (c === 0x2d) {
+        if (d === 0x3d) return this.puncToken(2, '-=');
+        if (d === 0x2d) return this.puncToken(2, '--');
+        return this.puncToken(1, '-');
+      }
+      else if (c === 0x2a) {
+        if (d === 0x3d) return this.puncToken(2, '*=');
+        return this.puncToken(1, '*');
+      }
+      else if (c === 0x25) {
+        if (d === 0x3d) return this.puncToken(2, '%=');
+        return this.puncToken(1, '%');
+      }
+      else if (c === 0x7c) {
+        if (d === 0x3d) return this.puncToken(2, '+=');
+        if (d === 0x7c) return this.puncToken(2, '+=');
+        return this.puncToken(1, '|');
+      }
+      else if (c === 0x26) {
+        if (d === 0x3d) return this.puncToken(2, '&=');
+        if (d === 0x26) return this.puncToken(2, '&&');
+        return this.puncToken(1, '&');
+      }
+      else if (c === 0x5e) {
+        if (d === 0x3d) return this.puncToken(2, '^=');
+        return this.puncToken(1, '^');
+      }
+      else if (c === 0x21) {
+        if (d === 0x3d) {
+          if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '!==');
+          return this.puncToken(2, '!=');
+        }
+        return this.puncToken(1, '~');
+      }
+      else if (c === 0x7e) {
+        if (d === 0x3d) return this.puncToken(2, '~=');
+        return this.puncToken(1, '~');
+      }
+      else if (c === 0x2f) {
+        // cant really be a //, /* or regex because they should have been checked before calling this function
+        if (d === 0x3d) return this.puncToken(2, '/=');
+        return this.puncToken(1, '/');
+      }
     }
 
     return false;
@@ -331,21 +584,25 @@ Tok.prototype = {
 
   whitespace: function(){
     ++this.pos;
-    return true;
+    return WHITE;
   },
   lineTerminator: function(c){
     this.lastNewline = true;
-    ++this.pos;
-    if (c === 0x000D && this.input.charCodeAt(this.pos) === 0x000A) ++this.pos;
-    return true;
+    var pos = ++this.pos;
+    if (c === 0x000D && this.input.charCodeAt(pos) === 0x000A) ++this.pos;
+    return WHITE;
   },
   commentSingle: function(){
     var rex = this.rexNewlines;
     rex.lastIndex = this.pos;
     rex.test(this.input);
-    this.pos = rex.lastIndex-1;
-    if (this.pos == -1) this.pos = this.input.length;
-    return true;
+
+    // if not found, lastIndex will be 0. in this case, that means "eof".
+    var pos = rex.lastIndex;
+    if (pos === 0) this.pos = this.len;
+    else this.pos = pos - 1;
+
+    return WHITE;
   },
   commentMulti: function(){
     var end = this.input.indexOf('*/',this.pos+2)+2;
@@ -354,11 +611,14 @@ Tok.prototype = {
     // search for newline (important for ASI)
     var nls = this.rexNewlineSearchInMultilineComment;
     nls.lastIndex = this.pos+2;
+    // not dead code. we're checking the nls regex for its lastIndex property
+    // if it matches end, there was no newline (it will match */), if it didnt
+    // match end, it will match a newline earlier
     nls.test(this.input);
-    if (nls.lastIndex != end) this.lastNewline = true;
+    if (nls.lastIndex !== end) this.lastNewline = true;
 
     this.pos = end;
-    return true;
+    return WHITE;
   },
   stringSingle: function(){
     var pos = this.pos + 1;
@@ -405,7 +665,7 @@ Tok.prototype = {
       else throw 'Invalid unicode escape';
     // hex escapes
     } else if (c === 0x0078) {
-      if (this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2))) pos += 2;
+      if (this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2))) pos += 2;
       else throw 'Invalid hex escape';
     // skip windows newlines as if they're one char
     } else if (c === 0x000D) {
@@ -416,7 +676,7 @@ Tok.prototype = {
   unicode: function(pos){
     var input = this.input;
 
-    return this.hexicode(this.input.charCodeAt(pos)) && this.hexicode(this.input.charCodeAt(pos+1)) && this.hexicode(this.input.charCodeAt(pos+2)) && this.hexicode(this.input.charCodeAt(pos+3));
+    return this.hexicode(input.charCodeAt(pos)) && this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2)) && this.hexicode(input.charCodeAt(pos+3));
   },
   hexicode: function(c){
     // 0-9, a-f, A-F
@@ -486,7 +746,7 @@ Tok.prototype = {
     // /foo\dbar/
     this.pos++;
     this.regexBody();
-    this.pos++;
+//    this.pos++;
     this.regexFlags();
 
     return REGEX;
@@ -494,7 +754,6 @@ Tok.prototype = {
   regexBody: function(){
     var input = this.input;
     var len = input.length;
-    var pos = this.pos;
     while (this.pos < len) {
       var c = input.charCodeAt(this.pos++);
 
@@ -519,17 +778,21 @@ Tok.prototype = {
   regexClass: function(){
     var input = this.input;
     var len = input.length;
-    while (this.pos < len) {
-      var c = input.charCodeAt(this.pos++);
+    var pos = this.pos;
+    while (pos < len) {
+      var c = input.charCodeAt(pos++);
 
-      if (c === 0x005d) return; // ]
+      if (c === 0x005d) { // ]
+        this.pos = pos;
+        return;
+      }
       if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) {
-        throw 'Illegal newline in regex char class at '+this.pos;
+        throw 'Illegal newline in regex char class at '+pos;
       }
       if (c === 0x005c) { // backslash
-        var d = input.charCodeAt(this.pos++);
+        var d = input.charCodeAt(pos++);
         if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
-          throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+          throw new Error('Newline can not be escaped in regular expression at '+pos);
         }
       }
     }
@@ -537,8 +800,14 @@ Tok.prototype = {
     throw new Error('Unterminated regular expression at eof');
   },
   regexFlags: function(){
-    --this.pos;
-    this.asciiIdentifier();
+    // we cant use the actual identifier parser because that's assuming the identifier
+    // starts at the beginning of this token, which is not the case for regular expressions.
+    // so we use the remainder parser, which parses the second up to the rest of the identifier
+
+    var input = this.input;
+    this.pos = this.asciiIdentifierRest(input, input.length, this.pos );
+
+//    this.asciiIdentifier();
   },
   identifierOrBust: function(){
     var result = this.asciiIdentifier();
@@ -550,12 +819,46 @@ Tok.prototype = {
     var len = input.length;
     var pos = this.pos;
     var start = pos;
+
+    // yes, duplicate code. but the first iteration cannot pass numbers and tries a shortcut to get the next char
+
+    if (pos >= len) return false;
+
+    pos = this.asciiIdentifierStart(input, pos);
+    if (pos === start) return false;
+
+    // 2nd char up till the end of the identifier
+    pos = this.asciiIdentifierRest(input, len, pos);
+
+    this.pos = pos;
+    return true;
+  },
+  asciiIdentifierStart: function(input, pos){
+    // this shortcut will save significantly on minified code, where single char identifiers reign
+    var c = this.getLastNum();
+
+    // a-z A-Z $ _ (no number here!)
+    if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x24 || c === 0x5f) {
+      ++pos;
+      // \uxxxx
+    } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
+      pos += 6;
+    } else {
+      // tofix: non-ascii identifiers
+      // do nothing, return starting pos (keeps fingerprint
+      // of this method to always return a number)
+    }
+    return pos
+  },
+  asciiIdentifierRest: function(input, len, pos){
+    // also used by regex flag parser
     while (pos < len) {
       var c = input.charCodeAt(pos);
+
       // a-z A-Z 0-9 $ _
       if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x24 || c === 0x5f) {
         ++pos;
-      // \uxxxx
+        // \uxxxx
       } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
         pos += 6;
       } else {
@@ -563,16 +866,14 @@ Tok.prototype = {
         break;
       }
     }
-    if (pos === start) return false;
-    this.pos = pos;
-    return IDENTIFIER;
+    return pos;
   },
 
   getLastValue: function(){
     return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
   },
   getLastNum: function(){
-    if (this.lastNum === null) return this.lastNum = this.input.charCodeAt(this.lastStart);
+    if (this.lastNum === -1) return this.lastNum = this.input.charCodeAt(this.lastStart);
     return this.lastNum;
   },
 
