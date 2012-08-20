@@ -486,16 +486,17 @@ Par.prototype = {
     }
   },
   parseExpression: function(optional){
-    if (this.tok.isType(EOF)) throw 'Missing expression (EOF). '+this.tok.syntaxError();
-    var pos = this.tok.pos;
+    var tok = this.tok;
+    if (tok.isType(EOF)) throw 'Missing expression (EOF). '+tok.syntaxError();
+    var pos = tok.pos;
 
     this.parsePrimary(optional, false);
 
     this.parseAssignments();
     this.parseNonAssignments();
 
-    if (!optional && this.tok.pos === pos && !this.tok.isType(EOF)) throw 'Missing expression. '+this.tok.syntaxError();
-    return this.tok.pos !== pos;
+    if (!optional && tok.pos === pos && !tok.isType(EOF)) throw 'Missing expression. '+tok.syntaxError();
+    return tok.pos !== pos;
   },
   parseAssignments: function(){
     var parsed = false;
@@ -515,15 +516,17 @@ Par.prototype = {
     }
   },
   parseTernary: function(){
-    this.tok.nextExpr();
+    var tok = this.tok;
+    tok.nextExpr();
     this.parseExpression(false);
-    this.tok.mustBeNum(0x3a,true); // :
+    tok.mustBeNum(0x3a,true); // :
     this.parseExpression(false);
   },
   parseTernaryNoIn: function(){
-    this.tok.nextExpr();
+    var tok = this.tok;
+    tok.nextExpr();
     this.parseExpression(false);
-    this.tok.mustBeNum(0x3a,true); // :
+    tok.mustBeNum(0x3a,true); // :
     this.parseExpressionNoIn(true);
   },
   parsePrimaryAfter: function(){
@@ -531,9 +534,10 @@ Par.prototype = {
     this.parsePrimary(false, false);
   },
   parseExpressionsNoIn: function(){
+    var tok = this.tok;
     do {
       this.parseExpressionNoIn();
-    } while (this.tok.nextExprIfNum(0x2c));
+    } while (tok.nextExprIfNum(0x2c));
   },
   parseExpressionNoIn: function(canHaveAssignment){
     this.parsePrimary(false, true);
@@ -544,16 +548,17 @@ Par.prototype = {
 
     var parsedAssignment = this.parseAssignments();
 
+    var tok = this.tok;
     // keep parsing non-assignment binary/ternary ops unless `in`
     while (true) {
       if (this.isBinaryOperator()) {
-        if (this.tok.isString('in')) {
+        if (tok.isString('in')) {
           if (parsedAssignment && !canHaveAssignment) throw 'No regular assignments in a for-in lhs...';
           break;
         }
         else this.parsePrimaryAfter();
       }
-      else if (this.tok.isNum(0x3f)) this.parseTernaryNoIn();
+      else if (tok.isNum(0x3f)) this.parseTernaryNoIn();
       else break;
     }
   },
@@ -570,65 +575,67 @@ Par.prototype = {
     // parses parts of an expression without any binary operators
 
     this.parseUnary();
-
-    if (this.tok.isType(IDENTIFIER)) {
-      if (this.tok.getLastNum() === 0x66 && this.tok.getLastValue() === 'function') {
+    var tok = this.tok;
+    if (tok.isType(IDENTIFIER)) {
+      if (tok.getLastNum() === 0x66 && tok.getLastValue() === 'function') {
         this.parseFunction();
       } else {
         if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression';
-        this.tok.nextPunc();
+        tok.nextPunc();
       }
-    } else if (!this.tok.nextPuncIfValue(VALUE)) {
-      if (this.tok.nextExprIfNum(0x5b)) this.parseArray();
-      else if (this.tok.nextPuncIfNum(0x7b)) this.parseObject();
-      else if (this.tok.nextExprIfNum(0x28)) this.parseGroup(noIn);
-      else if (!optional) throw 'Missing expression part. '+this.tok.syntaxError();
+    } else if (!tok.nextPuncIfValue(VALUE)) {
+      if (tok.nextExprIfNum(0x5b)) this.parseArray();
+      else if (tok.nextPuncIfNum(0x7b)) this.parseObject();
+      else if (tok.nextExprIfNum(0x28)) this.parseGroup(noIn);
+      else if (!optional) throw 'Missing expression part. '+tok.syntaxError();
     }
 
     this.parsePrimarySuffixes();
   },
   parsePrimaryOrLabel: function(){
-    if (this.tok.isType(EOF)) throw 'Missing expression part or label. '+this.tok.syntaxError();
+    var tok = this.tok;
+    if (tok.isType(EOF)) throw 'Missing expression part or label. '+tok.syntaxError();
     // parses parts of an expression without any binary operators
 
-    var pos = this.tok.pos;
+    var pos = tok.pos;
 
     // if we parse any unary, we wont have to check for label
     var hasPrefix = this.parseUnary();
 
-    if (this.tok.isType(IDENTIFIER)) {
-      if (this.tok.getLastNum() === 0x66 && this.tok.getLastValue() === 'function') {
+    if (tok.isType(IDENTIFIER)) {
+      if (tok.getLastNum() === 0x66 && tok.getLastValue() === 'function') {
         this.parseFunction();
       } else {
-        if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression. '+this.tok.syntaxError();
-        this.tok.nextPunc();
+        if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression. '+tok.syntaxError();
+        tok.nextPunc();
 
         // now's the time... you just ticked off an identifier, check the current token for being a colon!
         if (!hasPrefix) {
           // 3a = :
-          if (this.tok.isNum(0x3a)) {
-            if (this.isValueKeyword()) throw 'Reserved identifier found in label. '+this.tok.syntaxError();
+          if (tok.isNum(0x3a)) {
+            if (this.isValueKeyword()) throw 'Reserved identifier found in label. '+tok.syntaxError();
             return true;
           }
         }
       }
-    } else if (!this.tok.nextPuncIfValue()) {
-      if (this.tok.nextExprIfNum(0x5b)) this.parseArray();
-      else if (this.tok.nextPuncIfNum(0x7b)) this.parseObject();
-      else if (this.tok.nextExprIfNum(0x28)) this.parseGroup();
-      else throw 'Missing expression part. '+this.tok.syntaxError();
+    } else if (!tok.nextPuncIfValue()) {
+      if (tok.nextExprIfNum(0x5b)) this.parseArray();
+      else if (tok.nextPuncIfNum(0x7b)) this.parseObject();
+      else if (tok.nextExprIfNum(0x28)) this.parseGroup();
+      else throw 'Missing expression part. '+tok.syntaxError();
     }
 
     this.parsePrimarySuffixes();
 
-    if (this.tok.pos === pos && !this.tok.isType(EOF)) throw 'Missing expression part. '+this.tok.syntaxError();
+    if (tok.pos === pos && !tok.isType(EOF)) throw 'Missing expression part. '+tok.syntaxError();
 
     return false;
   },
   parseUnary: function(){
     var parsed = false;
-    while (!this.tok.isType(EOF) && this.testUnary()) {
-      this.tok.nextExpr();
+    var tok = this.tok;
+    while (!tok.isType(EOF) && this.testUnary()) {
+      tok.nextExpr();
       parsed = true;
     }
     return parsed; // return bool to determine possibility of label
@@ -639,21 +646,22 @@ Par.prototype = {
     // for string lengths unless we need to disambiguate optional chars
 
     // regexUnary: /^(?:delete|void|typeof|new|\+\+?|--?|~|!)$/,
-    var c = this.tok.getLastNum();
+    var tok = this.tok;
+    var c = tok.getLastNum();
 
-    if (c === 0x6e && this.tok.getLastValue() === 'new') return true;
-    if (c === 0x74 && this.tok.getLastValue() === 'typeof') return true;
-    if (c === 0x64 && this.tok.getLastValue() === 'delete') return true;
+    if (c === 0x6e && tok.getLastValue() === 'new') return true;
+    if (c === 0x74 && tok.getLastValue() === 'typeof') return true;
+    if (c === 0x64 && tok.getLastValue() === 'delete') return true;
     if (c === 0x2b) {
-      if (this.tok.lastStop - this.tok.lastStart === 1) return true; // +
-      if (this.tok.getLastValue().charCodeAt(1) === 0x2b) return true; // ++
+      if (tok.lastStop - tok.lastStart === 1) return true; // +
+      if (tok.getLastValue().charCodeAt(1) === 0x2b) return true; // ++
     }
     if (c === 0x2d) {
-      if (this.tok.lastStop - this.tok.lastStart === 1) return true; // -
-      if (this.tok.getLastValue().charCodeAt(1) === 0x2d) return true; // --
+      if (tok.lastStop - tok.lastStart === 1) return true; // -
+      if (tok.getLastValue().charCodeAt(1) === 0x2d) return true; // --
     }
     if (c === 0x7e || c === 0x21) return true; // ~ !
-    if (c === 0x76 && this.tok.getLastValue() === 'void') return true;
+    if (c === 0x76 && tok.getLastValue() === 'void') return true;
 
     return false;
   },
@@ -664,21 +672,22 @@ Par.prototype = {
     // [<exprs>]
     // (<exprs>)
 
+    var tok = this.tok;
     while (true) {
       // need to check for punctuator because it could also be a number...
-      if (this.tok.isType(PUNCTUATOR) && this.tok.nextPuncIfNum(0x2e)) { // .
-        this.tok.mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+      if (tok.isType(PUNCTUATOR) && tok.nextPuncIfNum(0x2e)) { // .
+        tok.mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       }
-      else if (this.tok.nextExprIfNum(0x28)) { // (
+      else if (tok.nextExprIfNum(0x28)) { // (
         this.parseOptionalExpressions();
-        this.tok.mustBeNum(0x29, false); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+        tok.mustBeNum(0x29, false); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       }
-      else if (this.tok.nextExprIfNum(0x5b)) { // [
+      else if (tok.nextExprIfNum(0x5b)) { // [
         this.parseExpressions();
-        this.tok.mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+        tok.mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       }
-      else if (this.tok.nextPuncIfString('--')) break; // ends primary expressions
-      else if (this.tok.nextPuncIfString('++')) break; // ends primary expressions
+      else if (tok.nextPuncIfString('--')) break; // ends primary expressions
+      else if (tok.nextPuncIfString('++')) break; // ends primary expressions
       else break;
     }
   },
@@ -691,8 +700,9 @@ Par.prototype = {
     // part of the set of valid tokens for js. So we don't have to check
     // for string lengths unless we need to disambiguate optional chars
 
-    var len = this.tok.lastStop - this.tok.lastStart;
-    var c = this.tok.getLastNum();
+    var tok = this.tok;
+    var len = tok.lastStop - tok.lastStart;
+    var c = tok.getLastNum();
 
     if (len === 1) return c === 0x3d; // =
 
@@ -706,16 +716,16 @@ Par.prototype = {
         c === 0x5e || // ^
         c === 0x2f || // /
         c === 0x2d    // -
-      ) && this.tok.getLastValue().charCodeAt(1) === 0x3d; // =
+      ) && tok.getLastValue().charCodeAt(1) === 0x3d; // =
     }
 
     else if (len === 3 && c === 0x3c) {
-      var val = this.tok.getLastValue();
+      var val = tok.getLastValue();
       return (val.charCodeAt(1) === 0x3c && val.charCodeAt(2) === 0x3d); // <<=
     }
 
     else if (c === 0x3e) {
-      var val = this.tok.getLastValue();
+      var val = tok.getLastValue();
       return ((val.charCodeAt(1) === 0x3e) && (
          (len === 4 && val.charCodeAt(2) === 0x3e && val.charCodeAt(3) === 0x3d) || // >>>=
          (len === 3 && val.charCodeAt(2) === 0x3d) // >>=
@@ -733,12 +743,13 @@ Par.prototype = {
     // part of the set of valid tokens for js. So we don't have to check
     // for string lengths unless we need to disambiguate optional chars
 
+    var tok = this.tok;
     // if not punctuator, it could still be `in` or `instanceof`. otherwise it's just false :)
-    if (!this.tok.isType(PUNCTUATOR)) {
-      if (this.tok.isType(IDENTIFIER)) {
-        var c = this.tok.getLastNum();
+    if (!tok.isType(PUNCTUATOR)) {
+      if (tok.isType(IDENTIFIER)) {
+        var c = tok.getLastNum();
         if (c === 0x69) {
-          var val = this.tok.getLastValue();
+          var val = tok.getLastValue();
           return (val === 'in' || val === 'instanceof');
         }
       }
@@ -748,7 +759,7 @@ Par.prototype = {
     // so we have a valid punctuator token, checking for binary ops is simple now except
     // that we have to make sure it's not a(n compound) assignment!
 
-    var c = this.tok.getLastNum();
+    var c = tok.getLastNum();
 
     if ((
       c === 0x2b || // +
@@ -759,36 +770,36 @@ Par.prototype = {
       c === 0x2d    // -
     )) {
       // if len is more than 1, it's either a compound assignment (*=, +=, etc) or a unary op (++ --)
-      return (this.tok.lastStop - this.tok.lastStart === 1);
+      return (tok.lastStop - tok.lastStart === 1);
     }
 
     else if (c === 0x3d || c === 0x21) { // = !
-      var val = this.tok.getLastValue();
-      return (val.charCodeAt(1) === 0x3d && (this.tok.lastStop - this.tok.lastStart === 2 || val.charCodeAt(2) === 0x3d)); // === !==
+      var val = tok.getLastValue();
+      return (val.charCodeAt(1) === 0x3d && (tok.lastStop - tok.lastStart === 2 || val.charCodeAt(2) === 0x3d)); // === !==
     }
 
     else if (c === 0x3c) {
-      if (this.tok.lastStop - this.tok.lastStart === 1) return true; // <
-      var d = this.tok.getLastValue().charCodeAt(1);
+      if (tok.lastStop - tok.lastStart === 1) return true; // <
+      var d = tok.getLastValue().charCodeAt(1);
       // the len check prevents <<=
-      return ((d === 0x3c && (this.tok.lastStop - this.tok.lastStart === 2)) || d === 0x3d); // << <=
+      return ((d === 0x3c && (tok.lastStop - tok.lastStart === 2)) || d === 0x3d); // << <=
     }
 
     else if (c === 0x3e) {
-      var len = this.tok.lastStop - this.tok.lastStart;
+      var len = tok.lastStop - tok.lastStart;
       if (len === 1) return true; // >
-      var val = this.tok.getLastValue();
+      var val = tok.getLastValue();
       var d = val.charCodeAt(1);
       // the len checks prevent >>= and >>>=
       return (d === 0x3d || (len === 2 && d === 0x3e) || (len === 3 && val.charCodeAt(2) === 0x3e)); // >= >> >>>
     }
 
     else if (c === 0x26) {
-      return (this.tok.lastStop - this.tok.lastStart === 1 || this.tok.getLastValue().charCodeAt(1) === 0x26); // &&
+      return (tok.lastStop - tok.lastStart === 1 || tok.getLastValue().charCodeAt(1) === 0x26); // &&
     }
 
     else if (c === 0x7c) {
-      return (this.tok.lastStop - this.tok.lastStart === 1 || this.tok.getLastValue().charCodeAt(1) === 0x7c); // ||
+      return (tok.lastStop - tok.lastStart === 1 || tok.getLastValue().charCodeAt(1) === 0x7c); // ||
     }
 
     return false;
@@ -800,24 +811,27 @@ Par.prototype = {
     this.tok.mustBeNum(0x29, false); // )  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
   },
   parseArray: function(){
+    var tok = this.tok;
     do {
       this.parseExpression(true); // just one because they are all optional (and arent in expressions)
-    } while (this.tok.nextExprIfNum(0x2c)); // elision
+    } while (tok.nextExprIfNum(0x2c)); // elision
 
-    this.tok.mustBeNum(0x5d, false); // ]  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+    tok.mustBeNum(0x5d, false); // ]  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
   },
   parseObject: function(){
+    var tok = this.tok;
     do {
-      if (this.tok.isValue()) this.parsePair();
-    } while (this.tok.nextExprIfNum(0x2c)); // elision
-    this.tok.mustBeNum(0x7d, false); // }  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+      if (tok.isValue()) this.parsePair();
+    } while (tok.nextExprIfNum(0x2c)); // elision
+    tok.mustBeNum(0x7d, false); // }  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
   },
   parsePair: function(){
-    if (this.tok.nextPuncIfString('get')) {
-      if (this.tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(0);
+    var tok = this.tok;
+    if (tok.nextPuncIfString('get')) {
+      if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(0);
       else this.parseDataPart();
-    } else if (this.tok.nextPuncIfString('set')) {
-      if (this.tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(1);
+    } else if (tok.nextPuncIfString('set')) {
+      if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(1);
       else this.parseDataPart();
     } else {
       this.parseData();
@@ -836,13 +850,14 @@ Par.prototype = {
     // note that this function will return false most of the time
     // if it returns true, a syntax error will probably be thrown
 
+    var tok = this.tok;
     // yep, this really makes a difference
-    var c = this.tok.getLastNum();
+    var c = tok.getLastNum();
 
     if (c === 0x62) {
-      return this.tok.getLastValue() === 'break';
+      return tok.getLastValue() === 'break';
     } else if (c === 0x63) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'case' ||
         identifier === 'catch' ||
@@ -851,7 +866,7 @@ Par.prototype = {
         identifier === 'const'
       );
     } else if (c === 0x64) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'do' ||
         identifier === 'debugger' ||
@@ -859,7 +874,7 @@ Par.prototype = {
         identifier === 'delete'
       );
     } else if (c === 0x65) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'else' ||
         identifier === 'enum' ||
@@ -867,7 +882,7 @@ Par.prototype = {
         identifier === 'extends'
       );
     } else if (c === 0x66) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'false' ||
         identifier === 'function' ||
@@ -875,7 +890,7 @@ Par.prototype = {
         identifier === 'finally'
       );
     } else if (c === 0x69) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'instanceof' ||
         identifier === 'in' ||
@@ -883,21 +898,21 @@ Par.prototype = {
         identifier === 'import'
       );
     } else if (c === 0x6e) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'null' ||
         identifier === 'new'
       );
     } else if (c === 0x72) {
-      return this.tok.getLastValue() === 'return';
+      return tok.getLastValue() === 'return';
     } else if (c === 0x73) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'switch' ||
         identifier === 'super'
       );
     } else if (c === 0x74) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'this' ||
         identifier === 'true' ||
@@ -906,13 +921,13 @@ Par.prototype = {
         identifier === 'try'
       );
     } else if (c === 0x76) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'var' ||
         identifier === 'void'
       );
     } else if (c === 0x77) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'while' ||
         identifier === 'with'
@@ -925,13 +940,14 @@ Par.prototype = {
     // note that this function will return false most of the time
     // if it returns true, a syntax error will probably be thrown
 
+    var tok = this.tok;
     // yep, this really makes a difference
-    var c = this.tok.getLastNum();
+    var c = tok.getLastNum();
 
     if (c === 0x62) {
-      return this.tok.getLastValue() === 'break';
+      return tok.getLastValue() === 'break';
     } else if (c === 0x63) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'case' ||
         identifier === 'catch' ||
@@ -940,7 +956,7 @@ Par.prototype = {
         identifier === 'const'
       );
     } else if (c === 0x64) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'do' ||
         identifier === 'debugger' ||
@@ -948,7 +964,7 @@ Par.prototype = {
         identifier === 'delete'
       );
     } else if (c === 0x65) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'else' ||
         identifier === 'enum' ||
@@ -956,13 +972,13 @@ Par.prototype = {
         identifier === 'extends'
       );
     } else if (c === 0x66) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'for' ||
         identifier === 'finally'
       );
     } else if (c === 0x69) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'instanceof' ||
         identifier === 'in' ||
@@ -970,30 +986,30 @@ Par.prototype = {
         identifier === 'import'
       );
     } else if (c === 0x6e) {
-      return this.tok.getLastValue() === 'new';
+      return tok.getLastValue() === 'new';
     } else if (c === 0x72) {
-      return this.tok.getLastValue() === 'return';
+      return tok.getLastValue() === 'return';
     } else if (c === 0x73) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'switch' ||
         identifier === 'super'
       );
     } else if (c === 0x74) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'typeof' ||
         identifier === 'throw' ||
         identifier === 'try'
       );
     } else if (c === 0x76) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'var' ||
         identifier === 'void'
       );
     } else if (c === 0x77) {
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
       return (
         identifier === 'while' ||
         identifier === 'with'
@@ -1005,20 +1021,21 @@ Par.prototype = {
   isValueKeyword: function(){
     // returns true if identifier is a value-holding keyword
 
-    var c = this.tok.getLastNum();
+    var tok = this.tok;
+    var c = tok.getLastNum();
     var identifier;
 
     return (
       // keywords:
       (c === 0x66 && (
-        (identifier = this.tok.getLastValue()) === 'function' ||
+        (identifier = tok.getLastValue()) === 'function' ||
         identifier === 'false'
       )) ||
       (c === 0x74 && (
-        (identifier = this.tok.getLastValue()) === 'this' ||
+        (identifier = tok.getLastValue()) === 'this' ||
         identifier === 'true'
       )) ||
-      (c === 0x6e && (identifier = this.tok.getLastValue()) === 'null')
+      (c === 0x6e && (identifier = tok.getLastValue()) === 'null')
     );
   }
 };
