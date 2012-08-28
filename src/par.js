@@ -421,7 +421,7 @@ Par.prototype = {
 
     var tok = this.tok;
     // 0x7d=}
-    if (tok.isType(EOF) || tok.isNum(0x7d) || (tok.lastNewline && !tok.isType(REGEX))) {
+    if (tok.isNum(0x7d) || (tok.lastNewline && !tok.isType(REGEX) || tok.isType(EOF))) {
       return this.addAsi();
     }
     return false;
@@ -430,13 +430,13 @@ Par.prototype = {
     ++this.tok.tokenCount;
     return ASI;
   },
+
   parseExpressionStatement: function(){
     this.parseExpressions();
     this.parseSemi();
 
     return true;
   },
-
   parseExpressionOrLabel: function(inFunction, inLoop, inSwitch, labelSet){
     var found = this.parseExpressionForLabel(inFunction, inLoop, inSwitch, labelSet);
     if (!found) {
@@ -444,7 +444,6 @@ Par.prototype = {
       this.parseSemi();
     }
   },
-
   parseExpressionForLabel: function(inFunction, inLoop, inSwitch, labelSet){
     // dont check for label if you can already see it'll fail
     var checkLabel = this.tok.isType(IDENTIFIER);
@@ -470,7 +469,6 @@ Par.prototype = {
     this.parseNonAssignments();
     return false;
   },
-
   parseOptionalExpressions: function(){
     if (this.parseExpression(true)) {
       while (this.tok.nextExprIfNum(0x2c)) { // ,
@@ -552,13 +550,20 @@ Par.prototype = {
     // keep parsing non-assignment binary/ternary ops unless `in`
     while (true) {
       if (this.isBinaryOperator()) {
-        if (tok.isString('in')) {
+        // TOFIX: check the `n` as a number too...
+        // rationale for checking number; this is the `in` check which will succeed
+        // about 50% of the time (stats from 8mb of various js). the other time it
+        // will check for a primary. it's therefore more likely that an isnum will
+        // save time because it would cache the charCodeAt for the other token if
+        // it failed the check
+        if (tok.isNum(0x69) && tok.isString('in')) {
           if (parsedAssignment && !canHaveAssignment) throw 'No regular assignments in a for-in lhs...';
           break;
+        } else {
+          this.parsePrimaryAfter();
         }
-        else this.parsePrimaryAfter();
       }
-      else if (tok.isNum(0x3f)) this.parseTernaryNoIn();
+      else if (tok.isNum(0x3f)) this.parseTernaryNoIn(); // ?
       else break;
     }
   },
@@ -577,16 +582,17 @@ Par.prototype = {
     this.parseUnary();
     var tok = this.tok;
     if (tok.isType(IDENTIFIER)) {
-      if (tok.getLastNum() === 0x66 && tok.getLastValue() === 'function') {
+      if (tok.isNum(0x66) && tok.getLastValue() === 'function') {
         this.parseFunction();
       } else {
         if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression';
         tok.nextPunc();
       }
     } else if (!tok.nextPuncIfValue(VALUE)) {
-      if (tok.nextExprIfNum(0x5b)) this.parseArray();
+      // group is most likely, then object, then array, hardly never an error
+      if (tok.nextExprIfNum(0x28)) this.parseGroup(noIn);
       else if (tok.nextPuncIfNum(0x7b)) this.parseObject();
-      else if (tok.nextExprIfNum(0x28)) this.parseGroup(noIn);
+      else if (tok.nextExprIfNum(0x5b)) this.parseArray();
       else if (!optional) throw 'Missing expression part. '+tok.syntaxError();
     }
 
@@ -603,7 +609,7 @@ Par.prototype = {
     var hasPrefix = this.parseUnary();
 
     if (tok.isType(IDENTIFIER)) {
-      if (tok.getLastNum() === 0x66 && tok.getLastValue() === 'function') {
+      if (tok.isNum(0x66) && tok.getLastValue() === 'function') {
         this.parseFunction();
       } else {
         if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression. '+tok.syntaxError();
@@ -747,8 +753,7 @@ Par.prototype = {
     // if not punctuator, it could still be `in` or `instanceof`. otherwise it's just false :)
     if (!tok.isType(PUNCTUATOR)) {
       if (tok.isType(IDENTIFIER)) {
-        var c = tok.getLastNum();
-        if (c === 0x69) {
+        if (tok.isNum(0x69)) {
           var val = tok.getLastValue();
           return (val === 'in' || val === 'instanceof');
         }

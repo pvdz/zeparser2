@@ -594,7 +594,6 @@ var good = [
 ["while(true)continue", [5, 6], "ASI because of EOF"],
 ["while(true)continue\nx;", [8, 9], "ASI because of newline"],
 
-
 ["function f(){return\n;}", [10, 11], "ASI after break with return, ignoring the semi-colon on next line"],
 ["function f(){return\n}", [9, 10], "ASI after break because of }"],
 ["function f(){return}", [8, 9], "ASI after break because of }"],
@@ -753,4 +752,7 @@ var bad = [
   ["5e*foo", "requires suffix even when it looks like a proper expression"],
 
   ["=foo;", "due to label crap, this once was a thing"],
+
+  ["foo:{while(false){continue foo;}}", "continue labels must be one from an iteration label set"],
+  ["throw\nfoo;", "throw does not get ASI applied to it, a newline is always a syntax error"],
 ];

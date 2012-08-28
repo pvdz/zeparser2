@@ -928,6 +928,14 @@ Tok.prototype = {
 
   getLastValue: function(){
     return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
+
+//    // this seems slightly slower
+//    var val = this.lastValue;
+//    if (!val) {
+//      var input = this.input;
+//      val = this.lastValue = input.substring(this.lastStart, this.lastStop);
+//    }
+//    return val;
   },
   getLastNum: function(){
     if (this.lastNum === -1) return this.lastNum = this.input.charCodeAt(this.lastStart);
