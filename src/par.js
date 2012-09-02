@@ -742,18 +742,18 @@ Par.prototype = {
 
     var tok = this.tok;
     var len = tok.lastLen;
-    var c = tok.getLastNum();
 
     if (len === 1) return tok.getLastNum() === 0x3d; // =
 
     else if (len === 2) {
       if (tok.getLastNum2() !== 0x3d) return false; // =
+      var c = tok.getLastNum();
       return (
+        c === 0x2b || // +
+        c === 0x2d || // -
+        c === 0x2a || // *
         c === 0x7c || // |
         c === 0x26 || // &
-        c === 0x2b || // +
-        c === 0x2a || // *
-        c === 0x2d || // -
         c === 0x25 || // %
         c === 0x5e || // ^
         c === 0x2f    // /
@@ -782,33 +782,38 @@ Par.prototype = {
     //return (this.regexNonAssignBinaryOp.test(val));
 
     // this method works under the assumption that the current token is
-    // part of the set of valid tokens for js. So we don't have to check
+    // part of the set of valid _tokens_ for js. So we don't have to check
     // for string lengths unless we need to disambiguate optional chars
+    // and we dont need to worry about validation. the operator is either
+    // going to be a punctuator, `in`, or `instanceof`. But note that the
+    // token might still be a completely unrelated (error) kind of token.
+    // We will parse it in such a way that the error condition is always
+    // the longest path, though.
 
     var tok = this.tok;
-    // if not punctuator, it could still be `in` or `instanceof`. otherwise it's just false :)
-    if (!tok.isType(PUNCTUATOR)) {
-      if (tok.isType(IDENTIFIER)) {
-        if (tok.isNum(0x69)) { // i
-          return ((tok.lastLen === 2 && tok.getLastNum2() === 0x6e) || (tok.lastLen === 10 && tok.getLastValue() === 'instanceof'));
-        }
-      }
+    var c = tok.getLastNum();
+
+    // so we have a valid  token, checking for binary ops is simple now except
+    // that we have to make sure it's not an (compound) assignment!
+
+    // About 80% of the calls to this method result in none of the ifs
+    // even matching. The times the method returns `false` is even bigger.
+    // To this end, we preliminary check a few cases so we can jump quicker.
+
+    // ) ; , (most frequent, for 27% 23% and 20% of the times this method is
+    // called, c will be one of them (simple expression enders)
+    if (c === 0x29 || c === 0x3b || c === 0x2c) {
+      return false;
+    }
+    // quite frequent (more than any other single if below it) are } (8%)
+    // and ] (7%). Maybe I'll remove this in the future. The overhead may
+    // not be worth the gains. Hard to tell... :)
+    else if (c === 0x5d || c === 0x7d) {
       return false;
     }
 
-    // so we have a valid punctuator token, checking for binary ops is simple now except
-    // that we have to make sure it's not a(n compound) assignment!
 
-    var c = tok.getLastNum();
-
-    if ((
-      c === 0x2b || // +
-      c === 0x2a || // *
-      c === 0x25 || // %
-      c === 0x5e || // ^
-      c === 0x2f || // /
-      c === 0x2d    // -
-    )) {
+    else if (c === 0x2b) { // +
       // if len is more than 1, it's either a compound assignment (*=, +=, etc) or a unary op (++ --)
       return (tok.lastLen === 1);
     }
@@ -817,14 +822,27 @@ Par.prototype = {
       return (tok.getLastNum2() === 0x3d && (tok.lastLen === 2 || tok.getLastNum3() === 0x3d)); // === !==
     }
 
-    else if (c === 0x3c) {
+    else if (c === 0x26) { // &
+      return (tok.lastLen === 1 || tok.getLastNum2() === 0x26); // &&
+    }
+
+    else if (c === 0x7c) { // |
+      return (tok.lastLen === 1 || tok.getLastNum2() === 0x7c); // ||
+    }
+
+    else if (c === 0x3c) { // <
       if (tok.lastLen === 1) return true; // <
       var d = tok.getLastNum2();
       // the len check prevents <<=
       return ((d === 0x3c && tok.lastLen === 2) || d === 0x3d); // << <=
     }
 
-    else if (c === 0x3e) {
+    else if (c === 0x2a) { // *
+      // if len is more than 1, it's either a compound assignment (*=, +=, etc) or a unary op (++ --)
+      return (tok.lastLen === 1);
+    }
+
+    else if (c === 0x3e) { // >
       var len = tok.lastLen;
       if (len === 1) return true; // >
       var d = tok.getLastNum2();
@@ -832,12 +850,19 @@ Par.prototype = {
       return (d === 0x3d || (len === 2 && d === 0x3e) || (len === 3 && tok.getLastNum3() === 0x3e)); // >= >> >>>
     }
 
-    else if (c === 0x26) {
-      return (tok.lastLen === 1 || tok.getLastNum2() === 0x26); // &&
+    else if (
+      c === 0x25 || // %
+      c === 0x5e || // ^
+      c === 0x2f || // /
+      c === 0x2d    // -
+    ) {
+      // if len is more than 1, it's either a compound assignment (*=, +=, etc) or a unary op (++ --)
+      return (tok.lastLen === 1);
     }
 
-    else if (c === 0x7c) {
-      return (tok.lastLen === 1 || tok.getLastNum2() === 0x7c); // ||
+    // if not punctuator, it could still be `in` or `instanceof`...
+    else if (c === 0x69) { // i
+      return ((tok.lastLen === 2 && tok.getLastNum2() === 0x6e) || (tok.lastLen === 10 && tok.getLastValue() === 'instanceof'));
     }
 
     return false;
@@ -859,6 +884,8 @@ Par.prototype = {
   parseObject: function(){
     var tok = this.tok;
     do {
+      // object literal keys can be most values, but not regex literal.
+      // since that's an error, it's unlikely you'll ever see that triggered.
       if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
     } while (tok.nextExprIfNum(0x2c)); // elision
     tok.mustBeNum(0x7d, false); // }  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
