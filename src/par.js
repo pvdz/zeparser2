@@ -23,12 +23,20 @@ Par.prototype = {
       return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
     }
 
-    if (tok.isValue()) {
-      this.parseExpressionStatement();
+    var c = tok.getLastNum();
+
+    if (c === 0x7b) { // {
+      tok.nextExpr();
+      this.parseBlock(inFunction, inLoop, inSwitch, labelSet);
       return true;
     }
 
-    var c = tok.getLastNum();
+    if (c === 0x3b) { // ; // empty statement
+      // this shouldnt occur very often, but they still do.
+      tok.nextExpr();
+      return true;
+    }
+
     if (
       c === 0x28 || // (
       c === 0x5b || // [
@@ -41,15 +49,10 @@ Par.prototype = {
       return true;
     }
 
-    if (c === 0x7b) { // {
-      tok.nextExpr();
-      this.parseBlock(inFunction, inLoop, inSwitch, labelSet);
+    if (tok.isValue()) {
+      this.parseExpressionStatement();
       return true;
     }
-    if (c === 0x3b) { // [
-      tok.nextExpr();
-      return true;
-    } // empty statement
 
     if (!optional) throw 'Expected more input...';
     return false;
@@ -98,10 +101,11 @@ Par.prototype = {
     do {
       if (this.isReservedIdentifier()) throw 'var name is reserved';
       tok.mustBeIdentifier(true);
-      if (tok.nextExprIfNum(0x3d)) { // =
+      if (tok.isNum(0x3d) && tok.lastLen === 1) { // =
+        tok.nextExpr();
         this.parseExpression(false);
       }
-    } while(tok.nextPuncIfNum(0x2c)); // ,
+    } while(tok.nextExprIfNum(0x2c)); // ,
     this.parseSemi();
 
     return true;
@@ -112,10 +116,11 @@ Par.prototype = {
     do {
       if (this.isReservedIdentifier()) throw 'var name is reserved';
       tok.mustBeIdentifier(true);
-      if (tok.nextExprIfNum(0x3d)) { // =
-          this.parseExpressionNoIn(true);
+      if (tok.isNum(0x3d) && tok.lastLen === 1) { // =
+        tok.nextExpr();
+        this.parseExpressionNoIn(true);
       }
-    } while(tok.nextPuncIfNum(0x2c)); // ,
+    } while(tok.nextExprIfNum(0x2c)); // ,
   },
   parseIf: function(inFunction, inLoop, inSwitch, labelSet){
     // if (<exprs>) <stmt>
@@ -171,7 +176,7 @@ Par.prototype = {
 
     if (tok.nextExprIfNum(0x3b)) this.parseForEachHeader(); // ; (means empty first expression in for-each)
     else {
-      if (tok.isString('var')) this.parseVarPartNoIn();
+      if (tok.isNum(0x76) && tok.isString('var')) this.parseVarPartNoIn();
       else this.parseExpressionsNoIn();
 
       // 3b = ;
@@ -192,7 +197,11 @@ Par.prototype = {
   parseForInHeader: function(){
     // in <exprs> ) <stmt>
 
-    this.tok.mustBeString('in', true);
+    var tok = this.tok;
+    if (tok.getLastNum() !== 0x69 || tok.getLastNum2() !== 0x6e || tok.lastLen !== 2) {
+      throw 'Expected `in` here... '+tok.syntaxError();
+    }
+    tok.nextExpr();
     this.parseExpressions();
   },
   parseContinue: function(inFunction, inLoop, inSwitch, labelSet){
@@ -263,8 +272,9 @@ Par.prototype = {
 
     var tok = this.tok;
     tok.nextExpr();
-    if (tok.lastNewline) this.addAsi();
-    else {
+    if (tok.lastNewline) {
+      throw 'No newline allowed directly after a throw, ever. '+tok.syntaxError();
+    } else {
       this.parseExpressions();
       this.parseSemi();
     }
@@ -392,8 +402,9 @@ Par.prototype = {
     if (tok.isType(IDENTIFIER)) {
       if (paramCount === 0) throw 'Getters have no parameters';
       if (this.isReservedIdentifier()) throw 'param name is reserved';
-      tok.nextPunc();
-      while (tok.nextPuncIfNum(0x2c)) { // ,
+      tok.next(true); // TOFIX: make this `nextIdentifier` or something...
+      // there are only two valid next tokens; either a comma or a closing paren
+      while (tok.nextExprIfNum(0x2c)) { // ,
         if (paramCount === 1) throw 'Setters have exactly one param';
         tok.mustBeIdentifier(false);
       }
@@ -440,7 +451,7 @@ Par.prototype = {
   parseExpressionOrLabel: function(inFunction, inLoop, inSwitch, labelSet){
     var found = this.parseExpressionForLabel(inFunction, inLoop, inSwitch, labelSet);
     if (!found) {
-      if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions();
+      if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions(); // ,
       this.parseSemi();
     }
   },
@@ -453,7 +464,7 @@ Par.prototype = {
       // ugly but mandatory label check
       // if this is a label, the parsePrimary parser
       // will have bailed when seeing the colon.
-      if (this.parsePrimaryOrLabel() && this.tok.nextPuncIfNum(0x3a)) { // :
+      if (this.parsePrimaryOrLabel() && this.tok.nextExprIfNum(0x3a)) { // :
         labelSet.push(labelName);
         this.parseStatement(inFunction, inLoop, inSwitch, labelSet);
         labelSet.pop();
@@ -535,7 +546,7 @@ Par.prototype = {
     var tok = this.tok;
     do {
       this.parseExpressionNoIn();
-    } while (tok.nextExprIfNum(0x2c));
+    } while (tok.nextExprIfNum(0x2c)); // ,
   },
   parseExpressionNoIn: function(canHaveAssignment){
     this.parsePrimary(false, true);
@@ -556,7 +567,7 @@ Par.prototype = {
         // will check for a primary. it's therefore more likely that an isnum will
         // save time because it would cache the charCodeAt for the other token if
         // it failed the check
-        if (tok.isNum(0x69) && tok.isString('in')) {
+        if (tok.getLastNum() === 0x69 && tok.getLastNum2() === 0x6e && tok.lastLen === 2) {
           if (parsedAssignment && !canHaveAssignment) throw 'No regular assignments in a for-in lhs...';
           break;
         } else {
@@ -588,17 +599,18 @@ Par.prototype = {
         if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression';
         tok.nextPunc();
       }
-    } else if (!tok.nextPuncIfValue(VALUE)) {
-      // group is most likely, then object, then array, hardly never an error
-      if (tok.nextExprIfNum(0x28)) this.parseGroup(noIn);
-      else if (tok.nextPuncIfNum(0x7b)) this.parseObject();
-      else if (tok.nextExprIfNum(0x5b)) this.parseArray();
-      else if (!optional) throw 'Missing expression part. '+tok.syntaxError();
+    } else {
+      this.parsePrimaryValue(optional, noIn);
     }
 
     this.parsePrimarySuffixes();
   },
   parsePrimaryOrLabel: function(){
+    // note: this function is only executed for identifiers...
+    // note: this function is only executed for statement starts. the
+    //       function keyword will already have been filtered out by
+    //       the main statement start parsing method. So we dont have
+    //       to check for the function keyword here; it cant occur.
     var tok = this.tok;
     if (tok.isType(EOF)) throw 'Missing expression part or label. '+tok.syntaxError();
     // parses parts of an expression without any binary operators
@@ -608,27 +620,33 @@ Par.prototype = {
     // if we parse any unary, we wont have to check for label
     var hasPrefix = this.parseUnary();
 
-    if (tok.isType(IDENTIFIER)) {
-      if (tok.isNum(0x66) && tok.getLastValue() === 'function') {
-        this.parseFunction();
-      } else {
-        if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression. '+tok.syntaxError();
-        tok.nextPunc();
+    // simple shortcut: this function is only called if (at
+    // the time of calling) the next token was an identifier.
+    // if parseUnary returns true, we wont know what the type
+    // of the next token is. otherwise it must still be identifier!
+    if (!hasPrefix || tok.isType(IDENTIFIER)) {
+      // (see note above; we dont have to check for function here)
+      if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression. '+tok.syntaxError();
+      tok.nextPunc();
 
-        // now's the time... you just ticked off an identifier, check the current token for being a colon!
-        if (!hasPrefix) {
-          // 3a = :
-          if (tok.isNum(0x3a)) {
-            if (this.isValueKeyword()) throw 'Reserved identifier found in label. '+tok.syntaxError();
-            return true;
-          }
+      // now's the time... you just ticked off an identifier, check the current token for being a colon!
+      // (quick check first: if there was a unary operator, this cant be a label)
+      if (!hasPrefix) {
+        // 3a = :
+        if (tok.isNum(0x3a)) {
+          if (this.isValueKeyword()) throw 'Reserved identifier found in label. '+tok.syntaxError();
+          return true;
         }
       }
-    } else if (!tok.nextPuncIfValue()) {
-      if (tok.nextExprIfNum(0x5b)) this.parseArray();
-      else if (tok.nextPuncIfNum(0x7b)) this.parseObject();
-      else if (tok.nextExprIfNum(0x28)) this.parseGroup();
-      else throw 'Missing expression part. '+tok.syntaxError();
+    } else {
+      // TOFIX: does this ever happen? if the next token was an identifier and this is the statement start
+      //        there must have been a unary operator preceeding it in order to get to here. in that case
+      //        it must be one of delete, new, or void. i suppose it could be possible to parse a(ny) value
+      //        in the case of `void`. it could be `this` in the case of `delete` (and `new`, though that's
+      //        an extreme edge case... it would mean `this` is a function. when does that happen.)
+      //        However, note that these fizzles are very rare. in the 8mb test suite, it only _reaches_
+      //        here five times (always turned out to be a group). I mean, not quite the biggest possible gain.
+      this.parsePrimaryValue(false, false);
     }
 
     this.parsePrimarySuffixes();
@@ -636,6 +654,18 @@ Par.prototype = {
     if (tok.pos === pos && !tok.isType(EOF)) throw 'Missing expression part. '+tok.syntaxError();
 
     return false;
+  },
+  parsePrimaryValue: function(optional, noIn){
+    // at this point in the expression parser we will
+    // have ruled out anything else. the next token(s) must
+    // be some kind of expression value...
+    var tok = this.tok;
+    if (!tok.nextPuncIfValue()) {
+      if (tok.nextExprIfNum(0x28)) this.parseGroup(noIn); // (
+      else if (tok.nextExprIfNum(0x7b)) this.parseObject(); // {
+      else if (tok.nextExprIfNum(0x5b)) this.parseArray(); // [
+      else if (!optional) throw 'Missing expression part. '+tok.syntaxError();
+    }
   },
   parseUnary: function(){
     var parsed = false;
@@ -659,12 +689,12 @@ Par.prototype = {
     if (c === 0x74 && tok.getLastValue() === 'typeof') return true;
     if (c === 0x64 && tok.getLastValue() === 'delete') return true;
     if (c === 0x2b) {
-      if (tok.lastStop - tok.lastStart === 1) return true; // +
-      if (tok.getLastValue().charCodeAt(1) === 0x2b) return true; // ++
+      if (tok.lastLen === 1) return true; // +
+      if (tok.getLastNum2() === 0x2b) return true; // ++
     }
     if (c === 0x2d) {
-      if (tok.lastStop - tok.lastStart === 1) return true; // -
-      if (tok.getLastValue().charCodeAt(1) === 0x2d) return true; // --
+      if (tok.lastLen === 1) return true; // -
+      if (tok.getLastNum2() === 0x2d) return true; // --
     }
     if (c === 0x7e || c === 0x21) return true; // ~ !
     if (c === 0x76 && tok.getLastValue() === 'void') return true;
@@ -681,7 +711,7 @@ Par.prototype = {
     var tok = this.tok;
     while (true) {
       // need to check for punctuator because it could also be a number...
-      if (tok.isType(PUNCTUATOR) && tok.nextPuncIfNum(0x2e)) { // .
+      if (tok.isType(PUNCTUATOR) && tok.nextExprIfNum(0x2e)) { // .
         tok.mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       }
       else if (tok.nextExprIfNum(0x28)) { // (
@@ -692,8 +722,8 @@ Par.prototype = {
         this.parseExpressions();
         tok.mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       }
-      else if (tok.nextPuncIfString('--')) break; // ends primary expressions
-      else if (tok.nextPuncIfString('++')) break; // ends primary expressions
+      else if (tok.isNum(0x2b) && tok.nextPuncIfString('++')) break; // ends primary expressions
+      else if (tok.isNum(0x2d) && tok.nextPuncIfString('--')) break; // ends primary expressions
       else break;
     }
   },
@@ -707,7 +737,7 @@ Par.prototype = {
     // for string lengths unless we need to disambiguate optional chars
 
     var tok = this.tok;
-    var len = tok.lastStop - tok.lastStart;
+    var len = tok.lastLen;
     var c = tok.getLastNum();
 
     if (len === 1) return c === 0x3d; // =
@@ -722,19 +752,17 @@ Par.prototype = {
         c === 0x5e || // ^
         c === 0x2f || // /
         c === 0x2d    // -
-      ) && tok.getLastValue().charCodeAt(1) === 0x3d; // =
+      ) && tok.getLastNum2() === 0x3d; // =
     }
 
     else if (len === 3 && c === 0x3c) {
-      var val = tok.getLastValue();
-      return (val.charCodeAt(1) === 0x3c && val.charCodeAt(2) === 0x3d); // <<=
+      return (tok.getLastNum2() === 0x3c && tok.getLastNum3() === 0x3d); // <<=
     }
 
     else if (c === 0x3e) {
-      var val = tok.getLastValue();
-      return ((val.charCodeAt(1) === 0x3e) && (
-         (len === 4 && val.charCodeAt(2) === 0x3e && val.charCodeAt(3) === 0x3d) || // >>>=
-         (len === 3 && val.charCodeAt(2) === 0x3d) // >>=
+      return ((tok.getLastNum2() === 0x3e) && (
+         (len === 4 && tok.getLastNum3() === 0x3e && tok.getLastNum4() === 0x3d) || // >>>=
+         (len === 3 && tok.getLastNum3() === 0x3d) // >>=
       ));
     }
 
@@ -753,9 +781,8 @@ Par.prototype = {
     // if not punctuator, it could still be `in` or `instanceof`. otherwise it's just false :)
     if (!tok.isType(PUNCTUATOR)) {
       if (tok.isType(IDENTIFIER)) {
-        if (tok.isNum(0x69)) {
-          var val = tok.getLastValue();
-          return (val === 'in' || val === 'instanceof');
+        if (tok.isNum(0x69)) { // i
+          return ((tok.lastLen === 2 && tok.getLastNum2() === 0x6e) || (tok.lastLen === 10 && tok.getLastValue() === 'instanceof'));
         }
       }
       return false;
@@ -775,36 +802,34 @@ Par.prototype = {
       c === 0x2d    // -
     )) {
       // if len is more than 1, it's either a compound assignment (*=, +=, etc) or a unary op (++ --)
-      return (tok.lastStop - tok.lastStart === 1);
+      return (tok.lastLen === 1);
     }
 
     else if (c === 0x3d || c === 0x21) { // = !
-      var val = tok.getLastValue();
-      return (val.charCodeAt(1) === 0x3d && (tok.lastStop - tok.lastStart === 2 || val.charCodeAt(2) === 0x3d)); // === !==
+      return (tok.getLastNum2() === 0x3d && (tok.lastLen === 2 || tok.getLastNum3() === 0x3d)); // === !==
     }
 
     else if (c === 0x3c) {
-      if (tok.lastStop - tok.lastStart === 1) return true; // <
-      var d = tok.getLastValue().charCodeAt(1);
+      if (tok.lastLen === 1) return true; // <
+      var d = tok.getLastNum2();
       // the len check prevents <<=
-      return ((d === 0x3c && (tok.lastStop - tok.lastStart === 2)) || d === 0x3d); // << <=
+      return ((d === 0x3c && tok.lastLen === 2) || d === 0x3d); // << <=
     }
 
     else if (c === 0x3e) {
-      var len = tok.lastStop - tok.lastStart;
+      var len = tok.lastLen;
       if (len === 1) return true; // >
-      var val = tok.getLastValue();
-      var d = val.charCodeAt(1);
+      var d = tok.getLastNum2();
       // the len checks prevent >>= and >>>=
-      return (d === 0x3d || (len === 2 && d === 0x3e) || (len === 3 && val.charCodeAt(2) === 0x3e)); // >= >> >>>
+      return (d === 0x3d || (len === 2 && d === 0x3e) || (len === 3 && tok.getLastNum3() === 0x3e)); // >= >> >>>
     }
 
     else if (c === 0x26) {
-      return (tok.lastStop - tok.lastStart === 1 || tok.getLastValue().charCodeAt(1) === 0x26); // &&
+      return (tok.lastLen === 1 || tok.getLastNum2() === 0x26); // &&
     }
 
     else if (c === 0x7c) {
-      return (tok.lastStop - tok.lastStart === 1 || tok.getLastValue().charCodeAt(1) === 0x7c); // ||
+      return (tok.lastLen === 1 || tok.getLastNum2() === 0x7c); // ||
     }
 
     return false;
@@ -826,16 +851,16 @@ Par.prototype = {
   parseObject: function(){
     var tok = this.tok;
     do {
-      if (tok.isValue()) this.parsePair();
+      if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
     } while (tok.nextExprIfNum(0x2c)); // elision
     tok.mustBeNum(0x7d, false); // }  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
   },
   parsePair: function(){
     var tok = this.tok;
-    if (tok.nextPuncIfString('get')) {
+    if (tok.isNum(0x67) && tok.nextPuncIfString('get')) {
       if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(0);
       else this.parseDataPart();
-    } else if (tok.nextPuncIfString('set')) {
+    } else if (tok.isNum(0x73) && tok.nextPuncIfString('set')) {
       if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(1);
       else this.parseDataPart();
     } else {

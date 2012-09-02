@@ -401,7 +401,6 @@ var good = [
 ["while(true)continue \n foo;", [10, 11], "Restricted Production: `continue` Statement"],
 ["while(true)break \n foo;", [10, 11], "Restricted Production: `break` Statement"],
 ["function f(){return\nfoo;}", [11, 12], "Restricted Production: `return` Statement"],
-["throw\nfoo;", [4, 5], "Restricted Production: `throw` Statement"],
 ["var x; { 1 \n 2 } 3", [16, 19], "Classic Automatic Semicolon Insertion Case"],
 ["ab \t /* hi */\ncd", [7, 9], "Automatic Semicolon Insertion: Block Comment"],
 ["ab/*\n*/cd", [3, 5], "Automatic Semicolon Insertion Triggered by Multi-Line Block Comment"],
@@ -535,6 +534,7 @@ var good = [
 ["function f(){}/foo/;", 9, [false, false, false, false, false, false, false, true], "regex after a func def"],
 ["do{}while(/foo/);", 8, [false,false,false,false,false,true],"regex in do-while condition"],
 ["if(x)y;else /z/;", 10, [false,false,false,false,false,false,false,false,true],"regex for else"],
+["foo:/bar/;", 4, [false, false, true], "regex after label"],
 
 ["!--foo;", 4, "prefix decr after bang"],
 ["!++foo;", 4, "prefix incr after bang"],
@@ -611,6 +611,8 @@ var good = [
 ["0.e1", [1,2], "some number checks i needed to do"],
 ["0,1", [3,4], "uhm, yeah, still just two numbers, right?"],
 
+["(function(){}());", 10, "iife, cant believe i wasnt testing this yet"],
+["+function(){};", 7, "can believe I wasnt testing for this though"],
 ];
 
 // these are mainly for the parser, of course...
@@ -678,6 +680,11 @@ var bad = [
   ['throw//x', 'incomplete throw'],
   ['x?y//x', 'incomplete ternary'],
   ['function f(){//x', 'incomplete function'],
+
+  ['var foo, /bar/;', 'var statement that runs into a regex'],
+  ['for (var foo, /bar/ in x);', 'for-in var that runs into a regex'],
+  ['({/foo/:5});', "regex as objlit key"],
+  ['({x:y, /foo/:5});', "regex as (second) objlit key"],
 
   ['`', "backticks do not occur in js syntax"],
   ['#', "hashes do not occur in js syntax"],
@@ -755,4 +762,6 @@ var bad = [
 
   ["foo:{while(false){continue foo;}}", "continue labels must be one from an iteration label set"],
   ["throw\nfoo;", "throw does not get ASI applied to it, a newline is always a syntax error"],
+
+  ["var x == 5;", "make sure tokens arent skipped by checking just one character"],
 ];

@@ -40,11 +40,16 @@ var Tok = function(input){
 
   this.lastStart = 0;
   this.lastStop = 0;
+  this.lastLen = 0;
   this.lastType = -1;
   this.lastValue = null;
-  this.lastNum = -1; // -1 means uninitialized (since charCodeAt can never return this, it's safe to go for -1)
-  this.lastNextNum = -1;
   this.lastNewline = -1;
+
+  // charCodeAt will never return -1, so -1 means "uninitialized". allows us to keep this value a number, always
+  this.nextNum1 = -1;
+  this.nextNum2 = -1;
+  this.nextNum3 = -1;
+  this.nextNum4 = -1;
 
   this.tokenCount = 0;
   this.tokens = [];
@@ -84,16 +89,20 @@ Tok.prototype = {
   lastStart: 0,
   /** @property {number} lastStop End pos of the last token */
   lastStop: 0,
+  /** @property {number} lastLen */
+  lastLen: 0,
   /** @property {number} lastType Type of the last token */
   lastType: null,
   /** @property {string|null} lastValue String value of the last token, or null if not yet fetched (see this.getLastValue()) */
   lastValue: null,
-  /** @property {number} lastNum Cached value of this.input.charCodeAt(this.lastStart), or -1 if not yet fetched */
-  lastNum: -1,
-  /** @property {number} lastNextNum When the previous parsing already had to query the ord of the first character for the next token, it will store that here */
-  lastNextNum: -1,
   /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
   lastNewline: false,
+
+  // .charCodeAt(pos+n) cache
+  nextNum1: -1,
+  nextNum2: -1,
+  nextNum3: -1,
+  nextNum4: -1,
 
   /** @property {number} tokenCount Simple counter, includes whitespace */
   tokenCount: 0,
@@ -125,7 +134,7 @@ Tok.prototype = {
    * @return {boolean}
    */
   isValue: function(){
-    return this.lastType === STRING || this.lastType === NUMBER || this.lastType === REGEX || this.lastType === IDENTIFIER;
+    return this.lastType === STRING || this.lastType === NUMBER || this.lastType === IDENTIFIER || this.lastType === REGEX || false;
   },
   /**
    * Compare the first character of the current token
@@ -148,20 +157,6 @@ Tok.prototype = {
     return this.getLastValue() === value;
   },
 
-  /**
-   * Parse the next token if the current
-   * token is(value). Next token is parsed
-   * possibly expecting a regex (so not a
-   * division).
-   *
-   * @param {number|string} value
-   * @return {boolean}
-   */
-  nextPuncIfNum: function(num){
-    var equals = this.isNum(num);
-    if (equals) this.nextPunc();
-    return equals;
-  },
   /**
    * Parse the next token if the current
    * token isType(type). Next token is parsed
@@ -293,7 +288,7 @@ Tok.prototype = {
 
     if (pos >= this.len) {
       this.lastType = EOF;
-      this.lastStart = this.lastStop = pos;
+      this.lastStart = this.lastStop = this.lastLen = pos;
       return EOF;
     }
 
@@ -309,25 +304,38 @@ Tok.prototype = {
   },
   nextWhiteToken: function(expressionStart){
     this.lastValue = null;
-    this.lastNum = -1;
-    this.lastStart = this.pos;
+    var start = this.lastStart = this.pos;
     if (this.pos >= this.len) return EOF;
 
-    // if the previous token parsing already discovered the
-    // ord of the first character for this token, it will
-    // have saved that in this.lastNextNum, so let's copy
-    // that to lastNum now.
-    var lastNextNum = this.lastNextNum;
-    if (lastNextNum !== -1) {
-      this.lastNum = lastNextNum;
-      this.lastNextNum = -1;
+    // prepare charCodeAt cache...
+    if (len === 1) {
+      this.nextNum1 = this.nextNum2;
+      this.nextNum2 = this.nextNum3;
+      this.nextNum3 = this.nextNum4;
+      this.nextNum4 = -1;
+    } else if (len === 2) {
+      this.nextNum1 = this.nextNum3;
+      this.nextNum2 = this.nextNum4;
+      this.nextNum3 = -1;
+      this.nextNum4 = -1;
+    } else if (len === 3) {
+      this.nextNum1 = this.nextNum4;
+      this.nextNum2 = -1;
+      this.nextNum3 = -1;
+      this.nextNum4 = -1;
+    } else {
+      this.nextNum1 = -1;
+      this.nextNum2 = -1;
+      this.nextNum3 = -1;
+      this.nextNum4 = -1;
     }
 
     ++this.tokenCount;
 
     var result = this.nextToken(expressionStart);
 
-    this.lastStop = this.pos;
+    var stop = this.lastStop = this.pos;
+    var len = this.lastLen = stop - start;
 
     return result;
   },
@@ -335,7 +343,7 @@ Tok.prototype = {
   nextToken: function(expressionStart){
     var pos = this.pos;
     var input = this.input;
-    var c = input.charCodeAt(pos);
+    var c = this.getLastNum(); // this.pos === this.lastStart
 
     var result = -1;
 
@@ -347,7 +355,7 @@ Tok.prototype = {
     else if (this.lineTerminator(c, pos, input)) result = WHITE;
     // forward slash before generic punctuators!
     else if (c === 0x2f) { // / (forward slash)
-      var n = input.charCodeAt(pos+1);
+      var n = this.getLastNum2(); // this.pos === this.lastStart+1
       if (n === 0x2f) result = this.commentSingle(pos, input); // 0x002f=/
       else if (n === 0x2a) result = this.commentMulti(pos, input); // 0x002f=*
       else if (expressionStart) result = this.regex();
@@ -364,8 +372,6 @@ Tok.prototype = {
   },
 
   punctuator: function(c){
-    var input = this.input;
-    var pos = this.pos;
     var len = 0;
 
 //    >>>=,
@@ -376,7 +382,7 @@ Tok.prototype = {
     //  (             )             {             }             [             ]             ;             ,             ?             :
     if (c === 0x28 || c === 0x29 || c === 0x7b || c === 0x7d || c === 0x5b || c === 0x5d || c === 0x3b || c === 0x2c || c === 0x3f || c === 0x3a) len = 1;
     else {
-      var d = input.charCodeAt(pos+1);
+      var d = this.getLastNum2();
 
       if (c === 0x2e) {
         // must check for a number because number parser comes after this
@@ -384,7 +390,7 @@ Tok.prototype = {
       }
       else if (c === 0x3d) {
         if (d === 0x3d) {
-          if (input.charCodeAt(pos+2) === 0x3d) len = 3;
+          if (this.getLastNum3() === 0x3d) len = 3;
           else len = 2;
         }
         else len = 1;
@@ -393,7 +399,7 @@ Tok.prototype = {
       else if (c === 0x3c) {
         if (d === 0x3d) len = 2;
         else if (d === 0x3c) {
-          if (input.charCodeAt(pos+2) === 0x3d) len = 3;
+          if (this.getLastNum3() === 0x3d) len = 3;
           else len = 2;
         }
         else len = 1;
@@ -401,10 +407,10 @@ Tok.prototype = {
       else if (c === 0x3e) {
         if (d === 0x3d) len = 2;
         else if (d === 0x3e) {
-          var e = input.charCodeAt(pos+2);
+          var e = this.getLastNum3();
           if (e === 0x3d) len = 3;
           else if (e === 0x3e) {
-            if (input.charCodeAt(pos+3) === 0x3d) len = 4;
+            if (this.getLastNum4() === 0x3d) len = 4;
             else len = 3;
           }
           else len = 2;
@@ -442,7 +448,7 @@ Tok.prototype = {
       }
       else if (c === 0x21) {
         if (d === 0x3d) {
-          if (input.charCodeAt(pos+2) === 0x3d) len = 3;
+          if (this.getLastNum3() === 0x3d) len = 3;
           else len = 2;
         }
         else len = 1;
@@ -463,16 +469,10 @@ Tok.prototype = {
   punctuatorDiv: function(c,d){
     // cant really be a //, /* or regex because they should have been checked before calling this function
     if (d === 0x3d) this.pos += 2; // /=
-    else {
-      ++this.pos;
-      this.lastNextNum = d;
-    }
+    else ++this.pos;
     return PUNCTUATOR;
   },
   punctuatorTok: function(c){
-    var input = this.input;
-    var pos = this.pos;
-
 //    >>>=,
 //    === !== >>> <<= >>=
 //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
@@ -489,7 +489,7 @@ Tok.prototype = {
     else if (c === 0x3f) return this.puncToken(1, '?');
     else if (c === 0x3a) return this.puncToken(1, ':');
     else {
-      var d = input.charCodeAt(pos+1);
+      var d = this.getLastNum2();
 
       if (c === 0x2e) {
         if (d >= 0x0030 && d <= 0x0039) return false;
@@ -497,7 +497,7 @@ Tok.prototype = {
       }
       else if (c === 0x3d) {
         if (d === 0x3d) {
-          if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '===');
+          if (this.getLastNum3() === 0x3d) return this.puncToken(3, '===');
           return this.puncToken(2, '==');
         }
         return this.puncToken(1, '=');
@@ -506,7 +506,7 @@ Tok.prototype = {
       else if (c === 0x3c) {
         if (d === 0x3d) return this.puncToken(2, '<=');
         if (d === 0x3c) {
-          if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '<<=');
+          if (this.getLastNum3() === 0x3d) return this.puncToken(3, '<<=');
           return this.puncToken(2, '<<');
         }
         return this.puncToken(1, '<');
@@ -514,10 +514,10 @@ Tok.prototype = {
       else if (c === 0x3e) {
         if (d === 0x3d) return this.puncToken(2, '>=');
         if (d === 0x3e) {
-          var e = input.charCodeAt(pos+2);
+          var e = this.getLastNum3();
           if (e === 0x3d) return this.puncToken(3, '>>=');
           if (e === 0x3e) {
-            if (input.charCodeAt(pos+3) === 0x3d) return this.puncToken(4, '>>>=');
+            if (this.getLastNum4() === 0x3d) return this.puncToken(4, '>>>=');
             return this.puncToken(3, '>>>');
           }
           return this.puncToken(2, '>>');
@@ -559,7 +559,7 @@ Tok.prototype = {
       }
       else if (c === 0x21) {
         if (d === 0x3d) {
-          if (input.charCodeAt(pos+2) === 0x3d) return this.puncToken(3, '!==');
+          if (this.getLastNum3() === 0x3d) return this.puncToken(3, '!==');
           return this.puncToken(2, '!=');
         }
         return this.puncToken(1, '~');
@@ -598,11 +598,10 @@ Tok.prototype = {
     } else if (c === 0x000D){
       this.lastNewline = true;
       // handle \r\n normalization here
-      var d = input.charCodeAt(pos+1);
+      var d = this.getLastNum2();
       if (d === 0x000A) {
-        this.pos = pos+2;
+        this.pos = pos + 2;
       } else {
-        this.lastNextNum = d;
         this.pos = pos + 1;
       }
       return WHITE;
@@ -617,10 +616,7 @@ Tok.prototype = {
       if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) break;
     }
     // cache the newline (or eof, whatever)
-    this.lastNextNum = c;
     this.pos = pos;
-
-
 
 //    var rex = this.rexNewlines;
 //    rex.lastIndex = this.pos;
@@ -636,7 +632,8 @@ Tok.prototype = {
   commentMulti: function(pos, input){
     var len = input.length;
     var hasNewline = false;
-    var c,d = input.charCodeAt(pos+=2);
+    var c,d = this.getLastNum3(); // at this point we are reading this.lastStart+2
+    pos += 2;
     while (pos < len) {
       c = d;
       d = input.charCodeAt(++pos);
@@ -734,7 +731,7 @@ Tok.prototype = {
     // leading zero can mean decimal or hex literal
     if (c === 0x0030) this.decOrHex(c, pos, input);
     // 1-9 just means decimal literal
-    else if (c >= 0x0031 && c <= 0x0039) this.decimalNumber(input.charCodeAt(pos+1), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
+    else if (c >= 0x0031 && c <= 0x0039) this.decimalNumber(this.getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
     // dot means decimal, without the leading digits
     else if (c === 0x2e) this.decimalFromDot(c, pos, input); // dot, start of the number
     // yeah, no number. move on.
@@ -746,7 +743,7 @@ Tok.prototype = {
     // numeric is either a decimal or hex
     // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
-    var d = input.charCodeAt(pos+1);
+    var d = this.getLastNum2();
     if (d === 0x0058 || d === 0x0078) { // x or X
       this.hexNumber(pos+2);
     } else {
@@ -780,10 +777,6 @@ Tok.prototype = {
       // rest is optional
       while (c >= 0x30 & c <= 0x39) c = input.charCodeAt(++pos);
     }
-
-    // c will be the first character of the next token. store it
-    // to save us a duplicate call to charCodeAt
-    this.lastNextNum = c;
 
     this.pos = pos;
 
@@ -871,8 +864,6 @@ Tok.prototype = {
     // so we use the remainder parser, which parses the second up to the rest of the identifier
 
     this.pos = this.asciiIdentifierRest(0);
-
-//    this.asciiIdentifier();
   },
   asciiIdentifier: function(c){
     var toAdd = this.asciiIdentifierStart(c);
@@ -885,12 +876,12 @@ Tok.prototype = {
   },
   asciiIdentifierStart: function(c){
     // a-z A-Z $ _ (no number here!)
-    if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x24 || c === 0x5f) {
+    if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c === 0x24) {
       return 1;
       // \uxxxx
     } else if (c === 0x5c) {
       var pos = this.pos;
-      if (this.input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
+      if (this.getLastNum2() === 0x75 && this.unicode(pos+2)) { // \
         return 6;
       } else {
         throw 'No backslash in identifier (xept for \\u). '+this.syntaxError();
@@ -911,13 +902,12 @@ Tok.prototype = {
       var c = input.charCodeAt(pos);
 
       // a-z A-Z 0-9 $ _
-      if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x24 || c === 0x5f) {
+      if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x5f || c === 0x24) {
         ++pos;
         // \uxxxx
       } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
         pos += 6;
       } else {
-        this.lastNextNum = c;
         // tofix: non-ascii identifiers
         break;
       }
@@ -938,8 +928,24 @@ Tok.prototype = {
 //    return val;
   },
   getLastNum: function(){
-    if (this.lastNum === -1) return this.lastNum = this.input.charCodeAt(this.lastStart);
-    return this.lastNum;
+    var n = this.nextNum1;
+    if (n === -1) return this.nextNum1 = this.input.charCodeAt(this.lastStart);
+    return n;
+  },
+  getLastNum2: function(){
+    var n = this.nextNum2;
+    if (n === -1) return this.nextNum2 = this.input.charCodeAt(this.lastStart+1);
+    return n;
+  },
+  getLastNum3: function(){
+    var n = this.nextNum3;
+    if (n === -1) return this.nextNum3 = this.input.charCodeAt(this.lastStart+2);
+    return n;
+  },
+  getLastNum4: function(){
+    var n = this.nextNum4;
+    if (n === -1) return this.nextNum4 = this.input.charCodeAt(this.lastStart+3);
+    return n;
   },
 
   debug: function(){
