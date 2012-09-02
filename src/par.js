@@ -104,7 +104,7 @@ Par.prototype = {
     var tok = this.tok;
     tok.nextPunc();
     do {
-      if (this.isReservedIdentifier()) throw 'var name is reserved';
+      if (this.isReservedIdentifier(false)) throw 'var name is reserved';
       tok.mustBeIdentifier(true);
       if (tok.isNum(0x3d) && tok.lastLen === 1) { // =
         tok.nextExpr();
@@ -119,7 +119,7 @@ Par.prototype = {
     var tok = this.tok;
     tok.nextPunc();
     do {
-      if (this.isReservedIdentifier()) throw 'var name is reserved';
+      if (this.isReservedIdentifier(false)) throw 'var name is reserved';
       tok.mustBeIdentifier(true);
       if (tok.isNum(0x3d) && tok.lastLen === 1) { // =
         tok.nextExpr();
@@ -376,7 +376,7 @@ Par.prototype = {
     var tok = this.tok;
     tok.nextPunc(); // 'function'
     if (tok.isType(IDENTIFIER)) { // name
-      if (this.isReservedIdentifier()) throw 'function name is reserved';
+      if (this.isReservedIdentifier(false)) throw 'function name is reserved';
       tok.nextPunc();
     }
     this.parseFunctionRemainder(-1);
@@ -406,7 +406,7 @@ Par.prototype = {
     var tok = this.tok;
     if (tok.isType(IDENTIFIER)) {
       if (paramCount === 0) throw 'Getters have no parameters';
-      if (this.isReservedIdentifier()) throw 'param name is reserved';
+      if (this.isReservedIdentifier(false)) throw 'param name is reserved';
       tok.next(true); // TOFIX: make this `nextIdentifier` or something...
       // there are only two valid next tokens; either a comma or a closing paren
       while (tok.nextExprIfNum(0x2c)) { // ,
@@ -599,7 +599,7 @@ Par.prototype = {
       if (tok.isNum(0x66) && tok.getLastValue() === 'function') {
         this.parseFunction();
       } else {
-        if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression';
+        if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression';
         tok.nextPunc();
       }
     } else {
@@ -629,7 +629,7 @@ Par.prototype = {
     // of the next token is. otherwise it must still be identifier!
     if (!hasPrefix || tok.isType(IDENTIFIER)) {
       // (see note above; we dont have to check for function here)
-      if (this.isReservedNonValueIdentifier()) throw 'Reserved identifier found in expression. '+tok.syntaxError();
+      if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
       tok.nextPunc();
 
       // now's the time... you just ticked off an identifier, check the current token for being a colon!
@@ -911,7 +911,7 @@ Par.prototype = {
     this.parseExpression(false);
   },
 
-  isReservedIdentifier: function(){
+  isReservedIdentifier: function(ignoreValues){
     // note that this function will return false most of the time
     // if it returns true, a syntax error will probably be thrown
 
@@ -955,8 +955,10 @@ Par.prototype = {
       } else if (c === 0x66) {
         var d = tok.getLastNum2();
         if (d === 0x61) {
+          if (ignoreValues) return false;
           return tok.getLastValue() === 'false';
         } else if (d === 0x75) {
+          if (ignoreValues) return false;
           return tok.getLastValue() === 'function';
         } else if (d === 0x6f) {
           return tok.getLastValue() === 'for';
@@ -975,6 +977,7 @@ Par.prototype = {
       } else if (c === 0x6e) {
         var d = tok.getLastNum2();
         if (d === 0x75) {
+          if (ignoreValues) return false;
           return tok.getLastValue() === 'null';
         } else if (d === 0x65) {
           return tok.getLastValue() === 'new';
@@ -994,113 +997,14 @@ Par.prototype = {
         var d = tok.getLastNum2();
         if (d === 0x68) {
           var id = tok.getLastValue();
-          return id === 'this' || id === 'throw';
+          if (id === 'throw') return true;
+          if (ignoreValues) return false;
+          return id === 'this';
         } else if (d === 0x72) {
           var id = tok.getLastValue();
-          return id === 'true' || id === 'try';
-        } else if (d === 0x79) {
-          return tok.getLastValue() === 'typeof';
-        }
-      } else if (c === 0x76) {
-        var d = tok.getLastNum2();
-        if (d === 0x61) {
-          return tok.getLastValue() === 'var';
-        } else if (d === 0x6f) {
-          return tok.getLastValue() === 'void';
-        }
-      } else if (c === 0x77) {
-        var d = tok.getLastNum2();
-        if (d === 0x68) {
-          return tok.getLastValue() === 'while';
-        } else if (d === 0x69) {
-          return tok.getLastValue() === 'with';
-        }
-      }
-    }
-
-    return false;
-  },
-  isReservedNonValueIdentifier: function(){
-    // same as isReservedIdentifier except not checking for:
-    // function, false, true, this, null
-    // (isValueKeyword will still do that)
-    // note that this function will return false most of the time
-    // if it returns true, a syntax error will probably be thrown
-
-    var tok = this.tok;
-
-    if (tok.lastLen > 1) {
-      // yep, this really makes a difference
-      var c = tok.getLastNum();
-
-      if (c === 0x62) {
-        return tok.getLastNum2() === 0x72 && tok.getLastValue() === 'break';
-      } else if (c === 0x63) {
-        var d = tok.getLastNum2();
-        if (d === 0x61) {
-          var id = tok.getLastValue();
-          return id === 'case' || id === 'catch';
-        } else if (d === 0x6f) {
-          var id = tok.getLastValue();
-          return id === 'continue' || id === 'const';
-        } else if (d === 0x6c) {
-          return tok.getLastValue() === 'class';
-        }
-      } else if (c === 0x64) {
-        var d = tok.getLastNum2();
-        if (d === 0x6f) {
-          return tok.lastLen === 2; // do
-        } else if (d === 0x65) {
-          var id = tok.getLastValue();
-          return id === 'debugger' || id === 'default' || id === 'delete';
-        }
-      } else if (c === 0x65) {
-        var d = tok.getLastNum2();
-        if (d === 0x6c) {
-          return tok.getLastValue() === 'else';
-        } else if (d === 0x6e) {
-          return tok.getLastValue() === 'enum';
-        } else if (d === 0x78) {
-          var id = tok.getLastValue();
-          return id === 'export' || id === 'extends';
-        }
-      } else if (c === 0x66) {
-        var d = tok.getLastNum2();
-        if (d === 0x6f) {
-          return tok.getLastValue() === 'for';
-        } else if (d === 0x69) {
-          return tok.getLastValue() === 'finally';
-        }
-      } else if (c === 0x69) {
-        var d = tok.getLastNum2();
-        if (d === 0x6e) {
-          return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
-        } else if (d === 0x66) {
-          return tok.lastLen === 2; // 'if'
-        } else if (d === 0x6d) {
-          return tok.getLastValue() === 'import';
-        }
-      } else if (c === 0x6e) {
-        if (tok.getLastNum2() === 0x65) {
-          return tok.getLastValue() === 'new';
-        }
-      } else if (c === 0x72) {
-        if (tok.getLastNum2() === 0x65) {
-          return tok.getLastValue() === 'return';
-        }
-      } else if (c === 0x73) {
-        var d = tok.getLastNum2();
-        if (d === 0x77) {
-          return tok.getLastValue() === 'switch';
-        } else if (d === 0x75) {
-          return tok.getLastValue() === 'super';
-        }
-      } else if (c === 0x74) {
-        var d = tok.getLastNum2();
-        if (d === 0x68) {
-          return tok.getLastValue() === 'throw';
-        } else if (d === 0x72) {
-          return tok.getLastValue() === 'try';
+          if (id === 'try') return true;
+          if (ignoreValues) return false;
+          return id === 'true';
         } else if (d === 0x79) {
           return tok.getLastValue() === 'typeof';
         }
@@ -1125,6 +1029,7 @@ Par.prototype = {
   },
   isValueKeyword: function(){
     // returns true if identifier is a value-holding keyword
+    // only called to completely verify a found label. so, almost never.
 
     var tok = this.tok;
     var c = tok.getLastNum();
