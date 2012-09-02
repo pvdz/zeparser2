@@ -1,3 +1,16 @@
+var arr = [];
+var uncached = 0;
+var total = 0;
+var orig = String.prototype.charCodeAt;
+String.prototype.charCodeAt = function(pos){
+  ++total;
+  if (!arr[pos]) {
+    ++uncached;
+    arr[pos] = true;
+  }
+  return orig.call(this, pos);
+};
+
 // indices match slots of the start-regexes (where applicable)
 // this order is determined by regex/parser rules so they are fixed
 var WHITE_SPACE = 1;
@@ -917,7 +930,9 @@ Tok.prototype = {
   },
 
   getLastValue: function(){
-    return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
+    var v = this.lastValue;
+    if (!v) return this.lastValue = this.input.substring(this.lastStart, this.lastStop)
+    return v;
 
 //    // this seems slightly slower
 //    var val = this.lastValue;

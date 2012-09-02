@@ -881,169 +881,209 @@ Par.prototype = {
     // if it returns true, a syntax error will probably be thrown
 
     var tok = this.tok;
-    // yep, this really makes a difference
-    var c = tok.getLastNum();
 
-    if (c === 0x62) {
-      return tok.getLastValue() === 'break';
-    } else if (c === 0x63) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'case' ||
-        identifier === 'catch' ||
-        identifier === 'continue' ||
-        identifier === 'class' ||
-        identifier === 'const'
-      );
-    } else if (c === 0x64) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'do' ||
-        identifier === 'debugger' ||
-        identifier === 'default' ||
-        identifier === 'delete'
-      );
-    } else if (c === 0x65) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'else' ||
-        identifier === 'enum' ||
-        identifier === 'export' ||
-        identifier === 'extends'
-      );
-    } else if (c === 0x66) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'false' ||
-        identifier === 'function' ||
-        identifier === 'for' ||
-        identifier === 'finally'
-      );
-    } else if (c === 0x69) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'instanceof' ||
-        identifier === 'in' ||
-        identifier === 'if' ||
-        identifier === 'import'
-      );
-    } else if (c === 0x6e) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'null' ||
-        identifier === 'new'
-      );
-    } else if (c === 0x72) {
-      return tok.getLastValue() === 'return';
-    } else if (c === 0x73) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'switch' ||
-        identifier === 'super'
-      );
-    } else if (c === 0x74) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'this' ||
-        identifier === 'true' ||
-        identifier === 'typeof' ||
-        identifier === 'throw' ||
-        identifier === 'try'
-      );
-    } else if (c === 0x76) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'var' ||
-        identifier === 'void'
-      );
-    } else if (c === 0x77) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'while' ||
-        identifier === 'with'
-      );
+    if (tok.lastLen > 1) {
+      // yep, this really makes a difference
+      var c = tok.getLastNum();
+
+      if (c === 0x62) {
+        return tok.getLastNum2() === 0x72 && tok.getLastValue() === 'break';
+      } else if (c === 0x63) {
+        var d = tok.getLastNum2();
+        if (d === 0x61) {
+          var id = tok.getLastValue();
+          return id === 'case' || id === 'catch';
+        } else if (d === 0x6f) {
+          var id = tok.getLastValue();
+          return id === 'continue' || id === 'const';
+        } else if (d === 0x6c) {
+          return tok.getLastValue() === 'class';
+        }
+      } else if (c === 0x64) {
+        var d = tok.getLastNum2();
+        if (d === 0x6f) {
+          return tok.lastLen === 2; // do
+        } else if (d === 0x65) {
+          var id = tok.getLastValue();
+          return id === 'debugger' || id === 'default' || id === 'delete';
+        }
+      } else if (c === 0x65) {
+        var d = tok.getLastNum2();
+        if (d === 0x6c) {
+          return tok.getLastValue() === 'else';
+        } else if (d === 0x6e) {
+          return tok.getLastValue() === 'enum';
+        } else if (d === 0x78) {
+          var id = tok.getLastValue();
+          return id === 'export' || id === 'extends';
+        }
+      } else if (c === 0x66) {
+        var d = tok.getLastNum2();
+        if (d === 0x61) {
+          return tok.getLastValue() === 'false';
+        } else if (d === 0x75) {
+          return tok.getLastValue() === 'function';
+        } else if (d === 0x6f) {
+          return tok.getLastValue() === 'for';
+        } else if (d === 0x69) {
+          return tok.getLastValue() === 'finally';
+        }
+      } else if (c === 0x69) {
+        var d = tok.getLastNum2();
+        if (d === 0x6e) {
+          return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
+        } else if (d === 0x66) {
+          return tok.lastLen === 2; // 'if'
+        } else if (d === 0x6d) {
+          return tok.getLastValue() === 'import';
+        }
+      } else if (c === 0x6e) {
+        var d = tok.getLastNum2();
+        if (d === 0x75) {
+          return tok.getLastValue() === 'null';
+        } else if (d === 0x65) {
+          return tok.getLastValue() === 'new';
+        }
+      } else if (c === 0x72) {
+        if (tok.getLastNum2() === 0x65) {
+          return tok.getLastValue() === 'return';
+        }
+      } else if (c === 0x73) {
+        var d = tok.getLastNum2();
+        if (d === 0x77) {
+          return tok.getLastValue() === 'switch';
+        } else if (d === 0x75) {
+          return tok.getLastValue() === 'super';
+        }
+      } else if (c === 0x74) {
+        var d = tok.getLastNum2();
+        if (d === 0x68) {
+          var id = tok.getLastValue();
+          return id === 'this' || id === 'throw';
+        } else if (d === 0x72) {
+          var id = tok.getLastValue();
+          return id === 'true' || id === 'try';
+        } else if (d === 0x79) {
+          return tok.getLastValue() === 'typeof';
+        }
+      } else if (c === 0x76) {
+        var d = tok.getLastNum2();
+        if (d === 0x61) {
+          return tok.getLastValue() === 'var';
+        } else if (d === 0x6f) {
+          return tok.getLastValue() === 'void';
+        }
+      } else if (c === 0x77) {
+        var d = tok.getLastNum2();
+        if (d === 0x68) {
+          return tok.getLastValue() === 'while';
+        } else if (d === 0x69) {
+          return tok.getLastValue() === 'with';
+        }
+      }
     }
 
     return false;
   },
   isReservedNonValueIdentifier: function(){
+    // same as isReservedIdentifier except not checking for:
+    // function, false, true, this, null
+    // (isValueKeyword will still do that)
     // note that this function will return false most of the time
     // if it returns true, a syntax error will probably be thrown
 
     var tok = this.tok;
-    // yep, this really makes a difference
-    var c = tok.getLastNum();
 
-    if (c === 0x62) {
-      return tok.getLastValue() === 'break';
-    } else if (c === 0x63) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'case' ||
-        identifier === 'catch' ||
-        identifier === 'continue' ||
-        identifier === 'class' ||
-        identifier === 'const'
-      );
-    } else if (c === 0x64) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'do' ||
-        identifier === 'debugger' ||
-        identifier === 'default' ||
-        identifier === 'delete'
-      );
-    } else if (c === 0x65) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'else' ||
-        identifier === 'enum' ||
-        identifier === 'export' ||
-        identifier === 'extends'
-      );
-    } else if (c === 0x66) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'for' ||
-        identifier === 'finally'
-      );
-    } else if (c === 0x69) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'instanceof' ||
-        identifier === 'in' ||
-        identifier === 'if' ||
-        identifier === 'import'
-      );
-    } else if (c === 0x6e) {
-      return tok.getLastValue() === 'new';
-    } else if (c === 0x72) {
-      return tok.getLastValue() === 'return';
-    } else if (c === 0x73) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'switch' ||
-        identifier === 'super'
-      );
-    } else if (c === 0x74) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'typeof' ||
-        identifier === 'throw' ||
-        identifier === 'try'
-      );
-    } else if (c === 0x76) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'var' ||
-        identifier === 'void'
-      );
-    } else if (c === 0x77) {
-      var identifier = tok.getLastValue();
-      return (
-        identifier === 'while' ||
-        identifier === 'with'
-      );
+    if (tok.lastLen > 1) {
+      // yep, this really makes a difference
+      var c = tok.getLastNum();
+
+      if (c === 0x62) {
+        return tok.getLastNum2() === 0x72 && tok.getLastValue() === 'break';
+      } else if (c === 0x63) {
+        var d = tok.getLastNum2();
+        if (d === 0x61) {
+          var id = tok.getLastValue();
+          return id === 'case' || id === 'catch';
+        } else if (d === 0x6f) {
+          var id = tok.getLastValue();
+          return id === 'continue' || id === 'const';
+        } else if (d === 0x6c) {
+          return tok.getLastValue() === 'class';
+        }
+      } else if (c === 0x64) {
+        var d = tok.getLastNum2();
+        if (d === 0x6f) {
+          return tok.lastLen === 2; // do
+        } else if (d === 0x65) {
+          var id = tok.getLastValue();
+          return id === 'debugger' || id === 'default' || id === 'delete';
+        }
+      } else if (c === 0x65) {
+        var d = tok.getLastNum2();
+        if (d === 0x6c) {
+          return tok.getLastValue() === 'else';
+        } else if (d === 0x6e) {
+          return tok.getLastValue() === 'enum';
+        } else if (d === 0x78) {
+          var id = tok.getLastValue();
+          return id === 'export' || id === 'extends';
+        }
+      } else if (c === 0x66) {
+        var d = tok.getLastNum2();
+        if (d === 0x6f) {
+          return tok.getLastValue() === 'for';
+        } else if (d === 0x69) {
+          return tok.getLastValue() === 'finally';
+        }
+      } else if (c === 0x69) {
+        var d = tok.getLastNum2();
+        if (d === 0x6e) {
+          return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
+        } else if (d === 0x66) {
+          return tok.lastLen === 2; // 'if'
+        } else if (d === 0x6d) {
+          return tok.getLastValue() === 'import';
+        }
+      } else if (c === 0x6e) {
+        if (tok.getLastNum2() === 0x65) {
+          return tok.getLastValue() === 'new';
+        }
+      } else if (c === 0x72) {
+        if (tok.getLastNum2() === 0x65) {
+          return tok.getLastValue() === 'return';
+        }
+      } else if (c === 0x73) {
+        var d = tok.getLastNum2();
+        if (d === 0x77) {
+          return tok.getLastValue() === 'switch';
+        } else if (d === 0x75) {
+          return tok.getLastValue() === 'super';
+        }
+      } else if (c === 0x74) {
+        var d = tok.getLastNum2();
+        if (d === 0x68) {
+          return tok.getLastValue() === 'throw';
+        } else if (d === 0x72) {
+          return tok.getLastValue() === 'try';
+        } else if (d === 0x79) {
+          return tok.getLastValue() === 'typeof';
+        }
+      } else if (c === 0x76) {
+        var d = tok.getLastNum2();
+        if (d === 0x61) {
+          return tok.getLastValue() === 'var';
+        } else if (d === 0x6f) {
+          return tok.getLastValue() === 'void';
+        }
+      } else if (c === 0x77) {
+        var d = tok.getLastNum2();
+        if (d === 0x68) {
+          return tok.getLastValue() === 'while';
+        } else if (d === 0x69) {
+          return tok.getLastValue() === 'with';
+        }
+      }
     }
 
     return false;
@@ -1055,7 +1095,7 @@ Par.prototype = {
     var c = tok.getLastNum();
     var identifier;
 
-    return (
+    return tok.lastLen > 4 && (
       // keywords:
       (c === 0x66 && (
         (identifier = tok.getLastValue()) === 'function' ||
