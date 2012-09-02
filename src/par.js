@@ -31,12 +31,6 @@ Par.prototype = {
       return true;
     }
 
-    if (c === 0x3b) { // ; // empty statement
-      // this shouldnt occur very often, but they still do.
-      tok.nextExpr();
-      return true;
-    }
-
     if (
       c === 0x28 || // (
       c === 0x5b || // [
@@ -46,6 +40,12 @@ Par.prototype = {
       c === 0x21    // !
     ) {
       this.parseExpressionStatement();
+      return true;
+    }
+
+    if (c === 0x3b) { // ; // empty statement
+      // this shouldnt occur very often, but they still do.
+      tok.nextExpr();
       return true;
     }
 
@@ -61,25 +61,30 @@ Par.prototype = {
     var tok = this.tok;
 
     // yes, this makes "huge" difference
-    var c = this.tok.getLastNum();
+    var len = tok.lastLen;
 
-    if (c === 0x76 && tok.getLastValue() === 'var') this.parseVar();
-    else if (c === 0x69 && tok.getLastValue() === 'if') this.parseIf(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x64 && tok.getLastValue() === 'do') this.parseDo(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x77 && tok.getLastValue() === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x66 && tok.getLastValue() === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x74 && tok.getLastValue() === 'throw') this.parseThrow();
-    else if (c === 0x73 && tok.getLastValue() === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x74 && tok.getLastValue() === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x64 && tok.getLastValue() === 'debugger') this.parseDebugger();
-    else if (c === 0x77 && tok.getLastValue() === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction();
-    else if (c === 0x63 && tok.getLastValue() === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x62 && tok.getLastValue() === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
-    else if (c === 0x72 && tok.getLastValue() === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
-    // case and default are handled elsewhere
-    else if ((c === 0x63 && tok.getLastValue() === 'case') || (c === 0x64 && tok.getLastValue() === 'default')) return false;
-    else this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
+    if (len < 2 || len > 8) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
+    else { // bcdfirstvw
+      var c = tok.getLastNum();
+//      if (c > 0x66 && c < 0x72 && c != 0x69) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet); // i dunno if this is a good idea
+      if (c === 0x69 && len === 2 && tok.getLastNum2() === 0x66) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x76 && tok.getLastValue() === 'var') this.parseVar();
+      else if (c === 0x72 && tok.getLastValue() === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
+      else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction();
+      else if (c === 0x66 && tok.getLastValue() === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+      // case and default are handled elsewhere
+      else if ((c === 0x63 && tok.getLastValue() === 'case') || (c === 0x64 && tok.getLastValue() === 'default')) return false;
+      else if (c === 0x62 && tok.getLastValue() === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x77 && tok.getLastValue() === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x64 && len === 2 && tok.getLastNum2() === 0x6f) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x74 && tok.getLastValue() === 'throw') this.parseThrow();
+      else if (c === 0x73 && tok.getLastValue() === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x74 && tok.getLastValue() === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x64 && tok.getLastValue() === 'debugger') this.parseDebugger();
+      else if (c === 0x77 && tok.getLastValue() === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
+      else if (c === 0x63 && tok.getLastValue() === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
+      else this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
+    }
 
     return true;
   },
@@ -449,6 +454,8 @@ Par.prototype = {
     return true;
   },
   parseExpressionOrLabel: function(inFunction, inLoop, inSwitch, labelSet){
+    // note that this is a statement that starts with an identifier
+    // (could also be new or delete!)
     var found = this.parseExpressionForLabel(inFunction, inLoop, inSwitch, labelSet);
     if (!found) {
       if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions(); // ,
@@ -550,10 +557,6 @@ Par.prototype = {
   },
   parseExpressionNoIn: function(canHaveAssignment){
     this.parsePrimary(false, true);
-
-    // TOFIX: i think i should drop first while to fix `illegal bare assignment in for-in`
-    //        because `for (x=y in z);` is not valid syntax (`for ((x=y)in z);` would be)
-    //        but note that this is used for both var and non-var for-in's, so check for that.
 
     var parsedAssignment = this.parseAssignments();
 
@@ -685,19 +688,20 @@ Par.prototype = {
     var tok = this.tok;
     var c = tok.getLastNum();
 
-    if (c === 0x6e && tok.getLastValue() === 'new') return true;
-    if (c === 0x74 && tok.getLastValue() === 'typeof') return true;
-    if (c === 0x64 && tok.getLastValue() === 'delete') return true;
-    if (c === 0x2b) {
-      if (tok.lastLen === 1) return true; // +
-      if (tok.getLastNum2() === 0x2b) return true; // ++
-    }
-    if (c === 0x2d) {
+    if (c === 0x74) return tok.getLastValue() === 'typeof';
+    else if (c === 0x6e) return tok.getLastValue() === 'new';
+    else if (c === 0x64) return tok.getLastValue() === 'delete';
+    else if (c === 0x21) return true; // !
+    else if (c === 0x76) return tok.getLastValue() === 'void';
+    else if (c === 0x2d) {
       if (tok.lastLen === 1) return true; // -
       if (tok.getLastNum2() === 0x2d) return true; // --
     }
-    if (c === 0x7e || c === 0x21) return true; // ~ !
-    if (c === 0x76 && tok.getLastValue() === 'void') return true;
+    else if (c === 0x2b) {
+      if (tok.lastLen === 1) return true; // +
+      if (tok.getLastNum2() === 0x2b) return true; // ++
+    }
+    else if (c === 0x7e) return true; // ~
 
     return false;
   },
@@ -740,30 +744,34 @@ Par.prototype = {
     var len = tok.lastLen;
     var c = tok.getLastNum();
 
-    if (len === 1) return c === 0x3d; // =
+    if (len === 1) return tok.getLastNum() === 0x3d; // =
 
     else if (len === 2) {
+      if (tok.getLastNum2() !== 0x3d) return false; // =
       return (
+        c === 0x7c || // |
+        c === 0x26 || // &
         c === 0x2b || // +
         c === 0x2a || // *
+        c === 0x2d || // -
         c === 0x25 || // %
-        c === 0x26 || // &
-        c === 0x7c || // |
         c === 0x5e || // ^
-        c === 0x2f || // /
-        c === 0x2d    // -
-      ) && tok.getLastNum2() === 0x3d; // =
+        c === 0x2f    // /
+      );
     }
 
-    else if (len === 3 && c === 0x3c) {
-      return (tok.getLastNum2() === 0x3c && tok.getLastNum3() === 0x3d); // <<=
-    }
+    else {
+      // these <<= >>= >>>= cases are very rare
 
-    else if (c === 0x3e) {
-      return ((tok.getLastNum2() === 0x3e) && (
-         (len === 4 && tok.getLastNum3() === 0x3e && tok.getLastNum4() === 0x3d) || // >>>=
-         (len === 3 && tok.getLastNum3() === 0x3d) // >>=
-      ));
+      if (len === 3 && tok.getLastNum() === 0x3c) {
+        return (tok.getLastNum2() === 0x3c && tok.getLastNum3() === 0x3d); // <<=
+      }
+      else if (tok.getLastNum() === 0x3e) {
+        return ((tok.getLastNum2() === 0x3e) && (
+          (len === 4 && tok.getLastNum3() === 0x3e && tok.getLastNum4() === 0x3d) || // >>>=
+            (len === 3 && tok.getLastNum3() === 0x3d) // >>=
+          ));
+      }
     }
 
     return false;

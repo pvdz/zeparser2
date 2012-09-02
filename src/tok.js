@@ -1,15 +1,15 @@
-var arr = [];
-var uncached = 0;
-var total = 0;
-var orig = String.prototype.charCodeAt;
-String.prototype.charCodeAt = function(pos){
-  ++total;
-  if (!arr[pos]) {
-    ++uncached;
-    arr[pos] = true;
-  }
-  return orig.call(this, pos);
-};
+//var arr = [];
+//var uncached = 0;
+//var total = 0;
+//var orig = String.prototype.charCodeAt;
+//String.prototype.charCodeAt = function(pos){
+//  ++total;
+//  if (!arr[pos]) {
+//    ++uncached;
+//    arr[pos] = true;
+//  }
+//  return orig.call(this, pos);
+//};
 
 // indices match slots of the start-regexes (where applicable)
 // this order is determined by regex/parser rules so they are fixed
@@ -63,6 +63,7 @@ var Tok = function(input){
   this.nextNum2 = -1;
   this.nextNum3 = -1;
   this.nextNum4 = -1;
+  this.nextLast = -1;
 
   this.tokenCount = 0;
   this.tokens = [];
@@ -116,6 +117,7 @@ Tok.prototype = {
   nextNum2: -1,
   nextNum3: -1,
   nextNum4: -1,
+  nextLast: -1,
 
   /** @property {number} tokenCount Simple counter, includes whitespace */
   tokenCount: 0,
@@ -317,38 +319,38 @@ Tok.prototype = {
   },
   nextWhiteToken: function(expressionStart){
     this.lastValue = null;
+    var lastLen = this.lastLen;
     var start = this.lastStart = this.pos;
     if (this.pos >= this.len) return EOF;
 
     // prepare charCodeAt cache...
-    if (len === 1) {
+    if (lastLen === 1) {
       this.nextNum1 = this.nextNum2;
       this.nextNum2 = this.nextNum3;
       this.nextNum3 = this.nextNum4;
-      this.nextNum4 = -1;
-    } else if (len === 2) {
+    } else if (lastLen === 2) {
       this.nextNum1 = this.nextNum3;
       this.nextNum2 = this.nextNum4;
       this.nextNum3 = -1;
-      this.nextNum4 = -1;
-    } else if (len === 3) {
+    } else if (lastLen === 3) {
       this.nextNum1 = this.nextNum4;
       this.nextNum2 = -1;
       this.nextNum3 = -1;
-      this.nextNum4 = -1;
     } else {
       this.nextNum1 = -1;
       this.nextNum2 = -1;
       this.nextNum3 = -1;
-      this.nextNum4 = -1;
     }
+    this.nextNum4 = -1;
+//    if (this.nextNum1 < 0) this.nextNum1 = this.nextLast;
+//    this.nextLast = -1;
 
     ++this.tokenCount;
 
     var result = this.nextToken(expressionStart);
 
     var stop = this.lastStop = this.pos;
-    var len = this.lastLen = stop - start;
+    this.lastLen = stop - start;
 
     return result;
   },
@@ -386,94 +388,103 @@ Tok.prototype = {
 
   punctuator: function(c){
     var len = 0;
-
 //    >>>=,
 //    === !== >>> <<= >>=
 //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
 //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
 
-    //  (             )             {             }             [             ]             ;             ,             ?             :
-    if (c === 0x28 || c === 0x29 || c === 0x7b || c === 0x7d || c === 0x5b || c === 0x5d || c === 0x3b || c === 0x2c || c === 0x3f || c === 0x3a) len = 1;
+    //  (             )             ;             ,             {             }             :             [             ]             ?
+    if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f) len = 1;
     else {
       var d = this.getLastNum2();
 
-      if (c === 0x2e) {
+      if (c === 0x2e) { // .
         // must check for a number because number parser comes after this
         if (d < 0x0030 || d > 0x0039) len = 1;
       }
-      else if (c === 0x3d) {
+      else if (c === 0x3d) { // =
         if (d === 0x3d) {
-          if (this.getLastNum3() === 0x3d) len = 3;
+          var e = this.getLastNum3();
+          if (e === 0x3d) len = 3;
+          else  len = 2;
+        }
+        else len = 1;
+      }
+      else if (c === 0x2b) { // +
+        if (d === 0x3d || d === 0x2b) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x21) { // !
+        if (d === 0x3d) {
+          var e = this.getLastNum3();
+          if (e === 0x3d) len = 3;
           else len = 2;
         }
         else len = 1;
       }
-
-      else if (c === 0x3c) {
+      else if (c === 0x26) { // &
+        if (d === 0x3d || d === 0x26) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x7c) { // |
+        if (d === 0x3d || d === 0x7c) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x2d) { // -
+        if (d === 0x3d || d === 0x2d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x3c) { // <
         if (d === 0x3d) len = 2;
         else if (d === 0x3c) {
-          if (this.getLastNum3() === 0x3d) len = 3;
+          var e = this.getLastNum3();
+          if (e === 0x3d) len = 3;
           else len = 2;
         }
+        else {
+          len = 1;
+        }
+      }
+      else if (c === 0x2a) { // *
+        if (d === 0x3d) len = 2;
         else len = 1;
       }
-      else if (c === 0x3e) {
+      else if (c === 0x3e) { // >
         if (d === 0x3d) len = 2;
         else if (d === 0x3e) {
           var e = this.getLastNum3();
           if (e === 0x3d) len = 3;
           else if (e === 0x3e) {
-            if (this.getLastNum4() === 0x3d) len = 4;
-            else len = 3;
+            var f = this.getLastNum4();
+            if (f === 0x3d) len = 4;
+            else  len = 3;
           }
-          else len = 2;
+          else {
+            len = 2;
+          }
         }
-        else len = 1;
-      }
-
-      else if (c === 0x2b) {
-        if (d === 0x3d || d === 0x2b) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x2d) {
-        if (d === 0x3d || d === 0x2d) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x2a) {
-        if (d === 0x3d) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x25) {
-        if (d === 0x3d) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x7c) {
-        if (d === 0x3d || d === 0x7c) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x26) {
-        if (d === 0x3d || d === 0x26) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x5e) {
-        if (d === 0x3d) len = 2;
-        else len = 1;
-      }
-      else if (c === 0x21) {
-        if (d === 0x3d) {
-          if (this.getLastNum3() === 0x3d) len = 3;
-          else len = 2;
+        else {
+          len = 1;
         }
-        else len = 1;
       }
-      else if (c === 0x7e) {
+      else if (c === 0x25) { // %
         if (d === 0x3d) len = 2;
         else len = 1;
       }
+      else if (c === 0x5e) { // ^
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+      else if (c === 0x7e) { // ~
+        if (d === 0x3d) len = 2;
+        else len = 1;
+      }
+      // else it wasnt a punctuator after all
     }
 
     if (len) {
       this.pos += len;
+
       return true;
     } else {
       return false;
@@ -597,18 +608,14 @@ Tok.prototype = {
   },
 
   whitespace: function(c){
-    if (c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x0020 || c === 0x00A0 || c === 0xFFFF) {
+    if (c === 0x0020 || c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x00A0 || c === 0xFFFF) {
       ++this.pos;
       return true;
     }
     return false;
   },
   lineTerminator: function(c, pos, input){
-    if (c === 0x000A || c === 0x2028 || c === 0x2029) {
-      this.lastNewline = true;
-      this.pos = pos + 1;
-      return WHITE;
-    } else if (c === 0x000D){
+    if (c === 0x000D){
       this.lastNewline = true;
       // handle \r\n normalization here
       var d = this.getLastNum2();
@@ -617,7 +624,11 @@ Tok.prototype = {
       } else {
         this.pos = pos + 1;
       }
-      return WHITE;
+      return true;
+    } else if (c === 0x000A || c === 0x2028 || c === 0x2029) {
+      this.lastNewline = true;
+      this.pos = pos + 1;
+      return true;
     }
     return false;
   },
@@ -629,6 +640,8 @@ Tok.prototype = {
       if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) break;
     }
     // cache the newline (or eof, whatever)
+    this.nextLast = c;
+
     this.pos = pos;
 
 //    var rex = this.rexNewlines;
