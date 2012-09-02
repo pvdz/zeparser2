@@ -911,6 +911,15 @@ Par.prototype = {
     this.parseExpression(false);
   },
 
+  /**
+   * Return whether the current token is a reserved identifier or not.
+   * Presumably only called on identifiers. If the passed on boolean is
+   * true, the keywords [true, false, this, function, null] are ignored
+   * for this check. This will be the case when parsing expression vars.
+   *
+   * @param {boolean} ignoreValues When true, still returns false even if token is one of [true, false, this, function, null]
+   * @return {boolean}
+   */
   isReservedIdentifier: function(ignoreValues){
     // note that this function will return false most of the time
     // if it returns true, a syntax error will probably be thrown
@@ -918,109 +927,113 @@ Par.prototype = {
     var tok = this.tok;
 
     if (tok.lastLen > 1) {
-      // yep, this really makes a difference
       var c = tok.getLastNum();
-
-      if (c === 0x62) {
-        return tok.getLastNum2() === 0x72 && tok.getLastValue() === 'break';
-      } else if (c === 0x63) {
-        var d = tok.getLastNum2();
-        if (d === 0x61) {
-          var id = tok.getLastValue();
-          return id === 'case' || id === 'catch';
-        } else if (d === 0x6f) {
-          var id = tok.getLastValue();
-          return id === 'continue' || id === 'const';
-        } else if (d === 0x6c) {
-          return tok.getLastValue() === 'class';
-        }
-      } else if (c === 0x64) {
-        var d = tok.getLastNum2();
-        if (d === 0x6f) {
-          return tok.lastLen === 2; // do
-        } else if (d === 0x65) {
-          var id = tok.getLastValue();
-          return id === 'debugger' || id === 'default' || id === 'delete';
-        }
-      } else if (c === 0x65) {
-        var d = tok.getLastNum2();
-        if (d === 0x6c) {
-          return tok.getLastValue() === 'else';
-        } else if (d === 0x6e) {
-          return tok.getLastValue() === 'enum';
-        } else if (d === 0x78) {
-          var id = tok.getLastValue();
-          return id === 'export' || id === 'extends';
-        }
-      } else if (c === 0x66) {
-        var d = tok.getLastNum2();
-        if (d === 0x61) {
-          if (ignoreValues) return false;
-          return tok.getLastValue() === 'false';
-        } else if (d === 0x75) {
-          if (ignoreValues) return false;
-          return tok.getLastValue() === 'function';
-        } else if (d === 0x6f) {
-          return tok.getLastValue() === 'for';
-        } else if (d === 0x69) {
-          return tok.getLastValue() === 'finally';
-        }
-      } else if (c === 0x69) {
-        var d = tok.getLastNum2();
-        if (d === 0x6e) {
-          return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
-        } else if (d === 0x66) {
-          return tok.lastLen === 2; // 'if'
-        } else if (d === 0x6d) {
-          return tok.getLastValue() === 'import';
-        }
-      } else if (c === 0x6e) {
-        var d = tok.getLastNum2();
-        if (d === 0x75) {
-          if (ignoreValues) return false;
-          return tok.getLastValue() === 'null';
-        } else if (d === 0x65) {
-          return tok.getLastValue() === 'new';
-        }
-      } else if (c === 0x72) {
-        if (tok.getLastNum2() === 0x65) {
-          return tok.getLastValue() === 'return';
-        }
-      } else if (c === 0x73) {
-        var d = tok.getLastNum2();
-        if (d === 0x77) {
-          return tok.getLastValue() === 'switch';
-        } else if (d === 0x75) {
-          return tok.getLastValue() === 'super';
-        }
-      } else if (c === 0x74) {
-        var d = tok.getLastNum2();
-        if (d === 0x68) {
-          var id = tok.getLastValue();
-          if (id === 'throw') return true;
-          if (ignoreValues) return false;
-          return id === 'this';
-        } else if (d === 0x72) {
-          var id = tok.getLastValue();
-          if (id === 'try') return true;
-          if (ignoreValues) return false;
-          return id === 'true';
-        } else if (d === 0x79) {
-          return tok.getLastValue() === 'typeof';
-        }
-      } else if (c === 0x76) {
-        var d = tok.getLastNum2();
-        if (d === 0x61) {
-          return tok.getLastValue() === 'var';
-        } else if (d === 0x6f) {
-          return tok.getLastValue() === 'void';
-        }
-      } else if (c === 0x77) {
-        var d = tok.getLastNum2();
-        if (d === 0x68) {
-          return tok.getLastValue() === 'while';
-        } else if (d === 0x69) {
-          return tok.getLastValue() === 'with';
+      if (c >= 0x61 && c <= 0x77) {
+        if (c < 0x67 || c > 0x71) {
+          if (c === 0x74) {
+            var d = tok.getLastNum2();
+            if (d === 0x68) {
+              var id = tok.getLastValue();
+              if (id === 'this') return !ignoreValues;
+              return id === 'throw';
+            } else if (d === 0x72) {
+              var id = tok.getLastValue();
+              if (id === 'true') return !ignoreValues;
+              if (id === 'try') return true;
+            } else if (d === 0x79) {
+              return tok.getLastValue() === 'typeof';
+            }
+          } else if (c === 0x73) {
+            var d = tok.getLastNum2();
+            if (d === 0x77) {
+              return tok.getLastValue() === 'switch';
+            } else if (d === 0x75) {
+              return tok.getLastValue() === 'super';
+            } else {
+              return false;
+            }
+          } else if (c === 0x66) {
+            var d = tok.getLastNum2();
+            if (d === 0x61) {
+              if (ignoreValues) return false;
+              return tok.getLastValue() === 'false';
+            } else if (d === 0x75) {
+              if (ignoreValues) return false;
+              return tok.getLastValue() === 'function';
+            } else if (d === 0x6f) {
+              return tok.getLastValue() === 'for';
+            } else if (d === 0x69) {
+              return tok.getLastValue() === 'finally';
+            }
+          } else if (c === 0x64) {
+            var d = tok.getLastNum2();
+            if (d === 0x6f) {
+              return tok.lastLen === 2; // do
+            } else if (d === 0x65) {
+              var id = tok.getLastValue();
+              return id === 'debugger' || id === 'default' || id === 'delete';
+            }
+          } else if (c === 0x65) {
+            var d = tok.getLastNum2();
+            if (d === 0x6c) {
+              return tok.getLastValue() === 'else';
+            } else if (d === 0x6e) {
+              return tok.getLastValue() === 'enum';
+            } else if (d === 0x78) {
+              var id = tok.getLastValue();
+              return id === 'export' || id === 'extends';
+            }
+          } else if (c === 0x62) {
+            return tok.getLastNum2() === 0x72 && tok.getLastValue() === 'break';
+          } else if (c === 0x63) {
+            var d = tok.getLastNum2();
+            if (d === 0x61) {
+              var id = tok.getLastValue();
+              return id === 'case' || id === 'catch';
+            } else if (d === 0x6f) {
+              var id = tok.getLastValue();
+              return id === 'continue' || id === 'const';
+            } else if (d === 0x6c) {
+              return tok.getLastValue() === 'class';
+            }
+          } else if (c === 0x72) {
+            if (tok.getLastNum2() === 0x65) {
+              return tok.getLastValue() === 'return';
+            }
+          } else if (c === 0x76) {
+            var d = tok.getLastNum2();
+            if (d === 0x61) {
+              return tok.getLastValue() === 'var';
+            } else if (d === 0x6f) {
+              return tok.getLastValue() === 'void';
+            }
+          } else if (c === 0x77) {
+            var d = tok.getLastNum2();
+            if (d === 0x68) {
+              return tok.getLastValue() === 'while';
+            } else if (d === 0x69) {
+              return tok.getLastValue() === 'with';
+            }
+          }
+        // we checked for b-f and r-w, but must not forget
+        // to check n and i:
+        } else if (c === 0x6e) {
+          var d = tok.getLastNum2();
+          if (d === 0x75) {
+            if (ignoreValues) return false;
+            return tok.getLastValue() === 'null';
+          } else if (d === 0x65) {
+            return tok.getLastValue() === 'new';
+          }
+        } else if (c === 0x69) {
+          var d = tok.getLastNum2();
+          if (d === 0x6e) {
+            return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
+          } else if (d === 0x66) {
+            return tok.lastLen === 2; // 'if'
+          } else if (d === 0x6d) {
+            return tok.getLastValue() === 'import';
+          }
         }
       }
     }
