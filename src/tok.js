@@ -91,7 +91,7 @@ Tok[WHITE] = 'white';
 
 Tok.prototype = {
   /** @property {string} input */
-  input: null,
+  input: '',
   /** @property {number} len */
   len: 0,
   /** @property {number} pos */
@@ -107,7 +107,7 @@ Tok.prototype = {
   lastLen: 0,
   /** @property {number} lastType Type of the last token */
   lastType: -1,
-  /** @property {string|null} lastValue String value of the last token, or null if not yet fetched (see this.getLastValue()) */
+  /** @property {string} lastValue String value of the last token, or empty string if not yet fetched (see this.getLastValue()) */
   lastValue: '',
   /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
   lastNewline: false,
@@ -368,6 +368,7 @@ Tok.prototype = {
     // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
     if (this.whitespace(c)) result = WHITE;
     else if (this.lineTerminator(c, pos, input)) result = WHITE;
+    else if (this.asciiIdentifier(c)) result = IDENTIFIER;
     // forward slash before generic punctuators!
     else if (c === 0x2f) { // / (forward slash)
       var n = this.getLastNum2(); // this.pos === this.lastStart+1
@@ -377,7 +378,6 @@ Tok.prototype = {
       else result = this.punctuatorDiv(c,n);
     }
     else if (this.punctuator(c)) result = PUNCTUATOR;
-    else if (this.asciiIdentifier(c)) result = IDENTIFIER; // if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x24 || c === 0x5f) return ;
     else if (c === 0x27) result = this.stringSingle();
     else if (c === 0x22) result = this.stringDouble();
     else if (this.number(c,pos,input)) result = NUMBER; // number after punctuator, check algorithm if that changes!
