@@ -13,15 +13,12 @@
 	</head>
 	<body>
 		(c) qfox.nl<br/>
-        Testing parser:<br/>
-        <script src="../src/regex-start-substring.js"></script>
-        <script src="../src/regex-string.js"></script>
-        <script src="../src/regex-number.js"></script>
-        <script src="../src/regex-identifier.js"></script>
-        <script src="../src/tok.js"></script>
-        <script src="../src/par.js"></script>
-		<script src="tests.js"></script>
-		<script>
+    Testing parser:<br/>
+    <script src="../src/tok.js" type="profile"></script>
+    <script src="../src/par.js" type="profile"></script>
+
+		<script src="tests.js" type="noprofile"></script>
+		<script type="noprofile">
       new function(){
         var out = document.createElement('pre');
         document.body.appendChild(out);
@@ -99,5 +96,6 @@
         console.log("Parser test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
       };
 		</script>
+    <script src="../../heatfiler/build/heatfiler.dev.js"></script>
 	</body>
 </html>

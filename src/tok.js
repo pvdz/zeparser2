@@ -1,16 +1,3 @@
-//var arr = [];
-//var uncached = 0;
-//var total = 0;
-//var orig = String.prototype.charCodeAt;
-//String.prototype.charCodeAt = function(pos){
-//  ++total;
-//  if (!arr[pos]) {
-//    ++uncached;
-//    arr[pos] = true;
-//  }
-//  return orig.call(this, pos);
-//};
-
 // indices match slots of the start-regexes (where applicable)
 // this order is determined by regex/parser rules so they are fixed
 var WHITE_SPACE = 1;
@@ -62,8 +49,6 @@ var Tok = function(input){
   this.nextNum1 = -1;
   this.nextNum2 = -1;
   this.nextNum3 = -1;
-  this.nextNum4 = -1;
-  this.nextLast = -1;
 
   this.tokenCount = 0;
   this.tokens = [];
@@ -116,8 +101,6 @@ Tok.prototype = {
   nextNum1: -1,
   nextNum2: -1,
   nextNum3: -1,
-  nextNum4: -1,
-  nextLast: -1,
 
   /** @property {number} tokenCount Simple counter, includes whitespace */
   tokenCount: 0,
@@ -259,21 +242,6 @@ Tok.prototype = {
     }
   },
   /**
-   * Parser requires the current token to be of
-   * a certain type. Parse the next token if that's
-   * the case. Throw a syntax error otherwise.
-   *
-   * @param {number} type
-   * @param {boolean} nextIsExpr=false
-   */
-  mustBeType: function(type, nextIsExpr){
-    if (this.isType(type)) {
-      this.next(nextIsExpr);
-    } else {
-      throw this.syntaxError(type);
-    }
-  },
-  /**
    * Parser requires the current token to be this
    * string. Parse the next token if that's the
    * case. Throw a syntax error otherwise.
@@ -327,23 +295,17 @@ Tok.prototype = {
     if (lastLen === 1) {
       this.nextNum1 = this.nextNum2;
       this.nextNum2 = this.nextNum3;
-      this.nextNum3 = this.nextNum4;
     } else if (lastLen === 2) {
       this.nextNum1 = this.nextNum3;
-      this.nextNum2 = this.nextNum4;
-      this.nextNum3 = -1;
-    } else if (lastLen === 3) {
-      this.nextNum1 = this.nextNum4;
       this.nextNum2 = -1;
-      this.nextNum3 = -1;
+    } else if (lastLen === 3) {
+      this.nextNum1 = -1;
+      this.nextNum2 = -1;
     } else {
       this.nextNum1 = -1;
       this.nextNum2 = -1;
-      this.nextNum3 = -1;
     }
-    this.nextNum4 = -1;
-//    if (this.nextNum1 < 0) this.nextNum1 = this.nextLast;
-//    this.nextLast = -1;
+    this.nextNum3 = -1;
 
     ++this.tokenCount;
 
@@ -393,8 +355,8 @@ Tok.prototype = {
 //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
 //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
 
-    //  (             )             ;             ,             {             }             :             [             ]             ?
-    if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f) len = 1;
+    //  (             )             ;             ,             {             }             :             [             ]             ?             ~
+    if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f || c === 0x7e) len = 1;
     else {
       var d = this.getLastNum2();
 
@@ -475,10 +437,6 @@ Tok.prototype = {
         if (d === 0x3d) len = 2;
         else len = 1;
       }
-      else if (c === 0x7e) { // ~
-        if (d === 0x3d) len = 2;
-        else len = 1;
-      }
       // else it wasnt a punctuator after all
     }
 
@@ -530,9 +488,6 @@ Tok.prototype = {
       c = input.charCodeAt(++pos);
       if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) break;
     }
-    // cache the newline (or eof, whatever)
-    this.nextLast = c;
-
     this.pos = pos;
 
 //    var rex = this.rexNewlines;
@@ -702,10 +657,6 @@ Tok.prototype = {
 
     return NUMBER;
   },
-  decimalSub: function(c, pos, input){
-    while (c >= 0x30 & c <= 0x39) c = input.charCodeAt(++pos);
-    return pos;
-  },
   hexNumber: function(pos){
     var input = this.input;
     var len = input.length;
@@ -863,9 +814,7 @@ Tok.prototype = {
     return n;
   },
   getLastNum4: function(){
-    var n = this.nextNum4;
-    if (n === -1) return this.nextNum4 = this.input.charCodeAt(this.lastStart+3);
-    return n;
+    return this.input.charCodeAt(this.lastStart+3);
   },
 
   debug: function(){

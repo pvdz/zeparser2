@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
+console.log("Building...");
+
 var fs = require('fs');
 var path = require('path');
 var root = path.resolve(__dirname+'/..');
 
 var files = [
-    'substringStartRegex.js',
-    'stringBodyRegex.js',
-    'numberRegex.js',
     'tok.js',
     'par.js'
 ];
@@ -19,9 +18,9 @@ var all = files.map(function(f){
 }).join('');
 
 // wrap in nodejs/browser way of exposing an exports object
-all = '(function(exports){'+all+'})(typeof window == \'undefined\' ? module.exports : window);\n';
+all = '(function(exports){'+all+'})(this);\n';
 
 
-console.log('writing to build/zp.js');
+console.log('Writing build to build/zp.js');
 fs.writeFileSync(root+'/build/zp.js', all);
-console.log('done!');
+console.log('Done!');

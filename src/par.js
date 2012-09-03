@@ -379,14 +379,6 @@ Par.prototype = {
     }
     this.parseFunctionRemainder(-1);
   },
-  parseNamedFunction: function(hasName){
-    // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
-
-    var tok = this.tok;
-    tok.nextPunc(); // 'function'
-    tok.mustBeIdentifier(false); // name
-    this.parseFunctionRemainder(-1);
-  },
   /**
    * Parse the function param list and body
    *
@@ -461,24 +453,31 @@ Par.prototype = {
     }
   },
   parseExpressionForLabel: function(inFunction, inLoop, inSwitch, labelSet){
-    // dont check for label if you can already see it'll fail
-    var checkLabel = this.tok.isType(IDENTIFIER);
-    if (checkLabel) {
-      var labelName = this.tok.getLastValue();
+    // this method is only called at the start of
+    // a statement that starts with an identifier.
+    var labelName = this.tok.getLastValue();
 
-      // ugly but mandatory label check
-      // if this is a label, the parsePrimary parser
-      // will have bailed when seeing the colon.
-      if (this.parsePrimaryOrLabel() && this.tok.nextExprIfNum(0x3a)) { // :
-        labelSet.push(labelName);
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
-        labelSet.pop();
-        return true;
+    // ugly but mandatory label check
+    // if this is a label, the parsePrimary parser
+    // will have bailed when seeing the colon.
+    if (this.parsePrimaryOrLabel() && this.tok.nextExprIfNum(0x3a)) { // :
+
+      // the label will have been checked for being a reserved keyword
+      // except for the value keywords. so we need to do that here.
+      // no need to check for function, because that cant occur here.
+      // note that it's pretty rare for the parser to reach this
+      // place, so i dont feel it's very important to take the uber
+      // optimized route. simple string comparisons will suffice.
+      // note that this is already confirmed to be used as a label so
+      // if any of these checks match, an error will be thrown.
+      if (labelName === 'true' || labelName === 'false' || labelName === 'this' || labelName === 'null') {
+        throw 'Reserved identifier found in label. '+this.tok.syntaxError();
       }
-    } else {
-      // parse a value and then just random stuff
-      this.parsePrimary(false, false);
-      this.parseNonAssignments();
+
+      labelSet.push(labelName);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+      labelSet.pop();
+      return true;
     }
 
     this.parseAssignments();
@@ -509,7 +508,6 @@ Par.prototype = {
     this.parseAssignments();
     this.parseNonAssignments();
 
-    if (!optional && tok.pos === pos && !tok.isType(EOF)) throw 'Missing expression. '+tok.syntaxError();
     return tok.pos !== pos;
   },
   parseAssignments: function(){
@@ -562,7 +560,6 @@ Par.prototype = {
     // keep parsing non-assignment binary/ternary ops unless `in`
     while (true) {
       if (this.isBinaryOperator()) {
-        // TOFIX: check the `n` as a number too...
         // rationale for checking number; this is the `in` check which will succeed
         // about 50% of the time (stats from 8mb of various js). the other time it
         // will check for a primary. it's therefore more likely that an isnum will
@@ -613,10 +610,6 @@ Par.prototype = {
     //       the main statement start parsing method. So we dont have
     //       to check for the function keyword here; it cant occur.
     var tok = this.tok;
-    if (tok.isType(EOF)) throw 'Missing expression part or label. '+tok.syntaxError();
-    // parses parts of an expression without any binary operators
-
-    var pos = tok.pos;
 
     // if we parse any unary, we wont have to check for label
     var hasPrefix = this.parseUnary();
@@ -626,7 +619,10 @@ Par.prototype = {
     // if parseUnary returns true, we wont know what the type
     // of the next token is. otherwise it must still be identifier!
     if (!hasPrefix || tok.isType(IDENTIFIER)) {
-      // (see note above; we dont have to check for function here)
+      // in fact... we dont have to check for any of the statement
+      // identifiers (break, return, if) because parseIdentifierStatement
+      // will already have ensured a different code path in that case!
+      // TOFIX: check how often this is called and whether it's worth investigating...
       if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
       tok.nextPunc();
 
@@ -635,24 +631,14 @@ Par.prototype = {
       if (!hasPrefix) {
         // 3a = :
         if (tok.isNum(0x3a)) {
-          if (this.isValueKeyword()) throw 'Reserved identifier found in label. '+tok.syntaxError();
           return true;
         }
       }
     } else {
-      // TOFIX: does this ever happen? if the next token was an identifier and this is the statement start
-      //        there must have been a unary operator preceeding it in order to get to here. in that case
-      //        it must be one of delete, new, or void. i suppose it could be possible to parse a(ny) value
-      //        in the case of `void`. it could be `this` in the case of `delete` (and `new`, though that's
-      //        an extreme edge case... it would mean `this` is a function. when does that happen.)
-      //        However, note that these fizzles are very rare. in the 8mb test suite, it only _reaches_
-      //        here five times (always turned out to be a group). I mean, not quite the biggest possible gain.
       this.parsePrimaryValue(false, false);
     }
 
     this.parsePrimarySuffixes();
-
-    if (tok.pos === pos && !tok.isType(EOF)) throw 'Missing expression part. '+tok.syntaxError();
 
     return false;
   },
@@ -922,6 +908,8 @@ Par.prototype = {
     // note that this function will return false most of the time
     // if it returns true, a syntax error will probably be thrown
 
+    // TOFIX: skip statement keywords when checking for label
+
     var tok = this.tok;
 
     if (tok.lastLen > 1) {
@@ -956,7 +944,11 @@ Par.prototype = {
               if (ignoreValues) return false;
               return tok.getLastValue() === 'false';
             } else if (d === 0x75) {
-              if (ignoreValues) return false;
+              // this is an ignoreValues case as well, but can never be triggered
+              // rationale: this function is only called with ignoreValues true
+              // when checking a label. labels are first words of statements. if
+              // function is the first word of a statement, it will never branch
+              // to parsing an identifier expression statement. and never get here.
               return tok.getLastValue() === 'function';
             } else if (d === 0x6f) {
               return tok.getLastValue() === 'for';
@@ -1038,25 +1030,4 @@ Par.prototype = {
 
     return false;
   },
-  isValueKeyword: function(){
-    // returns true if identifier is a value-holding keyword
-    // only called to completely verify a found label. so, almost never.
-
-    var tok = this.tok;
-    var c = tok.getLastNum();
-    var identifier;
-
-    return tok.lastLen > 4 && (
-      // keywords:
-      (c === 0x66 && (
-        (identifier = tok.getLastValue()) === 'function' ||
-        identifier === 'false'
-      )) ||
-      (c === 0x74 && (
-        (identifier = tok.getLastValue()) === 'this' ||
-        identifier === 'true'
-      )) ||
-      (c === 0x6e && (identifier = tok.getLastValue()) === 'null')
-    );
-  }
 };
