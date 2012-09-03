@@ -13,10 +13,9 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script>
-        var testString = '5';
+        var testString = 'foo();';
         console.log("testing", [testString.replace(/\n/g,'\u23CE')]);
         var par = new Par(testString);
-        debugger
         par.run();
         console.log("finished...", Tok[par.tok.lastBlack]);
     </script>
