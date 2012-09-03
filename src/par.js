@@ -133,7 +133,7 @@ Par.prototype = {
 
     this.tok.nextPunc();
     this.parseStatementHeader();
-    this.parseStatement(inFunction, inLoop, inSwitch, labelSet);
+    this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
 
     this.parseElse(inFunction, inLoop, inSwitch, labelSet);
 
@@ -145,7 +145,7 @@ Par.prototype = {
     var tok = this.tok;
     if (tok.getLastValue() === 'else') {
       tok.nextExpr();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
     }
   },
   parseDo: function(inFunction, inLoop, inSwitch, labelSet){
@@ -153,7 +153,7 @@ Par.prototype = {
 
     var tok = this.tok;
     tok.nextExpr(); // do
-    this.parseStatement(inFunction, true, inSwitch, labelSet);
+    this.parseStatement(inFunction, true, inSwitch, labelSet, false);
     tok.mustBeString('while', false);
     tok.mustBeNum(0x28, true); // (
     this.parseExpressions();
@@ -165,7 +165,7 @@ Par.prototype = {
 
     this.tok.nextPunc();
     this.parseStatementHeader();
-    this.parseStatement(inFunction, true, inSwitch, labelSet);
+    this.parseStatement(inFunction, true, inSwitch, labelSet, false);
   },
   parseFor: function(inFunction, inLoop, inSwitch, labelSet){
     // for ( <expr-no-in-=> in <exprs> ) <stmt>
@@ -190,7 +190,7 @@ Par.prototype = {
     }
 
     tok.mustBeNum(0x29, true); // )
-    this.parseStatement(inFunction, true, inSwitch, labelSet);
+    this.parseStatement(inFunction, true, inSwitch, labelSet, false);
   },
   parseForEachHeader: function(){
     // <expr> ; <expr> ) <stmt>
@@ -234,9 +234,7 @@ Par.prototype = {
     var tok = this.tok;
     tok.nextPunc(); // token after break cannot be a regex, either way.
 
-    var noLabel = tok.lastNewline || !tok.isType(IDENTIFIER);
-
-    if (noLabel) {
+    if (tok.lastNewline || !tok.isType(IDENTIFIER)) { // no label after break?
       if (!inLoop && !inSwitch) {
         // break without label
         throw 'Break without value only in loops or switches. '+tok.syntaxError();
@@ -368,7 +366,7 @@ Par.prototype = {
 
     this.tok.nextPunc();
     this.parseStatementHeader();
-    this.parseStatement(inFunction, inLoop, inSwitch, labelSet);
+    this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
   },
   parseFunction: function(){
     // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
@@ -473,7 +471,7 @@ Par.prototype = {
       // will have bailed when seeing the colon.
       if (this.parsePrimaryOrLabel() && this.tok.nextExprIfNum(0x3a)) { // :
         labelSet.push(labelName);
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet);
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
         labelSet.pop();
         return true;
       }
