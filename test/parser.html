@@ -1,24 +1,24 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Parser Test Suite Page</title>
-		<style>
-			input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
-			#cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
-			div { font-size: 11px; font-family: monospace; }
-			.red { background-color: red; color: white; }
-			.green { background-color: green; color: white; }
-			hr { margin: 0; padding: 0; font-size: 1px; }
-		</style>
-	</head>
-	<body>
-		(c) qfox.nl<br/>
+  <head>
+    <title>Parser Test Suite Page</title>
+    <style>
+      input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
+      #cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
+      div { font-size: 11px; font-family: monospace; }
+      .red { background-color: red; color: white; }
+      .green { background-color: green; color: white; }
+      hr { margin: 0; padding: 0; font-size: 1px; }
+    </style>
+  </head>
+  <body>
+    (c) qfox.nl<br/>
     Testing parser:<br/>
-    <script src="../src/tok.js" type="profile"></script>
-    <script src="../src/par.js" type="profile"></script>
+    <script src="../src/tok.js"></script>
+    <script src="../src/par.js"></script>
 
-		<script src="tests.js" type="noprofile"></script>
-		<script type="noprofile">
+    <script src="tests.js"></script>
+    <script>
       new function(){
         var out = document.createElement('pre');
         document.body.appendChild(out);
@@ -95,7 +95,6 @@
         debug("Parser test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
         console.log("Parser test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
       };
-		</script>
-    <script src="../../heatfiler/build/heatfiler.dev.js"></script>
-	</body>
+    </script>
+  </body>
 </html>
