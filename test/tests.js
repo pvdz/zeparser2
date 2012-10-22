@@ -621,6 +621,15 @@ var good = [
 ["function f(){}/1/;", 9, "forward slash after function _declaration_ must be regex"],
 ["var i, x = x\n/x", 14, "division after newline (by @garethheyes)"],
 ["var i, x = x\n/x/i", 16, "double division after newline (by @garethheyes)"],
+
+// series of tests after discussion (https://twitter.com/kuvos/status/260487571623256064):
+["var x=\n/5/", 7, [true, true, true, true, true, true], "var-regex tests (regex assigned to x)"],
+["var x=\n/5/g", 7, [true, true, true, true, true, true], "var-regex tests (regex with flag assigned to x)"],
+["var x=5\n/5", 9, "var-regex tests (5/5=1 :)"],
+["var x=5\n/5/g", 11, "var-regex tests (5/5/g=? :)"],
+["var x=5,x=5\n/5", 13, "var-regex tests (same thing, second var)"],
+["var x=5,x=5\n/5/g", 15, "var-regex tests (same thing, second var)"],
+
 ];
 
 // these are mainly for the parser, of course...
@@ -875,4 +884,19 @@ var bad = [
   ["foo.attr({x","unfinished object literal"],
   ["foo.attr({x:","unfinished object literal"],
   ["foo.attr({x:x","unfinished object literal"],
+
+  // series of tests after discussion (https://twitter.com/kuvos/status/260487571623256064):
+  ["var x\n/5", "var-regex tests (this is always invalid)"],
+  ["var x\n/5/", "var-regex tests (this is always invalid, no asi)"],
+  ["var x\n/5/g", "var-regex tests (this is always invalid, no asi)"],
+  ["var x=\n/5", "var-regex tests (this is always invalid)"],
+  ["var x=5\n/5/", "var-regex tests (no asi)"],
+
+  ["var x=5,\n/5", "var-regex tests"],
+  ["var x=5,\n/5/", "var-regex tests"],
+  ["var x=5,\n/5/g", "var-regex tests"],
+  ["var x=5,x\n/5", "var-regex tests (var name requires = first)"],
+  ["var x=5,x\n/5/", "var-regex tests (no asi)"],
+  ["var x=5,x\n/5/g", "var-regex tests (no asi)"],
+  ["var x=5,x=5\n/5/", "var-regex tests"],
 ];
