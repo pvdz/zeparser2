@@ -619,8 +619,8 @@ var good = [
 
 ["for(;function(){}/1;)break", 14, "forward slash after function _expression_ must be division (by @garethheyes)"],
 ["function f(){}/1/;", 9, "forward slash after function _declaration_ must be regex"],
-["var i, x = x\n/x", 14, "asi only applied once, at eof (by @garethheyes)"],
-["var i, x = x\n/x/i",16,"No semi, this is a continued division(by @garethheyes)"],
+["var i, x = x\n/x", 14, "division after newline (by @garethheyes)"],
+["var i, x = x\n/x/i", 16, "double division after newline (by @garethheyes)"],
 ];
 
 // these are mainly for the parser, of course...
