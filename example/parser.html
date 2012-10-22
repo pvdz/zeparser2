@@ -13,7 +13,7 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script>
-        var testString = 'foo();';
+        var testString = 'var x = 5;\n        new Rect(x+10,x,12,13).fill(\'red\').addTo(stage);\n\n        new Path().moveTo(20,30).lineTo(100,200).stroke(\'red\',10).addTo(stage);\n        foo.attr(\'x\',\'y\');\n\n        foo.attr({x:x';
         console.log("testing", [testString.replace(/\n/g,'\u23CE')]);
         var par = new Par(testString);
         par.run();

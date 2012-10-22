@@ -870,4 +870,9 @@ var bad = [
   ["for (var key=", "missing stuff in noin"],
   ["for (var key=foo,", "missing stuff in noin"],
   ["for (var key=foo&&", "missing stuff in noin"],
+  ["foo.attr(","unfinished method call"],
+  ["foo.attr({","unfinished object literal"],
+  ["foo.attr({x","unfinished object literal"],
+  ["foo.attr({x:","unfinished object literal"],
+  ["foo.attr({x:x","unfinished object literal"],
 ];
