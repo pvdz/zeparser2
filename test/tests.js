@@ -468,8 +468,7 @@ var good = [
 ["var x; function f(){ x; function g(){}}", 23, "Function Declaration Within Function Body"],
 ["while (x) { break }", [11, 12], "ASI: `while` Statement, `break`"],
 ["x.hasOwnProperty()", [5, 6], "Regression Test: Object Property Named `hasOwnProperty`"],
-["(x) = 5", [7, 8], "LHS of Expression Contains Grouping Operator"],
-["(x,x) = 5", [9, 10], "Syntactically Valid LHS Grouping Operator (Expression Will Produce A `ReferenceError` When Interpreted)"],
+["(x) = 5", [7, 8], "LHS of Expression Contains Grouping Operator but is valid because it contains a single expression"],
 ["switch(x){case 1:}", 10, "Single-`case` `switch` Statement Without Body"],
 ["while (x) { ++a\t}", [12, 13], "Prefix Increment Operator, Tab Character Within `while` Loop"],
 
@@ -618,7 +617,10 @@ var good = [
 // code coverage missing tests
 ["x!=y;",4,"cant believe this isnt tested by anything above"],
 
-
+["for(;function(){}/1;)break", 14, "forward slash after function _expression_ must be division (by @garethheyes)"],
+["function f(){}/1/;", 9, "forward slash after function _declaration_ must be regex"],
+["var i, x = x\n/x", 14, "asi only applied once, at eof (by @garethheyes)"],
+["var i, x = x\n/x/i",16,"No semi, this is a continued division(by @garethheyes)"],
 ];
 
 // these are mainly for the parser, of course...
@@ -706,6 +708,8 @@ var bad = [
   ['/foo[\\\n]bar/', "escaped newline in regex char class"],
   ['/foo[\\\r]bar/', "escaped newline in regex char class 2"],
   ['(x)\n/foo/;', "no asi when forward slash starts on next line"],
+  ["var x\n/a/", "No semi if next statement starts with regex literal (by @garethheyes)"],
+
   ['do{}while(x)\n/foo/;', "no asi due to regex"],
   ['do{}while(x)/foo/;', "do while expects a semi (wont parse /foo/ as regex, regardless)"],
   ['try{}catch(/foo/){}', "catch argument cannot be a regex, regardless"],
@@ -779,6 +783,7 @@ var bad = [
   ['this = 10;', 'Assignment to this, which is stupid and illegal'],
   ['eval = 10;', 'Assignment to eval, which is poisoned'],
   ['arguments = 10;', 'Assignment to arguments, which is poisoned'],
+  ["(x,x) = 5", "Should throw an early error for being an \"obvious\" impossible assignment"],
 
   ["while(true){continue a}", "label a not found"],
   ["while(true){break b}", "label b not found"],

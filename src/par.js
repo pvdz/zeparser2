@@ -27,7 +27,7 @@ Par.prototype = {
 
     if (c === 0x7b) { // {
       tok.nextExpr();
-      this.parseBlock(inFunction, inLoop, inSwitch, labelSet);
+      this.parseBlock(true, inFunction, inLoop, inSwitch, labelSet);
       return true;
     }
 
@@ -70,7 +70,7 @@ Par.prototype = {
       if (c === 0x69 && len === 2 && tok.getLastNum2() === 0x66) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
       else if (c === 0x76 && tok.getLastValue() === 'var') this.parseVar();
       else if (c === 0x72 && tok.getLastValue() === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
-      else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction();
+      else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction(true);
       else if (c === 0x66 && tok.getLastValue() === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
       // case and default are handled elsewhere
       else if ((c === 0x63 && tok.getLastValue() === 'case') || (c === 0x64 && tok.getLastValue() === 'default')) return false;
@@ -324,7 +324,7 @@ Par.prototype = {
     // try { <stmts> } catch ( <idntf> ) { <stmts> } finally { <stmts> }
 
     this.tok.nextPunc();
-    this.parseCompleteBlock(inFunction, inLoop, inSwitch, labelSet);
+    this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
 
     var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
     var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
@@ -339,7 +339,7 @@ Par.prototype = {
       tok.mustBeNum(0x28, false); // (
       tok.mustBeIdentifier(false);
       tok.mustBeNum(0x29, false); // )
-      this.parseCompleteBlock(inFunction, inLoop, inSwitch, labelSet);
+      this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
 
       return true;
     }
@@ -349,7 +349,7 @@ Par.prototype = {
     // finally { <stmts> }
 
     if (this.tok.nextPuncIfString('finally')) {
-      this.parseCompleteBlock(inFunction, inLoop, inSwitch, labelSet);
+      this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
 
       return true;
     }
@@ -368,7 +368,7 @@ Par.prototype = {
     this.parseStatementHeader();
     this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
   },
-  parseFunction: function(){
+  parseFunction: function(forFunctionDeclaration){
     // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
     var tok = this.tok;
@@ -377,19 +377,20 @@ Par.prototype = {
       if (this.isReservedIdentifier(false)) throw 'function name is reserved';
       tok.nextPunc();
     }
-    this.parseFunctionRemainder(-1);
+    this.parseFunctionRemainder(-1, forFunctionDeclaration);
   },
   /**
    * Parse the function param list and body
    *
    * @param {number} paramCount Number of expected params, -1/undefined means no requirement. used for getters and setters
+   * @param {boolean} forFunctionDeclaration Are we parsing a function declaration (determines whether we can parse a division next)
    */
-  parseFunctionRemainder: function(paramCount){
+  parseFunctionRemainder: function(paramCount, forFunctionDeclaration){
     var tok = this.tok;
     tok.mustBeNum(0x28, false); // (
     this.parseParameters(paramCount);
     tok.mustBeNum(0x29, false); // )
-    this.parseCompleteBlock(true, false, false, []); // this resets loop and switch status
+    this.parseCompleteBlock(forFunctionDeclaration, true, false, false, []); // this resets loop and switch status
   },
   parseParameters: function(paramCount){
     // [<idntf> [, <idntf>]]
@@ -407,14 +408,16 @@ Par.prototype = {
       throw 'Setters have exactly one param';
     }
   },
-  parseBlock: function(inFunction, inLoop, inSwitch, labelSet){
+  parseBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
     this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
-    this.tok.mustBeNum(0x7d, true); // }
-    return true; // why again?
+    // note: this parsing method is also used for functions. the only case where
+    // the closing curly can be followed by a division rather than a regex lit
+    // is with a function expression. that's why we needed to make this exception
+    this.tok.mustBeNum(0x7d, notForFunctionExpression); // }
   },
-  parseCompleteBlock: function(inFunction, inLoop, inSwitch, labelSet){
+  parseCompleteBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
     this.tok.mustBeNum(0x7b, true); // {
-    this.parseBlock(inFunction, inLoop, inSwitch, labelSet);
+    this.parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet);
   },
   parseSemi: function(){
     if (this.tok.nextExprIfNum(0x3b)) return PUNCTUATOR; // ;
@@ -427,7 +430,7 @@ Par.prototype = {
 
     var tok = this.tok;
     // 0x7d=}
-    if (tok.isNum(0x7d) || (tok.lastNewline && !tok.isType(REGEX) || tok.isType(EOF))) {
+    if (tok.isNum(0x7d) || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
       return this.addAsi();
     }
     return false;
@@ -592,7 +595,7 @@ Par.prototype = {
     var tok = this.tok;
     if (tok.isType(IDENTIFIER)) {
       if (tok.isNum(0x66) && tok.getLastValue() === 'function') {
-        this.parseFunction();
+        this.parseFunction(false);
       } else {
         if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression';
         tok.nextPunc();
@@ -877,10 +880,10 @@ Par.prototype = {
   parsePair: function(){
     var tok = this.tok;
     if (tok.isNum(0x67) && tok.nextPuncIfString('get')) {
-      if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(0);
+      if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(0, true);
       else this.parseDataPart();
     } else if (tok.isNum(0x73) && tok.nextPuncIfString('set')) {
-      if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(1);
+      if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(1, true);
       else this.parseDataPart();
     } else {
       this.parseData();
