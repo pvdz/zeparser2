@@ -868,7 +868,7 @@ Tok.prototype = {
     this.htmlSkipWhite();
 
     var nameStart = this.pos;
-    this.asciiIdentifier(input.charCodeAt(this.pos++));
+    this.asciiIdentifier(input.charCodeAt(this.pos));
     obj.tagName = input.slice(nameStart, this.pos);
 
     var skipped = true;
@@ -1065,7 +1065,7 @@ Tok.prototype = {
     if (input.charCodeAt(this.pos++) !== 0x3c) throw 'should be tag close start ['+input.charCodeAt(this.pos).toString(16)+','+String.fromCharCode(input.charCodeAt(this.pos))+']';
     if (input.charCodeAt(this.pos++) !== 0x2f) throw 'should be tag close second';
     this.htmlSkipWhite();
-    this.asciiIdentifier(input.charCodeAt(this.pos++));
+    this.asciiIdentifier(input.charCodeAt(this.pos));
     this.htmlSkipWhite();
     if (input.charCodeAt(this.pos++) !== 0x3e) throw 'should be tag close end';
     obj.closeStop = this.pos;
