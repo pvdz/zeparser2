@@ -77,7 +77,7 @@ Tok[EOF] = 'eof';
 Tok[ASI] = 'asi';
 Tok[ERROR] = 'error';
 Tok[WHITE] = 'white';
-TOK[HTML] = 'html';
+Tok[HTML] = 'html';
 
 Tok.prototype = {
   /** @property {string} input */
