@@ -838,9 +838,7 @@ Tok.prototype = {
   },
   htmlSkipWhite: function(){
     var start = this.pos;
-    var protect = 0;
     do {
-      if (++protect > 100000) throw 'uuuupsie';
       var c = this.input.charCodeAt(this.pos)
     } while (this.whitespace(c) || this.lineTerminator(c));
     return this.pos - start;
@@ -862,9 +860,7 @@ Tok.prototype = {
     obj.tagName = this.input.slice(nameStart, this.pos);
 
     var skipped = true;
-    var protect = 0;
     while (true) {
-      if (++protect > 100000) throw 'uuuupsie';
       skipped = this.htmlSkipWhite();
       var c = this.input.charCodeAt(this.pos);
       if (skipped) {
@@ -940,9 +936,7 @@ Tok.prototype = {
   htmlDoubleValue: function(c, attr){
     if (c !== 0x22) throw 'expecting double quote';
     ++this.pos;
-    var protect = 0;
     while (this.input.charCodeAt(this.pos) != 0x22 && this.pos < this.input.length) {
-      if (++protect > 100000) throw 'uuuupsie';
       ++this.pos;
     }
     if (this.input.charCodeAt(this.pos++) != 0x22) throw 'Expecting close quote';
@@ -952,9 +946,7 @@ Tok.prototype = {
   htmlSingleValue: function(c, attr){
     if (c !== 0x27) throw 'expecting single quote';
     ++this.pos;
-    var protect = 0;
     while (this.input.charCodeAt(this.pos) != 0x27 && this.pos < this.input.length) {
-      if (++protect > 100000) throw 'uuuupsie';
       ++this.pos;
     }
     if (this.input.charCodeAt(this.pos++) != 0x27) throw 'Expecting close quote';
@@ -970,11 +962,8 @@ Tok.prototype = {
     attr.valueType = 'dynamic';
   },
   htmlUnquotedValue: function(attr){
-    var protect = 0;
     var c;
-
     while (this.pos < this.input.length && !this.whitespace(c = this.input.charCodeAt(this.pos)) && c !== 0x2f && c !== 0x3e) {
-      if (++protect > 100000) throw 'uuuupsie';
       ++this.pos;
     }
 
@@ -982,11 +971,7 @@ Tok.prototype = {
   },
   htmlTagBody: function(obj){
     obj.bodyStart = this.pos;
-    var protect = 0;
     while (true) {
-      if (protect == 8000) debugger;
-      if (++protect > 100000) throw 'uuuupsie';
-
       var c = this.input.charCodeAt(this.pos++);
 //          console.log(c, c.toString(16),String.fromCharCode(c))
       if (c === 0x5c) ++this.pos;
@@ -1022,10 +1007,8 @@ Tok.prototype = {
         }
       } else {
         var start = --this.pos;
-        var protect2 = 0;
         while ((c = this.input.charCodeAt(this.pos)) !== 0x7b && c !== 0x3c && this.pos < this.input.length) {
           this.pos++
-          if (++protect2 > 100000) throw 'uuuupsie';
           if (c === 0x5c) ++this.pos;
         }
 
