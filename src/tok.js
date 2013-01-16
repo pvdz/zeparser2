@@ -16,7 +16,6 @@ var IDENTIFIER = 13;
 var EOF = 14;
 var ASI = 15;
 var ERROR = 16;
-var VALUE = 17; // STRING NUMBER REGEX IDENTIFIER
 var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
 /**
@@ -71,7 +70,6 @@ Tok[IDENTIFIER] = 'identifier';
 Tok[EOF] = 'eof';
 Tok[ASI] = 'asi';
 Tok[ERROR] = 'error';
-Tok[VALUE] = 'value';
 Tok[WHITE] = 'white';
 
 Tok.prototype = {
