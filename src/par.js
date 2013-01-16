@@ -37,6 +37,7 @@ Par.prototype = {
       c === 0x7e || // ~
       c === 0x2b || // + (either + or ++)
       c === 0x2d || // - (either - or --)
+      c === 0x3c || // <
       c === 0x21    // !
     ) {
       this.parseExpressionStatement();
@@ -654,6 +655,7 @@ Par.prototype = {
       if (tok.nextExprIfNum(0x28)) this.parseGroup(noIn); // (
       else if (tok.nextExprIfNum(0x7b)) this.parseObject(); // {
       else if (tok.nextExprIfNum(0x5b)) this.parseArray(); // [
+      else if (tok.isType(HTML)) this.nextPunc();
       else if (!optional) throw 'Missing expression part. '+tok.syntaxError();
     }
   },

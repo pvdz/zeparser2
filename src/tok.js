@@ -137,7 +137,13 @@ Tok.prototype = {
    * @return {boolean}
    */
   isValue: function(){
-    return this.lastType === STRING || this.lastType === NUMBER || this.lastType === IDENTIFIER || this.lastType === REGEX || false;
+    return (
+      this.lastType === STRING ||
+      this.lastType === NUMBER ||
+      this.lastType === IDENTIFIER ||
+      this.lastType === REGEX ||
+      this.lastType === HTML ||
+    false);
   },
   /**
    * Compare the first character of the current token
@@ -344,7 +350,7 @@ Tok.prototype = {
       else if (expressionStart) result = this.regex();
       else result = this.punctuatorDiv(c,n);
     }
-    else if (expressionStart && c === 0x3c) result = this.html(),HTML;
+    else if (expressionStart && c === 0x3c) result = (this.html(),HTML);
     else if (this.punctuator(c)) result = PUNCTUATOR;
     else if (c === 0x27) result = this.stringSingle();
     else if (c === 0x22) result = this.stringDouble();
