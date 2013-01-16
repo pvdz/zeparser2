@@ -28,7 +28,6 @@ var div = <div/>
 
 This syntax is meant to prevent ugly assignments breaking the flow of the code. The name should be any valid JS identifier.
 
-
 ```js
 el.appendChild(<div @foo/>);
 foo.style.backgroundColor = 'red';
@@ -46,6 +45,18 @@ el.appendChild(foo = document.createElement('div'));
 foo.style.backgroundColor = 'red';
 ```
 Either way; it breaks the pretty flow.
+
+Maybe it makes more sense in more complex html snippets...
+
+```js
+document.body.appendChild(
+  <div>
+    <input @x value={pos.x}/>
+    x
+    <input @y value={pos.y}/>
+  </div>
+);
+```
 
 Note that the parser saves this in a `varName` property of the tag, if such a name is supplied anyways.
 
@@ -65,7 +76,7 @@ You can use just the attribute name without a value (for `checked`, `selected`, 
 var div = <div foo/>;
 var div = <div foo=bar/>;
 var div = <div foo="bar"/>;
-var div = <div foo=\'bar\'/>;
+var div = <div foo='bar'/>;
 ```
 
 There must be at least one space between the tag name
