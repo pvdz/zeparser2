@@ -78,6 +78,7 @@ Tok[ASI] = 'asi';
 Tok[ERROR] = 'error';
 Tok[VALUE] = 'value';
 Tok[WHITE] = 'white';
+TOK[HTML] = 'html';
 
 Tok.prototype = {
   /** @property {string} input */
@@ -853,23 +854,25 @@ Tok.prototype = {
     }
   },
   htmlTagOpen: function(obj){
+    var input = this.input;
+
     obj.openStart = this.pos;
-    if (this.input.charCodeAt(this.pos++) !== 0x3c) throw 'not tag open';
+    if (input.charCodeAt(this.pos++) !== 0x3c) throw 'not tag open';
     this.htmlSkipWhite();
 
     var nameStart = this.pos;
-    this.asciiIdentifier(this.input.charCodeAt(this.pos++));
-    obj.tagName = this.input.slice(nameStart, this.pos);
+    this.asciiIdentifier(input.charCodeAt(this.pos++));
+    obj.tagName = input.slice(nameStart, this.pos);
 
     var skipped = true;
     while (true) {
       skipped = this.htmlSkipWhite();
-      var c = this.input.charCodeAt(this.pos);
+      var c = input.charCodeAt(this.pos);
       if (skipped) {
-        if (c === 0x40) {
+        if (c === 0x40) { // @
           var varNameStart = ++this.pos;
-          this.asciiIdentifier(this.input.charCodeAt(this.pos++));
-          obj.varName = this.input.slice(varNameStart, this.pos);
+          this.asciiIdentifier(input.charCodeAt(this.pos++));
+          obj.varName = input.slice(varNameStart, this.pos);
         } else if (c === 0x7b) {
           var start = ++this.pos;
 //          console.log(c, c.toString(16),String.fromCharCode(c))
@@ -880,9 +883,9 @@ Tok.prototype = {
             nameType:'dynamic',
             start:start,
             stop:stop,
-            value: this.input.slice(start,stop),
+            value: input.slice(start,stop),
           });
-        } else if (c !== 0x2f && c !== 0x3e) {
+        } else if (c !== 0x2f && c !== 0x3e) { // / >
           this.htmlAttribute(obj);
         } else {
           break;
@@ -892,7 +895,7 @@ Tok.prototype = {
       }
     }
 
-    if (obj.unary = (c === 0x2f)) c = this.input.charCodeAt(++this.pos);
+    if (obj.unary = (c === 0x2f)) c = input.charCodeAt(++this.pos);
     this.htmlSkipWhite();
     if (c !== 0x3e) throw 'must be end of open tag ['+c.toString(16)+','+String.fromCharCode(c)+']';
     ++this.pos;

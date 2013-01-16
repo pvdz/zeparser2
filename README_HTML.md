@@ -4,7 +4,9 @@ For more information about ZeParser v2, see README.md :)
 
 This branch has support for an elaborate html literal support. HTML is treated as if it were a literal, like strings or regular expressions. Their parsing results in a small parse tree, through which they can be revived (or in my use case; transformed).
 
-The following syntax is supported:
+The HTML literals are treated as one literal, starting at the opening tag, ending at the closing tag of the first opening tag (unless that was a unary tag, of course). In that light, it's not possible to do something like `var divs = <div/><div/>;` because it would be similar to doing `var nums = 5 5;`.
+
+The following syntax is supported (note that it all translates to one fleshed out token in the "parse tree"!):
 
 ## HTML tags as literals
 
@@ -26,6 +28,7 @@ var div = <div/>
 
 This syntax is meant to prevent ugly assignments breaking the flow of the code. The name should be any valid JS identifier.
 
+
 ```js
 el.appendChild(<div @foo/>);
 foo.style.backgroundColor = 'red';
@@ -46,6 +49,14 @@ Either way; it breaks the pretty flow.
 
 Note that the parser saves this in a `varName` property of the tag, if such a name is supplied anyways.
 
+There must be at least some whitespace between the tag name and the `@`. There should also be some whitespace between the var name and an attribute.
+
+```js
+<div @foo/>;
+<div @foo checked/>;
+```
+
+
 ## Attributes are supported, of course
 
 You can use just the attribute name without a value (for `checked`, `selected`, etc.), or single quoted, double quoted, or unquoted values.
@@ -56,6 +67,8 @@ var div = <div foo=bar/>;
 var div = <div foo="bar"/>;
 var div = <div foo=\'bar\'/>;
 ```
+
+There must be at least one space between the tag name
 
 Note that for the unquoted the whitespace, forward slash, or closing angle bracket delimit the value. For quoted values, unescaped quote obviously delimits it.
 
