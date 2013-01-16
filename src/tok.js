@@ -32,6 +32,7 @@ var HTML = 100; // custom language extension
  *
  * @constructor
  * @param {string} input
+ * @param {number} pos Where in the string should the tokenizer start parsing?
  */
 var Tok = function(input, pos){
   this.tokens = [];
