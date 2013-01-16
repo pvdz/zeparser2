@@ -834,12 +834,13 @@ Tok.prototype = {
   html: function(){
     var root = {};
     this.htmlTag(root);
-    console.log('result: ',root);
+    return root;
   },
   htmlSkipWhite: function(){
     var start = this.pos;
+    var input = this.input;
     do {
-      var c = this.input.charCodeAt(this.pos)
+      var c = input.charCodeAt(this.pos)
     } while (this.whitespace(c) || this.lineTerminator(c));
     return this.pos - start;
   },
