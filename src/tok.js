@@ -329,7 +329,7 @@ Tok.prototype = {
     // so:
     // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
     if (this.whitespace(c)) result = WHITE;
-    else if (this.lineTerminator(c, pos, input)) result = WHITE;
+    else if (this.lineTerminator(c, pos)) result = WHITE;
     else if (this.asciiIdentifier(c)) result = IDENTIFIER;
     // forward slash before generic punctuators!
     else if (c === 0x2f) { // / (forward slash)
@@ -462,7 +462,7 @@ Tok.prototype = {
     }
     return false;
   },
-  lineTerminator: function(c, pos, input){
+  lineTerminator: function(c, pos){
     if (c === 0x000D){
       this.lastNewline = true;
       // handle \r\n normalization here
