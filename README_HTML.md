@@ -172,4 +172,30 @@ var div = <   div   />;
 var div = <div></   div   >;
 ```
 
+## Parse tree
+
 Note that this parser only results in a parse tree. The transformation of the parse tree of a tag happens in another project :)
+
+## Artifacts
+
+The attributes are ordered by order of appearance. Duplicate attributes are allowed, though the last one will override the earlier ones. If an attribute occurs more than once and the last occurrence has no value, the value will not be reset.
+
+You can use any type of tag you wish, including `html`, `body`, or `crap`. The parser certainly doesn't care, as long as it's got an ascii name.
+
+It's currently not possible to create attributes with dashes. That's a tofix.
+
+It's currently not possible to create an `@name` using this (`<div @this.foo/>`, or any other kind of property assignment). The parser simply won't grok it. Also a tofix.
+
+You can create style sheets as if it were any other tag. The biggest nuisance here is that the opening curlies in css need to be escaped... (the closed curlies only matter when in an opening curly). You'll forget this at least once, I promise. But you get used to it quickly :) Maybe the parser can be made aware of ignoring curlies for `style`, though I'm sure you'd still want dynamic stuff there too...
+
+```js
+<div @snippet>
+  <style scoped>
+    div \{ border: 1px solid black; margin: 5px; padding: 5px; }
+    div>div \{ color: red; }
+    div>div:hover \{ color: blue; }
+  </style>
+  <div>Hover me!</div>
+</div>
+
+Editors do not like this. That's perhaps my biggest enemy. Webstorm seems to handle it okay-ish, but even that IDE still trips over some cases. Mileage will vary.
