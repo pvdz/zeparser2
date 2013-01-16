@@ -81,3 +81,7 @@ And finally, when I've done all of the above, this parser will form the basis of
 ## Portability
 
 The code does not use any odd tricks and is (deliberately) kept basic. Not only does this aim to help browsers optimize the hell out of everything, it also helps you to port the code if you would want to do so :)
+
+## HTML tag literal extension
+
+There's a branch (html) which has support for html tag literals. See README_HTML.md on that branch for more details.
