@@ -19,6 +19,11 @@ var ERROR = 16;
 var VALUE = 17; // STRING NUMBER REGEX IDENTIFIER
 var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
+var HTML = 100; // custom language extension
+
+// onliner to translate chars to their hex codes
+// process.openStdin().on('data', function(c){ console.log(': 0x'+c[0].toString(16)); });
+
 /**
  * Tokenizer for JS. After initializing the constructor
  * you can fetch the next tokens by calling tok.next()
@@ -29,14 +34,14 @@ var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
  * @constructor
  * @param {string} input
  */
-var Tok = function(input){
+var Tok = function(input, pos){
   this.tokens = [];
 
   this.input = (input||'');
   this.len = this.input.length;
 
   // v8 "appreciates" to be set all instance properties explicitly
-  this.pos = 0;
+  this.pos = pos|0;
 
   this.lastStart = 0;
   this.lastStop = 0;
@@ -339,6 +344,7 @@ Tok.prototype = {
       else if (expressionStart) result = this.regex();
       else result = this.punctuatorDiv(c,n);
     }
+    else if (expressionStart && c === 0x3c) result = this.html(),HTML;
     else if (this.punctuator(c)) result = PUNCTUATOR;
     else if (c === 0x27) result = this.stringSingle();
     else if (c === 0x22) result = this.stringDouble();
@@ -824,4 +830,228 @@ Tok.prototype = {
     return 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` '+
         '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
   },
+
+  html: function(){
+    var root = {};
+    this.htmlTag(root);
+    console.log('result: ',root);
+  },
+  htmlSkipWhite: function(){
+    var start = this.pos;
+    var protect = 0;
+    do {
+      if (++protect > 100000) throw 'uuuupsie';
+      var c = this.input.charCodeAt(this.pos)
+    } while (this.whitespace(c) || this.lineTerminator(c));
+    return this.pos - start;
+  },
+  htmlTag: function(obj){
+    this.htmlTagOpen(obj);
+    if (!obj.unary) {
+      this.htmlTagBody(obj);
+      this.htmlTagClose(obj);
+    }
+  },
+  htmlTagOpen: function(obj){
+    obj.openStart = this.pos;
+    if (this.input.charCodeAt(this.pos++) !== 0x3c) throw 'not tag open';
+    this.htmlSkipWhite();
+
+    var nameStart = this.pos;
+    this.asciiIdentifier(this.input.charCodeAt(this.pos++));
+    obj.tagName = this.input.slice(nameStart, this.pos);
+
+    var skipped = true;
+    var protect = 0;
+    while (true) {
+      if (++protect > 100000) throw 'uuuupsie';
+      skipped = this.htmlSkipWhite();
+      var c = this.input.charCodeAt(this.pos);
+      if (skipped) {
+        if (c === 0x40) {
+          var varNameStart = ++this.pos;
+          this.asciiIdentifier(this.input.charCodeAt(this.pos++));
+          obj.varName = this.input.slice(varNameStart, this.pos);
+        } else if (c === 0x7b) {
+          var start = ++this.pos;
+//          console.log(c, c.toString(16),String.fromCharCode(c))
+          this.htmlDynamic();
+          var stop = this.pos-1;
+          if (!obj.attributes) obj.attributes = [];
+          obj.attributes.push({
+            nameType:'dynamic',
+            start:start,
+            stop:stop,
+            value: this.input.slice(start,stop),
+          });
+        } else if (c !== 0x2f && c !== 0x3e) {
+          this.htmlAttribute(obj);
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    if (obj.unary = (c === 0x2f)) c = this.input.charCodeAt(++this.pos);
+    this.htmlSkipWhite();
+    if (c !== 0x3e) throw 'must be end of open tag ['+c.toString(16)+','+String.fromCharCode(c)+']';
+    ++this.pos;
+    obj.openStop = this.pos;
+  },
+  htmlDynamic: function(){
+    var start = this.pos;
+    var par = new Par(this.input, this.pos);
+
+    par.tok.nextExpr();
+    par.parseExpressions();
+
+    this.pos = par.tok.pos-1;
+    if (this.input.charCodeAt(this.pos++) !== 0x7d) throw 'expecting dynamic close';
+  },
+  htmlAttribute: function(obj){
+    var attr = {};
+
+    var nameStart = this.pos;
+    this.asciiIdentifier(this.input.charCodeAt(this.pos++));
+    attr.name = this.input.slice(nameStart, this.pos);
+
+    attr.nameType = 'normal';
+    if (this.input.charCodeAt(this.pos) === 0x3d) {
+      var c = this.input.charCodeAt(++this.pos);
+      var start = this.pos;
+
+      if (c === 0x22) this.htmlDoubleValue(c, attr);
+      else if (c === 0x27) this.htmlSingleValue(c, attr);
+      else if (c === 0x7b) this.htmlDynamicValue(c, attr);
+      else this.htmlUnquotedValue(c, attr);
+      var stop = this.pos;
+
+      attr.valueStart = start;
+      attr.valueStop = stop;
+      attr.value = this.input.slice(start, stop);
+    } else {
+      attr.valueType = 'none';
+    }
+    if (!obj.attributes) obj.attributes = [];
+    obj.attributes.push(attr);
+  },
+  htmlDoubleValue: function(c, attr){
+    if (c !== 0x22) throw 'expecting double quote';
+    ++this.pos;
+    var protect = 0;
+    while (this.input.charCodeAt(this.pos) != 0x22 && this.pos < this.input.length) {
+      if (++protect > 100000) throw 'uuuupsie';
+      ++this.pos;
+    }
+    if (this.input.charCodeAt(this.pos++) != 0x22) throw 'Expecting close quote';
+
+    attr.valueType = 'normal';
+  },
+  htmlSingleValue: function(c, attr){
+    if (c !== 0x27) throw 'expecting single quote';
+    ++this.pos;
+    var protect = 0;
+    while (this.input.charCodeAt(this.pos) != 0x27 && this.pos < this.input.length) {
+      if (++protect > 100000) throw 'uuuupsie';
+      ++this.pos;
+    }
+    if (this.input.charCodeAt(this.pos++) != 0x27) throw 'Expecting close quote';
+
+    attr.valueType = 'normal';
+  },
+  htmlDynamicValue: function(c, attr){
+    if (c !== 0x7b) throw 'expecting opening bracket';
+    ++this.pos;
+
+    this.htmlDynamic();
+
+    attr.valueType = 'dynamic';
+  },
+  htmlUnquotedValue: function(attr){
+    var protect = 0;
+    var c;
+
+    while (this.pos < this.input.length && !this.whitespace(c = this.input.charCodeAt(this.pos)) && c !== 0x2f && c !== 0x3e) {
+      if (++protect > 100000) throw 'uuuupsie';
+      ++this.pos;
+    }
+
+    attr.valueType = 'normal';
+  },
+  htmlTagBody: function(obj){
+    obj.bodyStart = this.pos;
+    var protect = 0;
+    while (true) {
+      if (protect == 8000) debugger;
+      if (++protect > 100000) throw 'uuuupsie';
+
+      var c = this.input.charCodeAt(this.pos++);
+//          console.log(c, c.toString(16),String.fromCharCode(c))
+      if (c === 0x5c) ++this.pos;
+      else if (c === 0x7b) {
+        var start = this.pos;
+        this.htmlDynamic();
+        var stop = this.pos-1;
+        if (!obj.children) obj.children = [];
+        obj.children.push({
+          type: 'dynamic',
+          start: start,
+          stop: stop,
+          value: this.input.slice(start, stop),
+        });
+      } else if (c === 0x3c) {
+        if (this.input.charCodeAt(this.pos) === 0x2f) {
+          --this.pos;
+          break;
+        } else {
+          var tag = {};
+          var start = --this.pos;
+          this.htmlTag(tag);
+          var stop = this.pos;
+
+          if (!obj.children) obj.children = [];
+          obj.children.push({
+            type: 'tag',
+            start: start,
+            stop: stop,
+            value: this.input.slice(start, stop),
+            tag: tag,
+          });
+        }
+      } else {
+        var start = --this.pos;
+        var protect2 = 0;
+        while ((c = this.input.charCodeAt(this.pos)) !== 0x7b && c !== 0x3c && this.pos < this.input.length) {
+          this.pos++
+          if (++protect2 > 100000) throw 'uuuupsie';
+          if (c === 0x5c) ++this.pos;
+        }
+
+        var stop = this.pos;
+        if (!obj.children) obj.children = [];
+        obj.children.push({
+          type: 'text',
+          start: start,
+          stop: stop,
+          value: this.input.slice(start, stop),
+        });
+      }
+
+      if (this.pos >= this.input.length) throw 'parsed too far :(';
+    }
+    obj.bodyStop = this.pos;
+  },
+  htmlTagClose: function(obj){
+    obj.closeStart = this.pos;
+    if (this.input.charCodeAt(this.pos++) !== 0x3c) throw 'should be tag close start ['+this.input.charCodeAt(this.pos).toString(16)+','+String.fromCharCode(this.input.charCodeAt(this.pos))+']';
+    if (this.input.charCodeAt(this.pos++) !== 0x2f) throw 'should be tag close second';
+    this.htmlSkipWhite();
+    this.asciiIdentifier(this.input.charCodeAt(this.pos++));
+    this.htmlSkipWhite();
+    if (this.input.charCodeAt(this.pos++) !== 0x3e) throw 'should be tag close end';
+    obj.closeStop = this.pos;
+  },
+
 };

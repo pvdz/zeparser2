@@ -1,5 +1,5 @@
-var Par = function(input){
-    this.tok = new Tok(input);
+var Par = function(input, pos){
+    this.tok = new Tok(input, pos);
 };
 
 Par.prototype = {

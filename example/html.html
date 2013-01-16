@@ -1,0 +1,119 @@
+<div @div style="clear:left;">Actor set: <select @select/></div>
+actorsets.forEach(function(actorSet, i){
+  select ++ <option {option.selected?'selected':''}>{actorSet.name}</option>;
+},this);
+this.dom ++ div;
+
+parent @ div
+parent @= div
+parent <= div
+parent <== div
+parent +== div
+parent ++ div
+parent <++ div
+parent <-- div
+parent add div
+parent -- div
+parent ~~ div div2
+
+
+<div @var attr attr=value attr="value" attr='value'></div>
+<div/>
+<div {x?checked:''}/>  => x ? <div checked/> : <div/>
+<div>{x}</div>  => <div>`x.toString`</div>
+<div>\{x}</div> => <div>{x}</div>
+
+x{foo} => x.querySelector('foo')
+x{{foo}} => x.querySelectorAll('foo')
+${foo} => document...
+${body} => document.body
+
+
+
+
+
+
+
+
+  tag:
+    accept(open);
+    if (nonUnary) {
+      accept(body);
+      accept(close);
+    }
+
+  open:
+    accept('<');
+    skipWhite(0);
+    accept(identifier);
+    maybe(
+      skipWhite(1)
+      maybe(atName)
+    );
+    maybe(
+      do {
+        skipWhite(1);
+        maybe(attr) or maybe(dynamic)
+      } while(moving);
+    }
+    maybe('/');
+    accept('>');
+
+  body:
+    do {
+      if ('<') accept(tag);
+      else if ('{') accept(dynamic);
+      else if ('<\s*/') accept(close);
+      else if ('^') throw error;
+      else accept('^<{^');
+    } while (not '<\s*/');
+
+  close:
+    accept('<');
+    accept('/');
+    skipWhite(0);
+    accept(identifier); // same as open
+    skipWhite(0);
+    accept('>');
+
+  identifier:
+    accept(alpha);
+    while (alnum) accept(alnum);
+
+  atName:
+    accept('@');
+    accept(identifier);
+
+  attr:
+    accept(identifier);
+    if (maybe('=')) {
+      maybe(dqvalue) or maybe(sqvalue) or maybe(uqvalue);
+    }
+
+  dqvalue:
+    accept('"');
+    do {
+      if ('\\') skip(1);
+      else if ('{') accept(dynamic);
+      else if (not '"') accept(one);
+    } while(not "'");
+    accept('"');
+
+  sqvalue:
+    accept('\'');
+    do {
+    if ('\\') skip(1);
+      else if ('{') accept(dynamic);
+      else if (not '\'') accept(one);
+    } while (not "'");
+    accept('\'');
+
+  uqvalue:
+    while (not '\s') {
+      accept(one);
+    }
+
+  dynamic:
+    accept('{');
+    accept(jsexpression);
+    accept('}');
