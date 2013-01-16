@@ -282,9 +282,9 @@ Tok.prototype = {
 
     do {
       var type = this.nextWhiteToken(expressionStart);
-//      this.tokens.push({type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos});
 
-//      console.log('token:', type, Tok[type], '`'+this.input.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
+      this.tokens.push({type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos});
+      this.tokens[this.tokens.length-1].root = this.lastHtml;
     } while (type === WHITE);
 
     this.lastType = type;
@@ -831,10 +831,11 @@ Tok.prototype = {
         '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
   },
 
+  lastHtml: null,
   html: function(){
     var root = {};
     this.htmlTag(root);
-    return root;
+    this.lastHtml = root;
   },
   htmlSkipWhite: function(){
     var start = this.pos;
