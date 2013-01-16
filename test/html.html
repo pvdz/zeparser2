@@ -41,11 +41,16 @@ Testing special html part of the tokenizer. Output in console...<br/>
       '<   div/>',
       '<   div   />',
       '<div></   div   >',
+      '<   div foo = bar  />',
+      '<   div foo = "bar"  />',
+      '<   div foo = \'bar\'  />',
+      '<   div foo = {bar}  />',
     ];
 
     tests.forEach(function(test,i){
-      console.log("testing: ", test);
-      new Tok(test).html();
+      console.log('testing: ', test);
+      console.log('token:',new Tok(test).html());
+
     });
 
 

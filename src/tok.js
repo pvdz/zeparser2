@@ -836,6 +836,7 @@ Tok.prototype = {
     var root = {};
     this.htmlTag(root);
     this.lastHtml = root;
+    return root;
   },
   htmlSkipWhite: function(){
     var start = this.pos;
@@ -854,6 +855,7 @@ Tok.prototype = {
   },
   htmlTagOpen: function(obj){
     var input = this.input;
+    var len = input.length;
 
     obj.openStart = this.pos;
     if (input.charCodeAt(this.pos++) !== 0x3c) throw 'not tag open';
@@ -864,7 +866,7 @@ Tok.prototype = {
     obj.tagName = input.slice(nameStart, this.pos);
 
     var skipped = true;
-    while (true) {
+    while (this.pos < len) {
       skipped = this.htmlSkipWhite();
       var c = input.charCodeAt(this.pos);
       if (skipped) {
@@ -872,7 +874,7 @@ Tok.prototype = {
           var varNameStart = ++this.pos;
           this.asciiIdentifier(input.charCodeAt(this.pos++));
           obj.varName = input.slice(varNameStart, this.pos);
-        } else if (c === 0x7b) {
+        } else if (c === 0x7b) { // {
           var start = ++this.pos;
 //          console.log(c, c.toString(16),String.fromCharCode(c))
           this.htmlDynamic();
@@ -917,9 +919,14 @@ Tok.prototype = {
     this.asciiIdentifier(this.input.charCodeAt(this.pos++));
     attr.name = this.input.slice(nameStart, this.pos);
 
+    this.htmlSkipWhite();
+
     attr.nameType = 'normal';
-    if (this.input.charCodeAt(this.pos) === 0x3d) {
-      var c = this.input.charCodeAt(++this.pos);
+    if (this.input.charCodeAt(this.pos) === 0x3d) { // =
+      ++this.pos;
+      this.htmlSkipWhite();
+
+      var c = this.input.charCodeAt(this.pos);
       var start = this.pos;
 
       if (c === 0x22) this.htmlDoubleValue(c, attr);
@@ -939,21 +946,29 @@ Tok.prototype = {
   },
   htmlDoubleValue: function(c, attr){
     if (c !== 0x22) throw 'expecting double quote';
-    ++this.pos;
-    while (this.input.charCodeAt(this.pos) != 0x22 && this.pos < this.input.length) {
-      ++this.pos;
-    }
-    if (this.input.charCodeAt(this.pos++) != 0x22) throw 'Expecting close quote';
+
+    var input = this.input;
+    var len = input.length;
+    var pos = ++this.pos;
+
+    while (input.charCodeAt(pos) != 0x22 && pos < len) ++pos;
+    if (input.charCodeAt(pos++) != 0x22) throw 'Expecting close quote';
+
+    this.pos = pos;
 
     attr.valueType = 'normal';
   },
   htmlSingleValue: function(c, attr){
     if (c !== 0x27) throw 'expecting single quote';
-    ++this.pos;
-    while (this.input.charCodeAt(this.pos) != 0x27 && this.pos < this.input.length) {
-      ++this.pos;
-    }
-    if (this.input.charCodeAt(this.pos++) != 0x27) throw 'Expecting close quote';
+
+    var input = this.input;
+    var len = input.length;
+    var pos = ++this.pos;
+
+    while (input.charCodeAt(pos) != 0x27 && pos < len) ++pos;
+    if (input.charCodeAt(pos++) != 0x27) throw 'Expecting close quote';
+
+    this.pos = pos;
 
     attr.valueType = 'normal';
   },
@@ -965,18 +980,26 @@ Tok.prototype = {
 
     attr.valueType = 'dynamic';
   },
-  htmlUnquotedValue: function(attr){
-    var c;
-    while (this.pos < this.input.length && !this.whitespace(c = this.input.charCodeAt(this.pos)) && c !== 0x2f && c !== 0x3e) {
+  htmlUnquotedValue: function(c, attr){
+    var input = this.input;
+    var len = input.length;
+
+    this.htmlSkipWhite();
+    if (this.whitespace(c) || c === 0x2f && c === 0x3e) throw 'Empty assignment is not allowed';
+    do {
       ++this.pos;
-    }
+    } while (this.pos < len && !this.whitespace(c = input.charCodeAt(this.pos)) && c !== 0x2f && c !== 0x3e);
 
     attr.valueType = 'normal';
   },
   htmlTagBody: function(obj){
+    var input = this.input;
+    var len = input.length;
+
     obj.bodyStart = this.pos;
+
     while (true) {
-      var c = this.input.charCodeAt(this.pos++);
+      var c = input.charCodeAt(this.pos++);
 //          console.log(c, c.toString(16),String.fromCharCode(c))
       if (c === 0x5c) ++this.pos;
       else if (c === 0x7b) {
@@ -988,10 +1011,10 @@ Tok.prototype = {
           type: 'dynamic',
           start: start,
           stop: stop,
-          value: this.input.slice(start, stop),
+          value: input.slice(start, stop),
         });
       } else if (c === 0x3c) {
-        if (this.input.charCodeAt(this.pos) === 0x2f) {
+        if (input.charCodeAt(this.pos) === 0x2f) {
           --this.pos;
           break;
         } else {
@@ -1005,13 +1028,13 @@ Tok.prototype = {
             type: 'tag',
             start: start,
             stop: stop,
-            value: this.input.slice(start, stop),
+            value: input.slice(start, stop),
             tag: tag,
           });
         }
       } else {
         var start = --this.pos;
-        while ((c = this.input.charCodeAt(this.pos)) !== 0x7b && c !== 0x3c && this.pos < this.input.length) {
+        while ((c = input.charCodeAt(this.pos)) !== 0x7b && c !== 0x3c && this.pos < input.length) {
           this.pos++
           if (c === 0x5c) ++this.pos;
         }
@@ -1022,22 +1045,23 @@ Tok.prototype = {
           type: 'text',
           start: start,
           stop: stop,
-          value: this.input.slice(start, stop),
+          value: input.slice(start, stop),
         });
       }
 
-      if (this.pos >= this.input.length) throw 'parsed too far :(';
+      if (this.pos >= len) throw 'parsed too far :(';
     }
     obj.bodyStop = this.pos;
   },
   htmlTagClose: function(obj){
+    var input = this.input;
     obj.closeStart = this.pos;
-    if (this.input.charCodeAt(this.pos++) !== 0x3c) throw 'should be tag close start ['+this.input.charCodeAt(this.pos).toString(16)+','+String.fromCharCode(this.input.charCodeAt(this.pos))+']';
-    if (this.input.charCodeAt(this.pos++) !== 0x2f) throw 'should be tag close second';
+    if (input.charCodeAt(this.pos++) !== 0x3c) throw 'should be tag close start ['+input.charCodeAt(this.pos).toString(16)+','+String.fromCharCode(input.charCodeAt(this.pos))+']';
+    if (input.charCodeAt(this.pos++) !== 0x2f) throw 'should be tag close second';
     this.htmlSkipWhite();
-    this.asciiIdentifier(this.input.charCodeAt(this.pos++));
+    this.asciiIdentifier(input.charCodeAt(this.pos++));
     this.htmlSkipWhite();
-    if (this.input.charCodeAt(this.pos++) !== 0x3e) throw 'should be tag close end';
+    if (input.charCodeAt(this.pos++) !== 0x3e) throw 'should be tag close end';
     obj.closeStop = this.pos;
   },
 
