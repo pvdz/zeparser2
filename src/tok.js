@@ -941,6 +941,8 @@ Tok.prototype = {
       else this.htmlUnquotedValue(c, attr);
       var stop = this.pos;
 
+      if (c === 0x22 || c === 0x27 || c === 0x7b) ++start, --stop;
+
       attr.valueStart = start;
       attr.valueStop = stop;
       attr.value = this.input.slice(start, stop);
