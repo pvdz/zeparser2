@@ -958,7 +958,6 @@ Tok.prototype = {
 
     if (obj.unary = (c === 0x2f)) {
       ++this.pos;
-      console.log("skipping white");
       this.htmlSkipWhite();
       c = input.charCodeAt(this.pos);
     }
