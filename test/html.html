@@ -39,10 +39,22 @@ Testing special html part of the tokenizer. Output in console...<br/>
       '<   div foo = {bar}  />',
 
       '<div>hello {moody} <b>world</b>!</div>',
+
+      // newline tests
+      '<div\n></div>',
+      '<\ndiv/>',
+      '<div/\n>',
+      '<div\nfoo=bar\nboo=baz/>',
+      '<div foo\n=bar/>',
+      '<div foo=\nbar/>',
+      '<div foo=\n"bar"/>',
+      '<div foo=\n\'bar\'/>',
+      '<div foo=\n{bar}/>',
+      '<div foo=\n{\nfoo + bar\n}/>',
     ];
 
     tests.forEach(function(test,i){
-      console.log('testing: ', test);
+      console.log('testing: ', test.replace(/\n/g,'\u23CE'));
       console.log('token:',new Tok(test).html());
 
     });

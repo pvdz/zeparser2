@@ -102,6 +102,19 @@ Tok.prototype = {
   /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
   lastNewline: false,
 
+  /**
+   * @property {number} line The current line we are parsing on, zero offset
+   */
+  line: 0,
+  /**
+   * Position of the last newline that was encountered.
+   * This is how we compute the current column (this.lastNewlineCol - this.pos);
+   * Tabs are always one column, not variable width, in this process
+   *
+   * @property {number} lastNewlineCol
+   */
+  lastNewlineCol: 0,
+
   // .charCodeAt(pos+n) cache
   nextNum1: -1,
   nextNum2: -1,
@@ -275,6 +288,17 @@ Tok.prototype = {
     return this.next(false);
   },
 
+  /**
+   * Updates the this.line and this.lastNewlineCol values.
+   * Pass on the position of the start of the new line, not of the \n
+   *
+   * @param {number} pos Position of first char of the new line
+   */
+  nextLine: function(pos){
+    ++this.line;
+    this.lastNewlineCol = pos;
+  },
+
   next: function(expressionStart){
     this.lastNewline = false;
 
@@ -287,10 +311,26 @@ Tok.prototype = {
     }
 
     do {
+      var lineStart = this.line; // might change (multi-line comment, string continuation escape, html literal)
+      var lastNewlineCol = this.lastNewlineCol; // should change :)
+
       var type = this.nextWhiteToken(expressionStart);
 
-      this.tokens.push({type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos});
-      this.tokens[this.tokens.length-1].root = this.lastHtml;
+
+
+      this.tokens.push({
+        type:type,
+        value:this.getLastValue(),
+        start:this.lastStart,
+        stop:this.pos,
+        line: lineStart,
+        col: lastNewlineCol,
+      });
+
+      if (this.lastHtml) {
+        this.tokens[this.tokens.length-1].root = this.lastHtml;
+        this.lastHtml = null;
+      }
     } while (type === WHITE);
 
     this.lastType = type;
@@ -484,10 +524,12 @@ Tok.prototype = {
       } else {
         this.pos = pos + 1;
       }
+      this.nextLine(this.pos);
       return true;
     } else if (c === 0x000A || c === 0x2028 || c === 0x2029) {
       this.lastNewline = true;
       this.pos = pos + 1;
+      this.nextLine(this.pos);
       return true;
     }
     return false;
@@ -527,7 +569,10 @@ Tok.prototype = {
       // only check one newline
       // TODO: check whether the extra check is worth the overhead for eliminating repetitive checks
       // (hint: if you generally check more characters here than you can skip, it's not worth it)
-      if (hasNewline || c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) hasNewline = this.lastNewline = true;
+      if (hasNewline || c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) {
+        hasNewline = this.lastNewline = true;
+        this.nextLine(pos);
+      }
     }
     this.pos = pos+1;
 
@@ -591,12 +636,16 @@ Tok.prototype = {
     if (c === 0x0075) { // u
       if (this.unicode(pos+1)) pos += 4;
       else throw 'Invalid unicode escape';
-    // line continuation; skip windows newlines as if they're one char
+    // crlf line continuation; skip windows newlines as if they're one char
     } else if (c === 0x000D) {
       // keep in mind, we are already skipping a char. no need to check
       // for other line terminators here. we are merely checking to see
       // whether we need to skip an additional character.
       if (input.charCodeAt(pos+1) === 0x000A) ++pos;
+      this.nextLine(pos);
+    // other line continuations
+    } else if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) {
+      this.nextLine(pos);
     // hex escapes
     } else if (c === 0x0078) { // x
       if (this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2))) pos += 2;
@@ -848,8 +897,13 @@ Tok.prototype = {
     var start = this.pos;
     var input = this.input;
     do {
-      var c = input.charCodeAt(this.pos)
-    } while (this.whitespace(c) || this.lineTerminator(c));
+      var c = input.charCodeAt(this.pos);
+
+      var isWhite = this.whitespace(c);
+      var isLine = !isWhite && this.lineTerminator(c, this.pos);
+
+      if (isLine) this.nextLine(this.pos);
+    } while (isWhite || isLine);
     return this.pos - start;
   },
   htmlTag: function(obj){
@@ -902,8 +956,13 @@ Tok.prototype = {
       }
     }
 
-    if (obj.unary = (c === 0x2f)) c = input.charCodeAt(++this.pos);
-    this.htmlSkipWhite();
+    if (obj.unary = (c === 0x2f)) {
+      ++this.pos;
+      console.log("skipping white");
+      this.htmlSkipWhite();
+      c = input.charCodeAt(this.pos);
+    }
+
     if (c !== 0x3e) throw 'must be end of open tag ['+c.toString(16)+','+String.fromCharCode(c)+']';
     ++this.pos;
     obj.openStop = this.pos;
@@ -911,11 +970,18 @@ Tok.prototype = {
   htmlDynamic: function(){
     var start = this.pos;
     var par = new Par(this.input, this.pos);
+    // copy line/col information, otherwise you'll lose track
+    par.tok.line = this.line;
+    par.tok.col = this.lastNewlineCol;
 
     par.tok.nextExpr();
     par.parseExpressions();
 
     this.pos = par.tok.pos-1;
+    // sync line/col information
+    this.line = par.tok.line;
+    this.lastNewlineCol = par.tok.col;
+
     if (this.input.charCodeAt(this.pos++) !== 0x7d) throw 'expecting dynamic close';
   },
   htmlAttribute: function(obj){
@@ -959,7 +1025,13 @@ Tok.prototype = {
     var len = input.length;
     var pos = ++this.pos;
 
-    while (input.charCodeAt(pos) != 0x22 && pos < len) ++pos;
+    while ((c = input.charCodeAt(pos)) != 0x22 && pos < len) {
+      ++pos;
+      if (c === 0x000D && input.charCodeAt(pos+1) === 0x000A) ++pos;
+      if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) {
+        this.nextLine(pos);
+      }
+    }
     if (input.charCodeAt(pos++) != 0x22) throw 'Expecting close quote';
 
     this.pos = pos;
@@ -973,7 +1045,13 @@ Tok.prototype = {
     var len = input.length;
     var pos = ++this.pos;
 
-    while (input.charCodeAt(pos) != 0x27 && pos < len) ++pos;
+    while ((c = input.charCodeAt(pos)) != 0x27 && pos < len) {
+      ++pos;
+      if (c === 0x000D && input.charCodeAt(pos+1) === 0x000A) ++pos;
+      if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) {
+        this.nextLine(pos);
+      }
+    }
     if (input.charCodeAt(pos++) != 0x27) throw 'Expecting close quote';
 
     this.pos = pos;
