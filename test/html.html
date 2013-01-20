@@ -54,7 +54,8 @@ Testing special html part of the tokenizer. Output in console...<br/>
     ];
 
     tests.forEach(function(test,i){
-      console.log('testing: ', test.replace(/\n/g,'\u23CE'));
+      console.warn('testing:');
+      console.log(test.replace(/\n/g,'\u23CE'));
       console.log('token:',new Tok(test).html());
 
     });

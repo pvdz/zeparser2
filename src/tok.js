@@ -107,7 +107,7 @@ Tok.prototype = {
    */
   line: 0,
   /**
-   * Position of the last newline that was encountered.
+   * Position _after_ the last newline that was encountered (so start of next line).
    * This is how we compute the current column (this.lastNewlineCol - this.pos);
    * Tabs are always one column, not variable width, in this process
    *
@@ -311,20 +311,18 @@ Tok.prototype = {
     }
 
     do {
-      var lineStart = this.line; // might change (multi-line comment, string continuation escape, html literal)
-      var lastNewlineCol = this.lastNewlineCol; // should change :)
+      var line = this.line; // might change (multi-line comment, string continuation escape, html literal)
+      var col = this.pos-this.lastNewlineCol; // should change :)
 
       var type = this.nextWhiteToken(expressionStart);
-
-
 
       this.tokens.push({
         type:type,
         value:this.getLastValue(),
         start:this.lastStart,
         stop:this.pos,
-        line: lineStart,
-        col: lastNewlineCol,
+        line: line,
+        col: col,
       });
 
       if (this.lastHtml) {
@@ -1046,10 +1044,10 @@ Tok.prototype = {
 
     while ((c = input.charCodeAt(pos)) != 0x27 && pos < len) {
       ++pos;
-      if (c === 0x000D && input.charCodeAt(pos+1) === 0x000A) ++pos;
       if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) {
         this.nextLine(pos);
       }
+      if (c === 0x000D && input.charCodeAt(pos+1) === 0x000A) ++pos;
     }
     if (input.charCodeAt(pos++) != 0x27) throw 'Expecting close quote';
 
@@ -1085,9 +1083,7 @@ Tok.prototype = {
 
     while (true) {
       var c = input.charCodeAt(this.pos++);
-//          console.log(c, c.toString(16),String.fromCharCode(c))
-      if (c === 0x5c) ++this.pos;
-      else if (c === 0x7b) {
+      if (c === 0x7b) { // {
         var start = this.pos;
         this.htmlDynamic();
         var stop = this.pos-1;
@@ -1098,8 +1094,8 @@ Tok.prototype = {
           stop: stop,
           value: input.slice(start, stop),
         });
-      } else if (c === 0x3c) {
-        if (input.charCodeAt(this.pos) === 0x2f) {
+      } else if (c === 0x3c) { // <
+        if (input.charCodeAt(this.pos) === 0x2f) { // /
           --this.pos;
           break;
         } else {
@@ -1118,13 +1114,22 @@ Tok.prototype = {
           });
         }
       } else {
-        var start = --this.pos;
-        while ((c = input.charCodeAt(this.pos)) !== 0x7b && c !== 0x3c && this.pos < input.length) {
-          this.pos++
-          if (c === 0x5c) ++this.pos;
-        }
+        // parse chunk: becomes child textnode
 
-        var stop = this.pos;
+        var start = this.pos-1;
+        do {
+          if (c === 0x5c) { // \ backslash
+            var c = input.charCodeAt(this.pos);
+            if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) this.nextLine(this.pos);
+            if (c === 0x000D && input.charCodeAt(this.pos+1) === 0x000A) ++this.pos;
+            ++this.pos;
+          } else {
+            if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) this.nextLine(this.pos);
+            if (c === 0x000D && input.charCodeAt(this.pos+1) === 0x000A) ++this.pos;
+          }
+        } while ((c = input.charCodeAt(this.pos++)) !== 0x7b && c !== 0x3c && this.pos < input.length);
+
+        var stop = --this.pos;
         if (!obj.children) obj.children = [];
         obj.children.push({
           type: 'text',
