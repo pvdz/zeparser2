@@ -630,6 +630,34 @@ var good = [
 ["var x=5,x=5\n/5", 13, "var-regex tests (same thing, second var)"],
 ["var x=5,x=5\n/5/g", 15, "var-regex tests (same thing, second var)"],
 
+// special classes parser
+["namespace Foo;", 4, "namespace test"],
+["class Foo {}", 6, "simplest class"],
+["final class Foo {}", 8, "final class"],
+["abstract class Foo {}", 8, "abstract class"],
+["class Foo extends Bar {}", 10, "extending class"],
+["class Foo implements A {}", 10, "implementing a class"],
+["class Foo implements A, B {}", 13, "implementing two classes"],
+["class Foo implements A, B, C {}", 16, "implementing three classes"],
+["class Foo extends Bar implements A, B, C {}", 20, "extends and implements"],
+
+["class A { foo = 5; }", 14, "simple member"],
+["class A { function foo(){} }", 15, "method"],
+["class A { Foo foo = 5; }", 16, "typed member"],
+["class A { Foo function foo(){ 5; } }", 21, "typed member"],
+
+  ["class A { static foo = 5; }", 16, "static member"],
+["class A { final foo = 5; }", 16, "final member"],
+["class A { static final foo = 5; }", 18, "static final member"],
+["class A { final static foo = 5; }", 18, "final static member"],
+["class A { public foo = 5; }", 16, "public member"],
+["class A { private foo = 5; }", 16, "private member"],
+["class A { protected foo = 5; }", 16, "protected member"],
+["class A { protected foo = 5; }", 16, "protected member"],
+
+["var ref = Classes\\Test\\classRef;", 12, "relative qualified namespace handle"],
+["var ref = \\Classes\\Test\\classRef;", 13, "absolute qualified namespace handle"],
+
 ];
 
 // these are mainly for the parser, of course...

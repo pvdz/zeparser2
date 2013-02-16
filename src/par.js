@@ -65,7 +65,7 @@ Par.prototype = {
     // yes, this makes "huge" difference
     var len = tok.lastLen;
 
-    if (len < 2 || len > 8) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
+    if (len < 2 || len > 9) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
     else { // bcdfirstvw
       var c = tok.getLastNum();
 //      if (c > 0x66 && c < 0x72 && c != 0x69) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet); // i dunno if this is a good idea
@@ -85,6 +85,12 @@ Par.prototype = {
       else if (c === 0x64 && tok.getLastValue() === 'debugger') this.parseDebugger();
       else if (c === 0x77 && tok.getLastValue() === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
       else if (c === 0x63 && tok.getLastValue() === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
+
+      else if (c === 0x6e && tok.getLastValue() === 'namespace') this.parseNamespace();
+      else if (c === 0x63 && tok.getLastValue() === 'class') this.parseClass();
+      else if (c === 0x66 && tok.getLastValue() === 'final') this.parseClass();
+      else if (c === 0x61 && tok.getLastValue() === 'abstract') this.parseClass();
+
       else this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
     }
 
@@ -958,6 +964,7 @@ Par.prototype = {
             } else if (d === 0x6f) {
               return tok.getLastValue() === 'for';
             } else if (d === 0x69) {
+              if (tok.getLastValue() === 'final') return true;
               return tok.getLastValue() === 'finally';
             }
           } else if (c === 0x64) {
@@ -1019,20 +1026,120 @@ Par.prototype = {
             return tok.getLastValue() === 'null';
           } else if (d === 0x65) {
             return tok.getLastValue() === 'new';
+          } else if (d === 0x61) {
+            return tok.getLastValue() === 'namespace';
           }
         } else if (c === 0x69) {
           var d = tok.getLastNum2();
           if (d === 0x6e) {
-            return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
+            return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in' 'instanceof'
           } else if (d === 0x66) {
             return tok.lastLen === 2; // 'if'
           } else if (d === 0x6d) {
-            return tok.getLastValue() === 'import';
+            if (tok.getLastValue() === 'import') return true;
+            return tok.getLastValue() === 'implements';
           }
         }
       }
     }
 
     return false;
+  },
+
+  parseNamespace: function(){
+    var tok = this.tok;
+    tok.nextPunc();
+    if (!tok.nextPuncIfType(IDENTIFIER)) throw 'Expected namespace name. '+this.tok.syntaxError();
+    this.parseSemi();
+  },
+  parseClass: function(){
+    // class <identifier> [extends <identifier>] [implements <identifier>[, <identifier>]*] { }
+
+    var tok = this.tok;
+    if (tok.nextPuncIfString('abstract')) {
+      if (!tok.nextPuncIfString('class')) throw 'Expected class keyword. '+this.tok.syntaxError();
+    } else if (tok.nextPuncIfString('final')) {
+      if (!tok.nextPuncIfString('class')) throw 'Expected class keyword. '+this.tok.syntaxError();
+    } else {
+      tok.nextPunc(); // must be class, no need to check
+    }
+
+    if (this.isReservedIdentifier(false) || !tok.nextPuncIfType(IDENTIFIER)) throw 'Expected class name. '+this.tok.syntaxError();
+    if (tok.nextPuncIfString('extends')) {
+      if (this.isReservedIdentifier(false) || !tok.nextPuncIfType(IDENTIFIER)) throw 'Expected extended name. '+this.tok.syntaxError();
+    }
+    if (tok.nextPuncIfString('implements')) {
+      if (this.isReservedIdentifier(false) || !tok.nextPuncIfType(IDENTIFIER)) throw 'Expected extended name. '+this.tok.syntaxError();
+      while (tok.nextPuncIfString(',')) {
+        if (this.isReservedIdentifier(false) || !tok.nextPuncIfType(IDENTIFIER)) throw 'Expected extended name. '+this.tok.syntaxError();
+      }
+    }
+
+    tok.mustBeString('{');
+    this.parseClassBody();
+    tok.mustBeString('}');
+  },
+  parseClassBody: function(){
+    // each entry:
+
+    // <fingerprint>
+    // <member> | <method>
+
+    // [identifier] [static | final [ static] ]
+    var tok = this.tok;
+    while (this.parseClassMemberFingerprint()) {
+      if (tok.nextPuncIfString('=')) {
+        this.parseClassMember();
+      } else if (tok.nextPuncIfString('function')) {
+        this.parseClassMethod();
+      } else if (tok.isType(IDENTIFIER)) {
+        if (tok.nextPuncIfString('function')) {
+          this.parseClassMethod();
+        } else if (!this.isReservedIdentifier(false) && tok.nextPuncIfType(IDENTIFIER)) {
+          tok.mustBeString('=');
+          this.parseClassMember();
+        } else {
+          throw 'Parse error in class member/method: '+this.tok.syntaxError();
+        }
+      } else {
+        throw 'Parse error in class member/method (2): '+this.tok.syntaxError();
+      }
+    }
+  },
+  parseClassMemberFingerprint: function(){
+    // [identifier] [identifier] [[final [static]] | [static [final]]] [public | private | protected]
+    // track if you parsed anything
+    var tok = this.tok;
+
+    // optional class type
+    var parsed = false;
+    if (!this.isReservedIdentifier(false)) {
+      parsed = tok.nextPuncIfType(IDENTIFIER);
+    }
+
+    // [final [static]] | [static [final]]
+    if (tok.nextPuncIfString('static')) {
+      parsed = true;
+      tok.nextPuncIfString('final');
+    } else if (tok.nextPuncIfString('final')) {
+      parsed = true;
+      tok.nextPuncIfString('static');
+    }
+
+    // [public | private | protected] (zero or one, not multiple)
+    if (tok.nextPuncIfString('public')) parsed = true;
+    else if (tok.nextPuncIfString('private')) parsed = true;
+    else if (tok.nextPuncIfString('protected')) parsed = true;
+
+    if (tok.getLastValue() === 'function') parsed = true;
+
+    return parsed;
+  },
+  parseClassMember: function(){
+    this.parseExpressions();
+    this.parseSemi();
+  },
+  parseClassMethod: function(){
+    this.parseFunction(true);
   },
 };
