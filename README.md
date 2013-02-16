@@ -86,5 +86,6 @@ The code does not use any odd tricks and is (deliberately) kept basic. Not only 
 
 List of (known) usages of this project:
 
-* [html lit](https://github.com/qfox/zeparser2/tree/html) (extend js with custom html literal syntax)
+* [html lit](https://github.com/qfox/zeparser2/tree/html) (extend js with custom html literal syntax, also adds line number detection for source maps)
 * [cnjs](https://github.com/qfox/zeparser2/tree/jscn) (extend js with custom php-like class notation, see [JSCN repo](https://github.com/Lcfvs/JSCN))
+* astoo (private repo, modifies this parser so it can parse AS2)
