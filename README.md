@@ -81,3 +81,10 @@ And finally, when I've done all of the above, this parser will form the basis of
 ## Portability
 
 The code does not use any odd tricks and is (deliberately) kept basic. Not only does this aim to help browsers optimize the hell out of everything, it also helps you to port the code if you would want to do so :)
+
+## Usages
+
+List of (known) usages of this project:
+
+* (html lit)[https://github.com/qfox/zeparser2/tree/html] (extend js with custom html literal syntax)
+* (cnjs)[https://github.com/qfox/zeparser2/tree/jscn] (extend js with custom php-like class notation)

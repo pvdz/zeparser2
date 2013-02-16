@@ -10,6 +10,8 @@ Par.prototype = {
     // go!
     this.parseStatements(false, false, false, []);
     if (this.tok.pos != this.tok.len) throw 'Did not complete parsing... '+this.tok.syntaxError();
+
+    return this;
   },
 
   parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
