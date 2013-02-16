@@ -652,6 +652,11 @@ var good = [
 ["class A { final static foo = 5; }", 18, "final static member"],
 ["class A { public foo = 5; }", 16, "public member"],
 ["class A { private foo = 5; }", 16, "private member"],
+["class A { protected foo = 5; }", 16, "protected member"],
+["class A { protected foo = 5; }", 16, "protected member"],
+
+["var ref = Classes\\Test\\classRef;", 12, "relative qualified namespace handle"],
+["var ref = \\Classes\\Test\\classRef;", 13, "absolute qualified namespace handle"],
 
 ];
 
