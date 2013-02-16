@@ -86,5 +86,5 @@ The code does not use any odd tricks and is (deliberately) kept basic. Not only 
 
 List of (known) usages of this project:
 
-* (https://github.com/qfox/zeparser2/tree/html)[html lit] (extend js with custom html literal syntax)
-* (https://github.com/qfox/zeparser2/tree/jscn)[cnjs] (extend js with custom php-like class notation, see (https://github.com/Lcfvs/JSCN)[JSCN repo])
+* [html lit](https://github.com/qfox/zeparser2/tree/html) (extend js with custom html literal syntax)
+* [cnjs](https://github.com/qfox/zeparser2/tree/jscn) (extend js with custom php-like class notation, see [JSCN repo](https://github.com/Lcfvs/JSCN))
