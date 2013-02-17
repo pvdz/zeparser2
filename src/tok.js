@@ -776,6 +776,8 @@ Tok.prototype = {
         // \uxxxx
       } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
         pos += 6;
+      } else if (c === 0x5c) {
+        ++pos; // backslash is allowed in namespaces. ef it.
       } else {
         // tofix: non-ascii identifiers
         break;

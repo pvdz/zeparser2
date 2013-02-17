@@ -646,12 +646,14 @@ var good = [
 ["class A { Foo foo = 5; }", 16, "typed member"],
 ["class A { Foo function foo(){ 5; } }", 21, "typed member"],
 
-  ["class A { static foo = 5; }", 16, "static member"],
+["class A { static foo = 5; }", 16, "static member"],
 ["class A { final foo = 5; }", 16, "final member"],
 ["class A { static final foo = 5; }", 18, "static final member"],
 ["class A { final static foo = 5; }", 18, "final static member"],
 ["class A { public foo = 5; }", 16, "public member"],
 ["class A { private foo = 5; }", 16, "private member"],
+
+["var ref = Classes\\Test\\classRef;", 8, "relative qualified namespace handle (or whatever, backslashes-in-identifiers)"],
 
 ];
 
