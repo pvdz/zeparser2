@@ -1,4 +1,4 @@
-if (typeof Tok === 'undefined') var Tok = require('../src/tok.js').Tok;
+if (typeof Tok === 'undefined') var Tok = require(__dirname+'/tok.js').Tok;
 
 // indices match slots of the start-regexes (where applicable)
 // this order is determined by regex/parser rules so they are fixed

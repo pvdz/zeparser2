@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // echo "foo" | cli.js
-var Par = require('../src/par.js').Par;
+var Par = require(__dirname+'/../src/par.js').Par;
 
 var data = '';
 process.stdin.resume();
