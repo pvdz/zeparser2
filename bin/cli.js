@@ -12,8 +12,9 @@ process.stdin.on('data', function (chunk) {
 });
 
 process.stdin.on('end', function () {
+  console.log(data);
   var par = new Par(data);
   par.run();
-  console.log('-- finished');
+  console.log('-- finished ('+par.tok.tokenCount+' tokens)');
 });
 
