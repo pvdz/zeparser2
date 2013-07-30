@@ -631,7 +631,6 @@ var good = [
 ["var x=5,x=5\n/5/g", 15, "var-regex tests (same thing, second var)"],
 
 ["(function(){}.constructor())", 11, "func expr with method call"],
-
 ];
 
 
@@ -821,6 +820,7 @@ var bad = [
   ["=foo;", "due to label crap, this once was a thing"],
 
   ["foo:{while(false){continue foo;}}", "continue labels must be one from an iteration label set"],
+  ["foo: { for (;;) continue foo; }", "continue inside for to illegal label"],
   ["throw\nfoo;", "throw does not get ASI applied to it, a newline is always a syntax error"],
 
   ["var x == 5;", "make sure tokens arent skipped by checking just one character"],
