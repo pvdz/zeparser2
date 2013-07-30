@@ -25,6 +25,12 @@
     this.tok = new Tok(input);
   };
 
+  Par.parse = function(input){
+    var par = new Par(input);
+    par.run();
+    return par;
+  };
+
   Par.prototype = {
     run: function(){
       // prepare
