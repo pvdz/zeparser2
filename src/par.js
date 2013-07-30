@@ -446,7 +446,7 @@
       if (tok.isType(IDENTIFIER)) {
         if (paramCount === 0) throw 'Getters have no parameters';
         if (this.isReservedIdentifier(false)) throw 'Function param name is reserved';
-        tok.next(true); // TOFIX: make this `nextIdentifier` or something...
+        tok.nextExpr();
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(0x2c)) { // ,
           if (paramCount === 1) throw 'Setters have exactly one param';
