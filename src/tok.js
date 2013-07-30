@@ -823,3 +823,5 @@ Tok.prototype = {
         '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
   },
 };
+
+if (typeof exports === 'object') exports.Tok = Tok;

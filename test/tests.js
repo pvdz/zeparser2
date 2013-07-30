@@ -630,7 +630,13 @@ var good = [
 ["var x=5,x=5\n/5", 13, "var-regex tests (same thing, second var)"],
 ["var x=5,x=5\n/5/g", 15, "var-regex tests (same thing, second var)"],
 
+["(function(){}.constructor())", 11, "func expr with method call"],
+
 ];
+
+
+
+
 
 // these are mainly for the parser, of course...
 var bad = [

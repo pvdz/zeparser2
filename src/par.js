@@ -1,3 +1,25 @@
+if (typeof Tok === 'undefined') var Tok = require('../src/tok.js').Tok;
+
+// indices match slots of the start-regexes (where applicable)
+// this order is determined by regex/parser rules so they are fixed
+var WHITE_SPACE = 1;
+var LINETERMINATOR = 2;
+var COMMENT_SINGLE = 3;
+var COMMENT_MULTI = 4;
+var STRING = 10;
+var STRING_SINGLE = 5;
+var STRING_DOUBLE = 6;
+var NUMBER = 7;
+var NUMERIC_DEC = 11;
+var NUMERIC_HEX = 12;
+var REGEX = 8;
+var PUNCTUATOR = 9;
+var IDENTIFIER = 13;
+var EOF = 14;
+var ASI = 15;
+var ERROR = 16;
+var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
+
 var Par = function(input){
     this.tok = new Tok(input);
 };
@@ -1036,3 +1058,5 @@ Par.prototype = {
     return false;
   },
 };
+
+if (typeof exports === 'object') exports.Par = Par;
