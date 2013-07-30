@@ -375,7 +375,15 @@
       var tok = this.tok;
       if (tok.nextPuncIfString('catch')) {
         tok.mustBeNum(0x28, false); // (
-        tok.mustBeIdentifier(false);
+
+        // catch var
+        if (tok.isType(IDENTIFIER)) {
+          if (this.isReservedIdentifier(false)) throw 'Catch scope var name is reserved';
+          tok.nextPunc();
+        } else {
+          throw 'Missing catch scope variable';
+        }
+
         tok.mustBeNum(0x29, false); // )
         this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
 
@@ -437,12 +445,19 @@
       var tok = this.tok;
       if (tok.isType(IDENTIFIER)) {
         if (paramCount === 0) throw 'Getters have no parameters';
-        if (this.isReservedIdentifier(false)) throw 'param name is reserved';
+        if (this.isReservedIdentifier(false)) throw 'Function param name is reserved';
         tok.next(true); // TOFIX: make this `nextIdentifier` or something...
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(0x2c)) { // ,
           if (paramCount === 1) throw 'Setters have exactly one param';
-          tok.mustBeIdentifier(false);
+
+          // param name
+          if (tok.isType(IDENTIFIER)) {
+            if (this.isReservedIdentifier(false)) throw 'Function param name is reserved';
+            tok.nextPunc();
+          } else {
+            throw 'Missing func param name';
+          }
         }
       } else if (paramCount === 1) {
         throw 'Setters have exactly one param';
@@ -920,10 +935,20 @@
     parsePair: function(){
       var tok = this.tok;
       if (tok.isNum(0x67) && tok.nextPuncIfString('get')) {
-        if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(0, true);
+        if (tok.isType(IDENTIFIER)) {
+          if (this.isReservedIdentifier(false)) throw 'Getter name is reserved';
+          tok.nextPunc();
+
+          this.parseFunctionRemainder(0, true);
+        }
         else this.parseDataPart();
       } else if (tok.isNum(0x73) && tok.nextPuncIfString('set')) {
-        if (tok.nextPuncIfType(IDENTIFIER)) this.parseFunctionRemainder(1, true);
+        if (tok.isType(IDENTIFIER)) {
+          if (this.isReservedIdentifier(false)) throw 'Getter name is reserved';
+          tok.nextPunc();
+
+          this.parseFunctionRemainder(1, true);
+        }
         else this.parseDataPart();
       } else {
         this.parseData();

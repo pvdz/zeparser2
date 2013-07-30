@@ -907,6 +907,15 @@ var bad = [
   ["var x=5,x=5\n/5/", "var-regex tests"],
 
   ["function(){}", "function declarations must have a name"],
+  ["function if(){}", "function declarations name must be valid"],
+  ["try{} catch(){}", "catch scope variable is required"],
+  ["try{} catch(if){}", "catch scope variable must be valid"],
+  ["function foo(if){}", "function param name 1 must be valid"],
+  ["function foo(a, break){}", "function param name 2 must be valid"],
+  ["function foo(a, b, throw){}", "function param name 3 must be valid"],
+  ["({get if(){}})", "getter name must be valid"],
+  ["({set while(x){}})", "setter name must be valid"],
+  ["({set a(if){}})", "setter param name must be valid"],
 ];
 
 
