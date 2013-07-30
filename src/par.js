@@ -400,6 +400,8 @@
       if (tok.isType(IDENTIFIER)) { // name
         if (this.isReservedIdentifier(false)) throw 'function name is reserved';
         tok.nextPunc();
+      } else if (forFunctionDeclaration) {
+        throw 'function declaration name is required';
       }
       this.parseFunctionRemainder(-1, forFunctionDeclaration);
     },
