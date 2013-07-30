@@ -908,3 +908,11 @@ var bad = [
 
   ["function(){}", "function declarations must have a name"],
 ];
+
+
+
+// when functionMode is enabled
+var forFunction = [
+  ["return;"],
+  ["return 15;"],
+];

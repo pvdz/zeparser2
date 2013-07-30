@@ -21,17 +21,25 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
-  var Par = exports.Par = function(input){
+  var Par = exports.Par = function(input, options){
     this.tok = new Tok(input);
+    this.options = options || {};
   };
 
-  Par.parse = function(input){
-    var par = new Par(input);
+  Par.parse = function(input, options){
+    var par = new Par(input, options);
     par.run();
     return par;
   };
 
   Par.prototype = {
+    /**
+     * @property {Object} options
+     * @property {boolean} options.functionMode In function mode, `return` is allowed in global space
+//     * @property {boolean} options.scriptMode
+     */
+    options: null,
+
     run: function(){
       // prepare
       this.tok.nextExpr();
@@ -290,7 +298,7 @@
       // return <exprs> ;
       // newline right after keyword = asi
 
-      if (!inFunction) throw 'Can only return in a function '+this.tok.syntaxError('break');
+      if (!inFunction && !this.options.functionMode) throw 'Can only return in a function '+this.tok.syntaxError('break');
 
       var tok = this.tok;
       tok.nextExpr();

@@ -90,6 +90,35 @@
           debug('<br/>');
         }
 
+        debug("<h1>These tests should fail in normal mode and pass in functionMode</h1>");
+
+        for (var i = 0; i < forFunction.length; ++i) {
+          var test = forFunction[i];
+          if (!test) console.warn("Probably missing a comma...");
+          var input = test[0];
+          var desc = test[1];
+
+          var failed = false;
+          try {
+            Par.parse(input);
+            failed = true;
+          } catch (e) {}
+          try {
+            Par.parse(input, {forFunction:true});
+          } catch (e) {
+            failed = true;
+          }
+
+          if (failed) {
+            debug('<span class="green">Test ' + i + ' properly passed and failed:</span>', desc);
+            ++ok;
+          } else {
+            debug('<b class="red">Test ' + i + ' did not properly pass/fail:</span>', desc, '(' + crashed.toString() + ')');
+            ++fail;
+          }
+          debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+          debug('<br/>');
+        }
 
         debug("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
         console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
