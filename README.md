@@ -52,7 +52,8 @@ There are two things missing from this parser:
 
 - Unicode characters
 - Validating lhs of assignments
-- label validation for loops
+- Label validation for loops
+- Strict mode checks
 
 The unicode characters are pretty easy to plug into, just look for the identifier parserss in the tokenizer. I didn't do that yet because, well, it didn't bother me so much during development. I do plan to add it.
 
@@ -67,6 +68,7 @@ I've only learned recently that continue may only jump to labels that are scoped
 - Label validation
 - Refactoring to globals and replacing constants
 - Use as basis for real parser
+- Strict mode
 
 As said, unicode support will happen and shouldn't be a big problem.
 
