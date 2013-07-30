@@ -905,4 +905,6 @@ var bad = [
   ["var x=5,x\n/5/", "var-regex tests (no asi)"],
   ["var x=5,x\n/5/g", "var-regex tests (no asi)"],
   ["var x=5,x=5\n/5/", "var-regex tests"],
+
+  ["function(){}", "function declarations must have a name"],
 ];
