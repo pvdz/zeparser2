@@ -1,4 +1,5 @@
 (function(exports){
+  var uniRegex = exports.uni || require(__dirname+'/uni.js').uni;
 
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
@@ -749,7 +750,7 @@
       // a-z A-Z $ _ (no number here!)
       if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c === 0x24) {
         return 1;
-        // \uxxxx
+      // \uxxxx
       } else if (c === 0x5c) {
         var pos = this.pos;
         if (this.getLastNum2() === 0x75 && this.unicode(pos+2)) { // \
@@ -757,11 +758,12 @@
         } else {
           throw 'No backslash in identifier (xept for \\u). '+this.syntaxError();
         }
-      } else {
-        // tofix: non-ascii identifiers
-        // do nothing so we return 0
-        return 0;
+      // above ascii range? might be valid unicode char
+      } else if (c > 127) {
+        if (uniRegex.test(String.fromCharCode(c))) return 1;
       }
+      // do nothing so we return 0
+      return 0;
     },
     asciiIdentifierRest: function(toAdd){
       var input = this.input;
@@ -778,8 +780,9 @@
           // \uxxxx
         } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
           pos += 6;
+        } else if (c > 127 && uniRegex.test(String.fromCharCode(c))) {
+          pos += 1;
         } else {
-          // tofix: non-ascii identifiers
           break;
         }
       }

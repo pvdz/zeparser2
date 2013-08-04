@@ -21,10 +21,12 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
+
   var Par = exports.Par = function(input, options){
     this.tok = new Tok(input);
     this.options = options || {};
   };
+
 
   Par.parse = function(input, options){
     var par = new Par(input, options);
