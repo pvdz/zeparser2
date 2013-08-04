@@ -50,12 +50,9 @@ The source is relatively good to read. The many (hex) numbers may be a bit intim
 
 There are two things missing from this parser:
 
-- Unicode characters
 - Validating lhs of assignments
 - Label validation for loops
 - Strict mode checks
-
-The unicode characters are pretty easy to plug into, just look for the identifier parserss in the tokenizer. I didn't do that yet because, well, it didn't bother me so much during development. I do plan to add it.
 
 Validating the lhs of assignments is missing because I'm not content with how the spec says it should trigger an early error. The language is a bit ambiguous and leaves it too open. I'm not too bothered with this part not working optimally since it's usually just extra checks that won't ever be triggered. The same could be said about other parts of the code, though.
 
@@ -63,14 +60,11 @@ I've only learned recently that continue may only jump to labels that are scoped
 
 ## Todos
 
-- Add unicode support
 - LHS assignment validation
 - Label validation
 - Refactoring to globals and replacing constants
 - Use as basis for real parser
 - Strict mode
-
-As said, unicode support will happen and shouldn't be a big problem.
 
 Checking the assignment targets is not tooo difficult, though still a challenge. Especially because you only know that you should validate it after you've encountered the assignment. Which kind of sucks. And you can't simply check the last identifier, or invalidate if the previous part of the statement was not "just" an identifier, because `x = y = z` is also valid.
 
