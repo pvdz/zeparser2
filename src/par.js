@@ -36,9 +36,12 @@
 
   Par.prototype = {
     /**
+     * This object is shared with Tok.
+     *
      * @property {Object} options
-     * @property {boolean} options.functionMode In function mode, `return` is allowed in global space
-//     * @property {boolean} options.scriptMode
+     * @property {boolean} [options.functionMode] In function mode, `return` is allowed in global space
+//     * @property {boolean} [options.scriptMode] (TODO, #12)
+     * @property {boolean} [options.regexNoClassEscape] Don't interpret backslash in regex class as escape
      */
     options: null,
 

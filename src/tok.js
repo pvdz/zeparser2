@@ -31,7 +31,7 @@
    * @constructor
    * @param {string} input
    */
-  var Tok = exports.Tok = function(input){
+  var Tok = exports.Tok = function(input, options){
     this.tokens = [];
 
     this.input = (input||'');
@@ -83,6 +83,15 @@
     len: 0,
     /** @property {number} pos */
     pos: 0,
+
+    /**
+     * Shared with Par.
+     * Only properties relevant to Tok are listed in this jsdoc.
+     *
+     * @property {Object} options
+     * @property {boolean} [options.regexNoClassEscape] Don't interpret backslash in regex class as escape
+     */
+    options: null,
 
     // parser can look at these positions to see where in the input the last token was
     // this way the tokenizer can simply return number-constants-as-types.
@@ -721,9 +730,13 @@
           throw 'Illegal newline in regex char class at '+pos;
         }
         if (c === 0x005c) { // backslash
-          var d = input.charCodeAt(pos++);
-          if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
-            throw new Error('Newline can not be escaped in regular expression at '+pos);
+          // there's a historical dispute over whether backslashes in regex classes
+          // add a slash or its next char. ES5 settled it to "it's an escape".
+          if (this.options.regexNoClassEscape) {
+            var d = input.charCodeAt(pos++);
+            if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+              throw new Error('Newline can not be escaped in regular expression at '+pos);
+            }
           }
         }
       }
