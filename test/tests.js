@@ -740,6 +740,7 @@ var bad = [
   ['if(foo)', 'incomplete if'],
   ['for(;;)', 'incomplete for-each'],
   ['for(x in y)', 'incomplete for-in'],
+  ['for(', 'very incomplete for-in'],
   ['while(x)', 'incomplete while'],
   ['do while();', 'incomplete while'],
   ['if(x);else', 'incomplete else'],

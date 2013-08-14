@@ -594,7 +594,7 @@
       return state;
     },
     parseExpressionOptional: function(){
-      var state = this.parsePrimary();
+      var state = this.parsePrimary(false);
       // if there was no assignment, state will be the same.
       state = this.parseAssignments(state);
 
@@ -650,7 +650,7 @@
     },
     parsePrimaryAfterOperator: function(){
       this.tok.nextExpr();
-      return this.parsePrimary();
+      return this.parsePrimary(true);
     },
     parseExpressionsNoIn: function(){
       var tok = this.tok;
@@ -664,7 +664,7 @@
       return state;
     },
     parseExpressionNoIn: function(){
-      var state = this.parsePrimary();
+      var state = this.parsePrimary(false);
 
       state = this.parseAssignments(state);
 
@@ -703,7 +703,7 @@
      *
      * @return {number}
      */
-    parsePrimary: function(){
+    parsePrimary: function(optional){
       // parses parts of an expression without any binary operators
       var state = NOPARSE;
       var parsedUnary = this.parseUnary(); // no unary can be valid in the lhs of an assignment
@@ -721,7 +721,7 @@
           if (this.isValueKeyword(identifier)) state = NONASSIGNEE;
         }
       } else {
-        state = this.parsePrimaryValue(false);
+        state = this.parsePrimaryValue(optional);
       }
 
       var suffixNonAssignable = this.parsePrimarySuffixes();
