@@ -1353,7 +1353,7 @@ Par.prototype = {
     var parsed = false;
     // assignment ops are allowed until the first non-assignment binary op
     while (this.isAssignmentOperator()) {
-      this.parsePrimaryAfter();
+      this.parsePrimaryAfterOperator();
       parsed = true;
     }
     return parsed; // for for-in header checks
@@ -1361,7 +1361,7 @@ Par.prototype = {
   parseNonAssignments: function(){
     // keep parsing non-assignment binary/ternary ops
     while (true) {
-      if (this.isBinaryOperator()) this.parsePrimaryAfter();
+      if (this.isBinaryOperator()) this.parsePrimaryAfterOperator();
       else if (this.tok.isNum(0x3f)) this.parseTernary(); // ?
       else break;
     }
@@ -1380,7 +1380,7 @@ Par.prototype = {
     tok.mustBeNum(0x3a,true); // :
     this.parseExpressionNoIn(true);
   },
-  parsePrimaryAfter: function(){
+  parsePrimaryAfterOperator: function(){
     this.tok.nextExpr();
     this.parsePrimary(false, false);
   },
@@ -1408,7 +1408,7 @@ Par.prototype = {
           if (parsedAssignment && !canHaveAssignment) throw 'No regular assignments in a for-in lhs...';
           break;
         } else {
-          this.parsePrimaryAfter();
+          this.parsePrimaryAfterOperator();
         }
       }
       else if (tok.isNum(0x3f)) this.parseTernaryNoIn(); // ?

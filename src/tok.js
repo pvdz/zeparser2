@@ -32,6 +32,7 @@
    * @param {string} input
    */
   var Tok = exports.Tok = function(input, options){
+    this.options = options || {}; // should be same as in Par, if any
     this.tokens = [];
 
     this.input = (input||'');
@@ -113,8 +114,10 @@
     nextNum2: -1,
     nextNum3: -1,
 
-    /** @property {number} tokenCount Simple counter, includes whitespace */
+    /** @property {number} tokenCount Simple counter, includes whitespace, excludes EOF */
     tokenCount: 0,
+    /** @property {number tokenCountAll Add one for any token, including EOF (Par relies on this) */
+    tokenCountAll: 0,
     /** @property {Object} tokens List of (all) tokens, if saving them is enabled */
     tokens: null,
 
@@ -280,8 +283,10 @@
       var pos = this.pos;
 
       if (pos >= this.len) {
+        if (this.lastType === EOF) throw 'Tried to parse beyond EOF, that cannot be good.';
         this.lastType = EOF;
         this.lastStart = this.lastStop = this.lastLen = pos;
+        ++this.tokenCountAll;
         return EOF;
       }
 
@@ -318,6 +323,7 @@
       this.nextNum3 = -1;
 
       ++this.tokenCount;
+      ++this.tokenCountAll;
 
       var result = this.nextToken(expressionStart);
 

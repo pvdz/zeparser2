@@ -76,6 +76,7 @@
           try {
             var par = new Par(input);
             par.run();
+            console.warn("Did not fail:", desc);
           } catch (e) {
             crashed = true;
           }
@@ -84,7 +85,7 @@
             debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc);
             ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc, '(' + crashed.toString() + ')');
+            debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc);
             ++fail;
           }
           debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
@@ -114,7 +115,7 @@
             debug('<span class="green">Test ' + i + ' properly passed and failed:</span>', desc);
             ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' did not properly pass/fail:</span>', desc, '(' + crashed.toString() + ')');
+            debug('<b class="red">Test ' + i + ' did not properly pass/fail:</span>', desc, crashed.toString() !== 'false' ? '(' + crashed.toString() + ')' : '');
             ++fail;
           }
           debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
