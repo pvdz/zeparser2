@@ -683,6 +683,7 @@ var good = [
 ["for (var a='5' in {key:5} ? 5 : bar in {key:5});", 34, "for-in, I don't even..."],
 ["for (var a=b?c:d in e in f);", 22, "`in` after the rhs of a ternary"],
 ["for (var a=b=c in d);", 16, "for-in assignment to initializer"],
+["for (new a().b in c);", 16, "new as lhs for-in"],
 ];
 
 
@@ -691,25 +692,6 @@ var good = [
 
 // these are mainly for the parser, of course...
 var bad = [
-  ['for (x = 5 in y) ;', "initialization (dead code) in for-in is only allowed with var keyword or with parens"],
-  ["for (a?b:(c in y))z;", "invalid"],
-  ["for (a?b:(c in y) in d)z;", "even if you wrap the `in`, still invalid"],
-  ["for (a,b in c);", "cant have multiple expressions as lhs of in"],
-  ["for (var a,b in c);", "only one var allowed to be declared"],
-  ["for (var a=1,b in c);", "only one var allowed to be declared"],
-  ["for ((a,b) in c);", "lhs parens must wrap single expression"],
-  ["for (((a,b)) in c);", "lhs double parens must still wrap single expression"],
-  ["for (((a),b) in c);", "mixed lhs double parens must still wrap single expression"],
-  ["for (x+b++ in y);", "binary expression with unary postfix (make sure `in` error detection works outside expression parser)"],
-  ["for (key instanceof bar in foo);", "instanceof is still a binary expression"],
-  ["for ((x in b) in u) {};", "`in` wrapped in parens as first part of for-in is still an illegal binary lhs"],
-  ["for (x+b++ in y);", "for-in lhs ending with incrementor"],
-  ["for ((x=5)in y);", "for-in, wrapped assignment is illegal assignee"],
-  ["for ((a?b:c) in y)z;", "ternary expression as left but not start for-in"],
-  ["for ((x=a?b:c) in y)z;", "ternary expression as left after assignment for-in"],
-  ["for ((x = [x in y]) in z);", "odd in construct, array invalid assignee"],
-  ["for ((x = {x:x in y}) in z);", "odd in construct, array still invalid assignee"],
-
   ['while(true)break 5+5;', "break arg, if any, must be a valid label identifier"],
   ['while(true)continue 5+5;', "break arg, if any, must be a valid label identifier"],
   ['while(true)break if;', "break arg, if any, must be a valid label identifier"],
@@ -771,6 +753,8 @@ var bad = [
 
   ['var foo, /bar/;', 'var statement that runs into a regex'],
   ['for (var foo, /bar/ in x);', 'for-in var that runs into a regex'],
+  ["for (a?b:(c in y))z;", "invalid"],
+  ["for ((c in y))z;", "parens are invalid here"],
   ['({/foo/:5});', "regex as objlit key"],
   ['({x:y, /foo/:5});', "regex as (second) objlit key"],
 
@@ -986,8 +970,46 @@ var bad = [
 
 
 
-// when functionMode is enabled
-var forFunction = [
-  ["return;"],
-  ["return 15;"],
+// test options
+var optional = [ // for expected: true = pass, false = throw
+  {
+    optionName: 'functionMode',
+    expectedWhenOff: false,
+    expectedWhenOn: true,
+    cases: [
+      ["return;", "return in global scope is illegal"],
+      ["return 15;", "return in global scope is illegal 2"],
+    ]
+  }, {
+    optionName: 'regexNoClassEscape',
+    expectedWhenOn: false,
+    expectedWhenOff: true,
+    cases: [
+      ["/f[o\\]o/", "class escapes are enabled by default (so this should fail by default)"],
+    ]
+  }, {
+    optionName: 'strictForInCheck',
+    expectedWhenOff: true,
+    expectedWhenOn: false,
+    cases: [
+      ["for (x = 5 in y) ;", "initialization (dead code) in for-in is only allowed with var keyword or with parens"],
+      ["for (a?b:(c in y) in d)z;", "even if you wrap the `in`, still invalid"],
+      ["for (a,b in c);", "cant have multiple expressions as lhs of in"],
+      ["for (var a,b in c);", "only one var allowed to be declared"],
+      ["for (var a=1,b in c);", "only one var allowed to be declared"],
+      ["for ((a,b) in c);", "lhs parens must wrap single expression"],
+      ["for (((a,b)) in c);", "lhs double parens must still wrap single expression"],
+      ["for (((a),b) in c);", "mixed lhs double parens must still wrap single expression"],
+      ["for (x+b++ in y);", "binary expression with unary postfix (make sure `in` error detection works outside expression parser)"],
+      ["for (key instanceof bar in foo);", "instanceof is still a binary expression"],
+      ["for ((x in b) in u) {};", "`in` wrapped in parens as first part of for-in is still an illegal binary lhs"],
+      ["for (x+b++ in y);", "for-in lhs ending with incrementor"],
+      ["for ((x=5)in y);", "for-in, wrapped assignment is illegal assignee"],
+      ["for ((a?b:c) in y)z;", "ternary expression as left but not start for-in"],
+      ["for ((x=a?b:c) in y)z;", "ternary expression as left after assignment for-in"],
+      ["for ((x = [x in y]) in z);", "odd in construct, array invalid assignee"],
+      ["for ((x = {x:x in y}) in z);", "odd in construct, array still invalid assignee"],
+      ["for (new a.b in c);", "new a.b is not a valid assignee"],
+    ]
+  }
 ];
