@@ -684,6 +684,7 @@ var good = [
 ["for (var a=b?c:d in e in f);", 22, "`in` after the rhs of a ternary"],
 ["for (var a=b=c in d);", 16, "for-in assignment to initializer"],
 ["for (new a().b in c);", 16, "new as lhs for-in"],
+["for (undefined in {});", 11, "undefined could be redefined so this might be valid"],
 ];
 
 
@@ -839,15 +840,6 @@ var bad = [
   ['x?if:y;', 'keyword in expression'],
   ['function if(){}', 'keyword as function name'],
   ['function f(if){}', 'keyword as param name'],
-
-  ['5 = 10;', 'Assignment to number, which doesnt return a reference'],
-  ['null = 10;', 'Assignment to null, which doesnt return a reference'],
-  ['true = 10;', 'Assignment to true, which doesnt return a reference'],
-  ['false = 10;', 'Assignment to false, which doesnt return a reference'],
-  ['this = 10;', 'Assignment to this, which is stupid and illegal'],
-  ['eval = 10;', 'Assignment to eval, which is poisoned'],
-  ['arguments = 10;', 'Assignment to arguments, which is poisoned'],
-  ["(x,x) = 5", "Should throw an early error for being an \"obvious\" impossible assignment"],
 
   ["while(true){continue a}", "label a not found"],
   ["while(true){break b}", "label b not found"],
@@ -1010,6 +1002,43 @@ var optional = [ // for expected: true = pass, false = throw
       ["for ((x = [x in y]) in z);", "odd in construct, array invalid assignee"],
       ["for ((x = {x:x in y}) in z);", "odd in construct, array still invalid assignee"],
       ["for (new a.b in c);", "new a.b is not a valid assignee"],
+      ["for (5 in {});", "for-in number is nonassignee"],
+      ["for ('x' in {});", "for-in string is nonassignee"],
+      ["for (true in {});", "for-in bool true is nonassignee"],
+      ["for (false in {});", "for-in bool false is nonassignee"],
+      ["for (null in {});", "for-in null is nonassignee"],
+      ["for (/foo/ in {});", "for-in regex is nonassignee"],
+    ]
+  }, {
+    optionName: 'strictAssignmentCheck',
+    expectedWhenOff: true,
+    expectedWhenOn: false,
+    cases: [
+      ['5 = 10;', 'Assignment to number, which doesnt return a reference'],
+      ['null = 10;', 'Assignment to null, which doesnt return a reference'],
+      ['true = 10;', 'Assignment to true, which doesnt return a reference'],
+      ['false = 10;', 'Assignment to false, which doesnt return a reference'],
+      ['this = 10;', 'Assignment to this, which is stupid and illegal'],
+      ["(x,x) = 5", "Should throw an early error for being an \"obvious\" impossible assignment"],
+      ["((x,x)) = 5", "Should throw an early error for being an \"obvious\" impossible assignment (double)"],
+      ["(((x,x))) = 5", "Should throw an early error for being an \"obvious\" impossible assignment (triple)"],
+
+      ["new foo = 5", "new always invalid assignee"],
+      ["delete foo = 5", "delete always invalid assignee"],
+      ["void foo = 5", "avoid always invalid assignee"],
+      ["++foo = bar", "++ always invalid assignee"],
+      ["--foo = bar", "-- always invalid assignee"],
+      ["+foo = bar", "+ always invalid assignee"],
+      ["-foo = bar", "- always invalid assignee"],
+      ["typeof foo = 5", "typeof always invalid assignee"],
+      ["!foo = 5", "! always invalid assignee"],
+      ["~foo = 5", "~ always invalid assignee"],
+      ["foo-- = 5", "post -- always invalid assignee"],
+      ["foo++ = 5", "post ++ always invalid assignee"],
     ]
   }
 ];
+
+// strict mode tests
+//['eval = 10;', 'Assignment to eval, which is poisoned'],
+//['arguments = 10;', 'Assignment to arguments, which is poisoned'],

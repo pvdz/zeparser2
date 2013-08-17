@@ -27,6 +27,7 @@
   var NONFORIN = 2; // comma, assignment, non-assignee
   var ASSIGNEE = 4;
   var NEITHER = NONASSIGNEE | NONFORIN;
+  var ISLABEL = 8;
 
   var Par = exports.Par = function(input, options){
     this.options = options || {};
@@ -48,7 +49,8 @@
      * @property {boolean} [options.functionMode=false] In function mode, `return` is allowed in global space
 //     * @property {boolean} [options.scriptMode=false] (TODO, #12)
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
-     * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad
+     * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
+     * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
      */
     options: null,
 
@@ -523,8 +525,7 @@
     parseExpressionOrLabel: function(inFunction, inLoop, inSwitch, labelSet){
       // note that this is a statement that starts with an identifier
       // (could also be new or delete!)
-      var found = this.parseExpressionForLabel(inFunction, inLoop, inSwitch, labelSet);
-      if (!found) {
+      if (this.parseExpressionForLabel(inFunction, inLoop, inSwitch, labelSet)) {
         if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions(); // 2c=,
         this.parseSemi();
       }
@@ -537,7 +538,8 @@
       // ugly but mandatory label check
       // if this is a label, the parsePrimary parser
       // will have bailed when seeing the colon.
-      if (this.parsePrimaryOrLabel()) {
+      var state = this.parsePrimaryOrLabel(labelName);
+      if (state & ISLABEL) {
 
         // the label will have been checked for being a reserved keyword
         // except for the value keywords. so we need to do that here.
@@ -554,12 +556,14 @@
         labelSet.push(labelName);
         this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
         labelSet.pop();
-        return true;
+        return false;
       }
 
-      this.parseAssignments(NOPARSE);
+      this.parseAssignments(state & NONASSIGNEE > 0);
       this.parseNonAssignments();
-      return false;
+
+      // tofix: make constant for boolean
+      return true;
     },
     parseOptionalExpressions: function(){
       var tok = this.tok;
@@ -595,29 +599,34 @@
     parseExpressionOptional: function(){
       var nonAssignee = this.parsePrimary(false);
       // if there was no assignment, state will be the same.
-      nonAssignee = this.parseAssignments(nonAssignee ? NONASSIGNEE : NOPARSE) > 0;
+      nonAssignee = this.parseAssignments(nonAssignee);
 
       // any binary operator is illegal as assignee and illegal as for-in lhs
       if (this.parseNonAssignments()) nonAssignee = true;
 
       return nonAssignee;
     },
-    parseAssignments: function(state){
+    parseAssignments: function(nonAssignee){
       // assignment ops are allowed until the first non-assignment binary op
+      var nonForIn = NOPARSE;
       while (this.isAssignmentOperator()) {
-        if (state & NONASSIGNEE) throw 'LHS is invalid assignee';
+        if (nonAssignee && this.options.strictAssignmentCheck) throw 'LHS is invalid assignee';
         // any assignment means not a for-in per definition
-        state = (this.parsePrimaryAfterOperator() ? NONASSIGNEE : NOPARSE) | NONFORIN;
+        this.tok.nextExpr();
+        nonAssignee = this.parsePrimary(true);
+        nonForIn = NONFORIN; // always
       }
 
-      // TODO: make sure I dont forget about `for(x=y in z);` case, for which I removed a check here
-      return state;
+      return (nonAssignee ? NONASSIGNEE : NOPARSE) | nonForIn;
     },
     parseNonAssignments: function(){
       var parsed = false;
       // keep parsing non-assignment binary/ternary ops
       while (true) {
-        if (this.isBinaryOperator()) this.parsePrimaryAfterOperator();
+        if (this.isBinaryOperator()) {
+          this.tok.nextExpr();
+          this.parsePrimary(true);
+        }
         else if (this.tok.isNum(0x3f)) this.parseTernary(); // ?
         else break;
         // any binary is a non-for-in
@@ -639,10 +648,6 @@
       tok.mustBeNum(0x3a,true); // :
       this.parseExpressionNoIn();
     },
-    parsePrimaryAfterOperator: function(){
-      this.tok.nextExpr();
-      return this.parsePrimary(true);
-    },
     parseExpressionsNoIn: function(){
       var tok = this.tok;
 
@@ -655,9 +660,9 @@
       return state;
     },
     parseExpressionNoIn: function(){
-      var state = this.parsePrimary(false) ? NONASSIGNEE : NOPARSE;
+      var nonAssignee = this.parsePrimary(false);
 
-      state = this.parseAssignments(state);
+      var state = this.parseAssignments(nonAssignee);
 
       var tok = this.tok;
       // keep parsing non-assignment binary/ternary ops unless `in`
@@ -672,7 +677,8 @@
           if (tok.getLastNum() === 0x69 && tok.getLastNum2() === 0x6e && tok.lastLen === 2) { // in
             repeat = false;
           } else {
-            this.parsePrimaryAfterOperator();
+            this.tok.nextExpr();
+            this.parsePrimary(true);
             state = NEITHER;
           }
         } else if (tok.isNum(0x3f)) { // 3f=?
@@ -722,13 +728,15 @@
 
       return nonAssignee;
     },
-    parsePrimaryOrLabel: function(){
-      // note: this function is only executed for identifiers...
-      // note: this function is only executed for statement starts. the
-      //       function keyword will already have been filtered out by
-      //       the main statement start parsing method. So we dont have
-      //       to check for the function keyword here; it cant occur.
+    parsePrimaryOrLabel: function(labelName){
+      // note: this function is only executed for statements that start
+      //       with an identifier . the function keyword will already
+      //       have been filtered out by the main statement start
+      //       parsing method. So we dont have to check for the function
+      //       keyword here; it cant occur.
       var tok = this.tok;
+
+      var state = NOPARSE;
 
       // if we parse any unary, we wont have to check for label
       var hasPrefix = this.parseUnary();
@@ -743,23 +751,27 @@
         // will already have ensured a different code path in that case!
         // TOFIX: check how often this is called and whether it's worth investigating...
         if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
+
         tok.nextPunc();
 
         // now's the time... you just ticked off an identifier, check the current token for being a colon!
         // (quick check first: if there was a unary operator, this cant be a label)
         if (!hasPrefix) {
           if (this.tok.nextExprIfNum(0x3a)) { // 3a = :
-            return true;
+            return ISLABEL;
           }
         }
+        if (hasPrefix || this.isValueKeyword(labelName)) state = NONASSIGNEE;
       } else {
         // TODO: make constants?
-        this.parsePrimaryValue(true);
+        if (this.parsePrimaryValue(true) || hasPrefix) state = NONASSIGNEE;
       }
 
-      this.parsePrimarySuffixes();
+      var suffixState = this.parsePrimarySuffixes();
+      if (suffixState & ASSIGNEE) state = NOPARSE;
+      else if (suffixState & NONASSIGNEE) state = NONASSIGNEE;
 
-      return false;
+      return state;
     },
     parsePrimaryValue: function(required){
       // at this point in the expression parser we will
@@ -767,9 +779,10 @@
       // be some kind of expression value...
 
       var nonAssignee = false;
-
       var tok = this.tok;
-      if (!tok.nextPuncIfValue()) {
+      if (tok.nextPuncIfValue()) {
+        nonAssignee = true;
+      } else {
         if (tok.nextExprIfNum(0x28)) nonAssignee = this.parseGroup(); // (
         else if (tok.nextExprIfNum(0x7b)) this.parseObject(); // {
         else if (tok.nextExprIfNum(0x5b)) this.parseArray(); // [
@@ -839,10 +852,12 @@
           tok.mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = ASSIGNEE; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
         } else if (tok.isNum(0x2b) && tok.nextPuncIfString('++')) {
-          nonAssignee = NONASSIGNEE; // cannot assign to foo++ (for-in lhs)
+          // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
+          nonAssignee = NONASSIGNEE; // cannot assign to foo++
           repeat = false;
         } else if (tok.isNum(0x2d) && tok.nextPuncIfString('--')) {
-          nonAssignee = NONASSIGNEE; // cannot assign to foo-- (for-in lhs)
+          // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
+          nonAssignee = NONASSIGNEE; // cannot assign to foo--
           repeat = false;
         } else {
           repeat = false;
