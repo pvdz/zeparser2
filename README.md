@@ -20,15 +20,20 @@ The parser itself has no return value. If the parser doesn't throw before it fin
 Usage is simple:
 
 ```js
-new Par(<input:string>).run();
+var par = new Par(<input:string>, options).run();
 ```
+
+or even simpler;
+
+```js
+var par = Par.parse(input, options);
+```
+
 ## Tests
 
 This parser comes with a huge set of input cases. These cases give me 100% code coverage. That doesn't mean that the parser is complete (because I might be missing a case in the suite) but I'm pretty confident that you won't easily poke a hole into it :)
 
 The tests can be found in `tests/tests.js`. You can run them for the tokenizer (`tests/tokenizer.html`) and for the parser (`tests/parser.html`).
-
-There are some more tests in there in case you are curious. They were mainly used in early development when I was using a regex for certain parts.
 
 ## Examples
 
@@ -36,7 +41,7 @@ The `example` folder contains two html files that have an inline example of how 
 
 ## src
 
-The src folder contains the two main files; `tok.js` and `par.js`. The `profiler.js` file is used by my benchmark project, feel free to ignore it. The `regexes` folder contains scripts that produce regular expressions to parse certain parts. They are _unused_, but I wanted to keep them regardless.
+The src folder contains the three main files; `tok.js`, `par.js`, and `uni.js`. The `profiler.js` file is used by my benchmark project, feel free to ignore it.
 
 ## Results
 
@@ -50,23 +55,19 @@ The source is relatively good to read. The many (hex) numbers may be a bit intim
 
 There are two things missing from this parser:
 
-- Validating lhs of assignments
 - Label validation for loops
 - Strict mode checks
 
-Validating the lhs of assignments is missing because I'm not content with how the spec says it should trigger an early error. The language is a bit ambiguous and leaves it too open. I'm not too bothered with this part not working optimally since it's usually just extra checks that won't ever be triggered. The same could be said about other parts of the code, though.
-
 I've only learned recently that continue may only jump to labels that are scoped to the current loop. I've not yet taken the time to investigate this further so the test case still fails. For now.
+
+Strict mode has never been a high priority for me, but maybe some day.
 
 ## Todos
 
-- LHS assignment validation
 - Label validation
 - Refactoring to globals and replacing constants
 - Use as basis for real parser
 - Strict mode
-
-Checking the assignment targets is not tooo difficult, though still a challenge. Especially because you only know that you should validate it after you've encountered the assignment. Which kind of sucks. And you can't simply check the last identifier, or invalidate if the previous part of the statement was not "just" an identifier, because `x = y = z` is also valid.
 
 Label validation is probably easy. The `continue` statement does not look for labels beyond the (inner most?) loop, while `break` does. So there's some trickery involved in getting that right as well. Right now it simply does statement scoping for labels.
 
@@ -77,6 +78,16 @@ And finally, when I've done all of the above, this parser will form the basis of
 ## Portability
 
 The code does not use any odd tricks and is (deliberately) kept basic. Not only does this aim to help browsers optimize the hell out of everything, it also helps you to port the code if you would want to do so :)
+
+## Nodejs
+
+The parser works under Node.js, you can find a `cli.js` script in the `bin` folder. The usage is simple:
+
+```
+echo 'console.log("hello world!")' | node bin/cli.js
+```
+
+This will make the parser parse whatever you echoed and throw if bad, or do nothing if passed. This script also serves as an example how to use the parser under node.
 
 ## Usages
 

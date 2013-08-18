@@ -18,52 +18,52 @@
     <script src="../src/tok.js"></script>
 		<script src="tests.js"></script>
 		<script>
-            new function(){
-                var out = document.createElement('pre');
-                document.body.appendChild(out);
-                var debug = function(){
-                    var f = document.createElement('div');
-                    f.innerHTML = Array.prototype.slice.call(arguments, 0).join(' ');
-                    out.appendChild(f);
-                };
+      new function(){
+        var out = document.createElement('pre');
+        document.body.appendChild(out);
+        var debug = function(){
+          var f = document.createElement('div');
+          f.innerHTML = Array.prototype.slice.call(arguments, 0).join(' ');
+          out.appendChild(f);
+        };
 
-                debug("Running test suite...",good.length,"tests");
-                debug(' ');
-                var start = Date.now();
-                var ok = 0;
-                var fail = 0;
-                for (var i=0; i<good.length; ++i) {
-                    var test = good[i];
-                    var input = test[0];
-                    var outputLen = test[1].length ? test[1][0] : test[1];
-                    var regexHints = test[3] ? test[2] : []; // if flags, then len=4
-                    var desc = test[3] || test[2];
+        debug("Running test suite...",good.length,"tests");
+        debug(' ');
+        var start = Date.now();
+        var ok = 0;
+        var fail = 0;
+        for (var i=0; i<good.length; ++i) {
+          var test = good[i];
+          var input = test[0];
+          var outputLen = test[1].length ? test[1][0] : test[1];
+          var regexHints = test[3] ? test[2] : []; // if flags, then len=4
+          var desc = test[3] || test[2];
 
-                    try {
-                      var found = 0;
-                      var tok = new Tok(input);
-                      var protect = 1000;
-                      while (--protect && tok.nextWhiteToken(regexHints[found]) != EOF) {
-                        ++found;
-                      }
-                    } catch (e) {
-                        console.error('Crash for', input);
-                        console.error(e);
-                    }
+          try {
+            var found = 0;
+            var tok = new Tok(input);
+            var protect = 1000;
+            while (--protect && tok.nextWhiteToken(regexHints[found]) != EOF) {
+              ++found;
+            }
+          } catch (e) {
+            console.error('Crash for', input);
+            console.error(e);
+          }
 
-                    if (found == outputLen) {
-                        debug('<span class="green">Test '+i+' ok:</span>',desc);
-                        ++ok;
-                    } else {
-                        debug('<b class="red">Test failed:</span>',desc,'(found',found,'expected',outputLen+')'),console.log(desc, tok);
-                        ++fail;
-                    }
-                    debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
-                    debug('<br/>');
-                }
-                debug("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
-                console.log("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
-            };
+          if (found == outputLen) {
+            debug('<span class="green">Test '+i+' ok:</span>',desc);
+            ++ok;
+          } else {
+            debug('<b class="red">Test failed:</span>',desc,'(found',found,'expected',outputLen+')'),console.log(desc, tok);
+            ++fail;
+          }
+          debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
+          debug('<br/>');
+        }
+        debug("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
+        console.log("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
+      };
 		</script>
 	</body>
 </html>
