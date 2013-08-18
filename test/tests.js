@@ -250,6 +250,7 @@ var good = [
 
   // ...
   ["new Date++;", 5, "`new` Operator, Identifier, Postfix Increment, `;`"],
+  ["new\nX;", 4, "new and (no) asi"],
   ["+x++;", 4, "Unary `+`, Identifier, Postfix Increment, `;`"],
 
   // Expressions.
@@ -769,7 +770,30 @@ var bad = [
   ["for(var x=a*;;);", "empty for-loop lhs"],
   ["for(var x=u?i:a*;;);", "empty for-loop lhs"],
   ["for(=x;;);", "incomplete assignment in for-loop"],
-
+  ["new", "new without rhs"],
+  ["x && new", "binary new without rhs"],
+  ["x && new;", "binary new without rhs, followed by semi"],
+  ["x && new\n", "binary new without rhs, followed by newline"],
+  ["x && new\nif(foo);", "binary new without rhs, followed by statement"],
+  ["new\n", "new without rhs followed by newline (making sure EOF token doesnt interfere)"],
+  ["new\nif(x);", "new without rhs followed by statement, forcing asi"],
+  ["new;", "new without rhs, followed by semi"],
+  ["delete;", "delete without rhs, followed by semi"],
+  ["++", "++ without rhs"],
+  ["++\n", "++ without rhs, followed by newline"],
+  ["++\nif(foo);", "new without rhs, followed by statement forcing asi"],
+  ["++;", "++ without rhs, followed by semi"],
+  ["--;", "-- without rhs, followed by semi"],
+  ["+", "+ without rhs"],
+  ["+\n", "+ without rhs, followed by newline"],
+  ["+\nif(foo);", "+ without rhs, followed by statement"],
+  ["+;", "+ without rhs, followed by semi"],
+  ["-;", "- without rhs, followed by semi"],
+  ["~", "~ without rhs"],
+  ["~\n", "~ without rhs, followed by newline"],
+  ["~\nif(foo);", "~ without rhs, followed by statement"],
+  ["~;", "~ without rhs, followed by semi"],
+  ["!;", "! without rhs, followed by semi"],
 
   ['var foo, /bar/;', 'var statement that runs into a regex'],
   ['for (var foo, /bar/ in x);', 'for-in var that runs into a regex'],

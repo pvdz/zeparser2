@@ -392,7 +392,7 @@
 
       var tok = this.tok;
       tok.nextExpr();
-      if (tok.lastNewline) { // TOFIX: what about EOF?
+      if (tok.lastNewline) {
         throw 'No newline allowed directly after a throw, ever. '+tok.syntaxError();
       } else {
         this.parseExpressions();
@@ -768,7 +768,7 @@
           if (!nonAssignee && this.isValueKeyword(identifier)) nonAssignee = true;
         }
       } else {
-        nonAssignee = this.parsePrimaryValue(optional);
+        nonAssignee = this.parsePrimaryValue(optional && !parsedUnary);
       }
 
       var suffixNonAssignable = this.parsePrimarySuffixes();
@@ -811,8 +811,7 @@
         }
         if (hasPrefix || this.isValueKeyword(labelName)) state = NONASSIGNEE;
       } else {
-        // TODO: make constants?
-        if (this.parsePrimaryValue(true) || hasPrefix) state = NONASSIGNEE;
+        if (this.parsePrimaryValue(REQUIRED) || hasPrefix) state = NONASSIGNEE;
       }
 
       var suffixState = this.parsePrimarySuffixes();
