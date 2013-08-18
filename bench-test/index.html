@@ -1,0 +1,80 @@
+<!doctype>
+<html>
+<head>
+<title>bench repro</title>
+</head>
+<body>
+<script>
+var exports = {};
+</script>
+
+<script src="fast/tok.js"></script>
+<script src="fast/par.js"></script>
+<script src="slow/tok.js"></script>
+<script src="slow/par.js"></script>
+
+<script>
+
+var xhr = new XMLHttpRequest();
+xhr.onreadystatechange = function(){
+  if (xhr.readyState == 4) {
+    try { xhr.status; // status is a getter, this checks for exception
+    } catch (e) {
+      throw new Error("Warning: Unknown error with server request (timeout?).");
+    }
+
+    if (xhr.status == 200) start(xhr.responseText);
+    else throw new Error("File request problem (code: "+xhr.status+")!");
+  }
+};
+xhr.open("GET", '8mb-benchmark.js');
+xhr.send(null);
+
+function start(src){
+	console.log("Starting...");
+	var sctr = exports.Par_slow;
+	var fctr = exports.Par_fast;
+
+	var slow = once(sctr, src);
+	var fast = once(fctr, src);
+	console.log("1: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("2: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("3: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("4: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("5: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("6: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("7: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("8: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+	console.log("9: slow:",slow,"fast:",fast);
+	slow += once(sctr, src);
+	fast += once(fctr, src);
+
+	console.log("Slow:", slow);
+	console.log("Fast:", fast);
+	console.log("Thank you for playing perf-roulette");
+	console.log("(Slow should be significantly higher than Fast)");
+}
+
+function once(ctr, src){
+	var start = Date.now();
+	new ctr(src).run();
+	return Date.now() - start;
+}
+
+</script>
