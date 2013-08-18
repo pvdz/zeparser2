@@ -29,6 +29,29 @@
   var NEITHER = NONASSIGNEE | NONFORIN;
   var ISLABEL = 8;
 
+  // boolean constants
+  var OPTIONAL = true;
+  var REQUIRED = false;
+  var NOTFORFUNCTIONEXPRESSION = true;
+  var PARSEDSOMETHING = true;
+  var PARSEDNOTHING = false;
+  var FORFUNCTIONDECL = true;
+  var NOTFORFUNCTIONDECL = false;
+  var NEXTTOKENCANBEREGEX = true;
+  var NEXTTOKENCANBEDIV = false;
+  var INLOOP = true;
+  var NOTINLOOP = false;
+  var INSWITCH = true;
+  var NOTINSWITCH = false;
+  var INFUNCTION = true;
+  var NOTINFUNCTION = false;
+  var PARSEDLABEL = false;
+  var PARSEDNOLABEL = true;
+  var IGNOREVALUES = true;
+  var DONTIGNOREVALUES = false;
+
+
+
   var Par = exports.Par = function(input, options){
     this.options = options || {};
     this.tok = new Tok(input, this.options);
@@ -58,7 +81,7 @@
       // prepare
       this.tok.nextExpr();
       // go!
-      this.parseStatements(false, false, false, []);
+      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, []);
       if (this.tok.pos != this.tok.len) throw 'Did not complete parsing... '+this.tok.syntaxError();
 
       return this;
@@ -66,7 +89,7 @@
 
     parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
       // note: statements are optional, this function might not parse anything
-      while (!this.tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, true));
+      while (!this.tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
       var tok = this.tok;
@@ -79,8 +102,8 @@
 
       if (c === 0x7b) { // {
         tok.nextExpr();
-        this.parseBlock(true, inFunction, inLoop, inSwitch, labelSet);
-        return true;
+        this.parseBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+        return PARSEDSOMETHING;
       }
 
       if (
@@ -92,22 +115,22 @@
         c === 0x21    // !
       ) {
         this.parseExpressionStatement();
-        return true;
+        return PARSEDSOMETHING;
       }
 
       if (c === 0x3b) { // ; // empty statement
         // this shouldnt occur very often, but they still do.
         tok.nextExpr();
-        return true;
+        return PARSEDSOMETHING;
       }
 
       if (tok.isValue()) {
         this.parseExpressionStatement();
-        return true;
+        return PARSEDSOMETHING;
       }
 
       if (!optional) throw 'Expected more input...';
-      return false;
+      return PARSEDNOTHING;
     },
     parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
@@ -115,6 +138,7 @@
       // yes, this makes "huge" difference
       var len = tok.lastLen;
 
+      // TODO: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
       if (len < 2 || len > 8) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
       else { // bcdfirstvw
         var c = tok.getLastNum();
@@ -122,10 +146,10 @@
         if (c === 0x69 && len === 2 && tok.getLastNum2() === 0x66) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
         else if (c === 0x76 && tok.getLastValue() === 'var') this.parseVar();
         else if (c === 0x72 && tok.getLastValue() === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
-        else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction(true);
+        else if (c === 0x66 && tok.getLastValue() === 'function') this.parseFunction(FORFUNCTIONDECL);
         else if (c === 0x66 && tok.getLastValue() === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
         // case and default are handled elsewhere
-        else if ((c === 0x63 && tok.getLastValue() === 'case') || (c === 0x64 && tok.getLastValue() === 'default')) return false;
+        else if ((c === 0x63 && tok.getLastValue() === 'case') || (c === 0x64 && tok.getLastValue() === 'default')) return PARSEDNOTHING;
         else if (c === 0x62 && tok.getLastValue() === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
         else if (c === 0x77 && tok.getLastValue() === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
         else if (c === 0x64 && len === 2 && tok.getLastNum2() === 0x6f) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
@@ -138,13 +162,13 @@
         else this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
       }
 
-      return true;
+      return PARSEDSOMETHING;
     },
     parseStatementHeader: function(){
       var tok = this.tok;
-      tok.mustBeNum(0x28, true); // (
+      tok.mustBeNum(0x28, NEXTTOKENCANBEREGEX); // (
       this.parseExpressions();
-      tok.mustBeNum(0x29, true); // )
+      tok.mustBeNum(0x29, NEXTTOKENCANBEREGEX); // )
     },
 
     parseVar: function(){
@@ -156,24 +180,22 @@
       var tok = this.tok;
       tok.nextPunc();
       do {
-        if (this.isReservedIdentifier(false)) throw 'var name is reserved';
-        tok.mustBeIdentifier(true);
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
+        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         if (tok.isNum(0x3d) && tok.lastLen === 1) { // =
           tok.nextExpr();
           this.parseExpression();
         }
       } while(tok.nextExprIfNum(0x2c)); // ,
       this.parseSemi();
-
-      return true;
     },
     parseVarPartNoIn: function(){
       var state = NOPARSE;
       var tok = this.tok;
 
       do {
-        if (this.isReservedIdentifier(false)) throw 'var name is reserved';
-        tok.mustBeIdentifier(true);
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
+        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
 
         if (tok.isNum(0x3d) && tok.lastLen === 1) { // =
           tok.nextExpr();
@@ -189,11 +211,9 @@
 
       this.tok.nextPunc();
       this.parseStatementHeader();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
 
       this.parseElse(inFunction, inLoop, inSwitch, labelSet);
-
-      return true;
     },
     parseElse: function(inFunction, inLoop, inSwitch, labelSet){
       // else <stmt>;
@@ -201,7 +221,7 @@
       var tok = this.tok;
       if (tok.getLastValue() === 'else') {
         tok.nextExpr();
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
       }
     },
     parseDo: function(inFunction, inLoop, inSwitch, labelSet){
@@ -209,11 +229,11 @@
 
       var tok = this.tok;
       tok.nextExpr(); // do
-      this.parseStatement(inFunction, true, inSwitch, labelSet, false);
-      tok.mustBeString('while', false);
-      tok.mustBeNum(0x28, true); // (
+      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+      tok.mustBeString('while', NEXTTOKENCANBEDIV);
+      tok.mustBeNum(0x28, NEXTTOKENCANBEREGEX); // (
       this.parseExpressions();
-      tok.mustBeNum(0x29, false); // ) (no regex following because it's either semi or newline without asi if a forward slash follows it
+      tok.mustBeNum(0x29, NEXTTOKENCANBEDIV); // ) (no regex following because it's either semi or newline without asi if a forward slash follows it
       this.parseSemi();
     },
     parseWhile: function(inFunction, inLoop, inSwitch, labelSet){
@@ -221,7 +241,7 @@
 
       this.tok.nextPunc();
       this.parseStatementHeader();
-      this.parseStatement(inFunction, true, inSwitch, labelSet, false);
+      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
     },
     parseFor: function(inFunction, inLoop, inSwitch, labelSet){
       // for ( <expr-no-in-=> in <exprs> ) <stmt>
@@ -233,7 +253,7 @@
 
       var tok = this.tok;
       tok.nextPunc(); // for
-      tok.mustBeNum(0x28, true); // (
+      tok.mustBeNum(0x28, NEXTTOKENCANBEREGEX); // (
 
       if (tok.nextExprIfNum(0x3b)) this.parseForEachHeader(); // ; (means empty first expression in for-each)
       else {
@@ -251,14 +271,14 @@
         else this.parseForInHeader();
       }
 
-      tok.mustBeNum(0x29, true); // )
-      this.parseStatement(inFunction, true, inSwitch, labelSet, false);
+      tok.mustBeNum(0x29, NEXTTOKENCANBEREGEX); // )
+      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
     },
     parseForEachHeader: function(){
       // <expr> ; <expr> ) <stmt>
 
       this.parseOptionalExpressions();
-      this.tok.mustBeNum(0x3b, true); // ;
+      this.tok.mustBeNum(0x3b, NEXTTOKENCANBEREGEX); // ;
       this.parseOptionalExpressions();
     },
     parseForInHeader: function(){
@@ -347,9 +367,9 @@
       var tok = this.tok;
       tok.nextPunc();
       this.parseStatementHeader();
-      tok.mustBeNum(0x7b, true); // {
-      this.parseSwitchBody(inFunction, inLoop, true, labelSet);
-      tok.mustBeNum(0x7d, true); // }
+      tok.mustBeNum(0x7b, NEXTTOKENCANBEREGEX); // {
+      this.parseSwitchBody(inFunction, inLoop, INSWITCH, labelSet);
+      tok.mustBeNum(0x7d, NEXTTOKENCANBEREGEX); // }
     },
     parseSwitchBody: function(inFunction, inLoop, inSwitch, labelSet){
       // [<cases>] [<default>] [<cases>]
@@ -369,12 +389,12 @@
     parseCase: function(inFunction, inLoop, inSwitch, labelSet){
       // case <value> : <stmts-no-case-default>
       this.parseExpressions();
-      this.tok.mustBeNum(0x3a,true); // :
+      this.tok.mustBeNum(0x3a, NEXTTOKENCANBEREGEX); // :
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
     },
     parseDefault: function(inFunction, inLoop, inSwitch, labelSet){
       // default <value> : <stmts-no-case-default>
-      this.tok.mustBeNum(0x3a,true); // :
+      this.tok.mustBeNum(0x3a, NEXTTOKENCANBEREGEX); // :
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
     },
     parseTry: function(inFunction, inLoop, inSwitch, labelSet){
@@ -383,7 +403,7 @@
       // try { <stmts> } catch ( <idntf> ) { <stmts> } finally { <stmts> }
 
       this.tok.nextPunc();
-      this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
+      this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
 
       var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
       var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
@@ -395,32 +415,32 @@
 
       var tok = this.tok;
       if (tok.nextPuncIfString('catch')) {
-        tok.mustBeNum(0x28, false); // (
+        tok.mustBeNum(0x28, NEXTTOKENCANBEDIV); // (
 
         // catch var
         if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(false)) throw 'Catch scope var name is reserved';
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Catch scope var name is reserved';
           tok.nextPunc();
         } else {
           throw 'Missing catch scope variable';
         }
 
-        tok.mustBeNum(0x29, false); // )
-        this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
+        tok.mustBeNum(0x29, NEXTTOKENCANBEDIV); // )
+        this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
 
-        return true;
+        return PARSEDSOMETHING;
       }
-      return false;
+      return PARSEDNOTHING;
     },
     parseFinally: function(inFunction, inLoop, inSwitch, labelSet){
       // finally { <stmts> }
 
       if (this.tok.nextPuncIfString('finally')) {
-        this.parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
+        this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
 
-        return true;
+        return PARSEDSOMETHING;
       }
-      return false;
+      return PARSEDNOTHING;
     },
     parseDebugger: function(){
       // debugger ;
@@ -433,7 +453,7 @@
 
       this.tok.nextPunc();
       this.parseStatementHeader();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
     },
     parseFunction: function(forFunctionDeclaration){
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
@@ -441,7 +461,7 @@
       var tok = this.tok;
       tok.nextPunc(); // 'function'
       if (tok.isType(IDENTIFIER)) { // name
-        if (this.isReservedIdentifier(false)) throw 'function name is reserved';
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'function name is reserved';
         tok.nextPunc();
       } else if (forFunctionDeclaration) {
         throw 'function declaration name is required';
@@ -456,17 +476,17 @@
      */
     parseFunctionRemainder: function(paramCount, forFunctionDeclaration){
       var tok = this.tok;
-      tok.mustBeNum(0x28, false); // (
+      tok.mustBeNum(0x28, NEXTTOKENCANBEDIV); // (
       this.parseParameters(paramCount);
-      tok.mustBeNum(0x29, false); // )
-      this.parseCompleteBlock(forFunctionDeclaration, true, false, false, []); // this resets loop and switch status
+      tok.mustBeNum(0x29, NEXTTOKENCANBEDIV); // )
+      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, []); // this resets loop and switch status
     },
     parseParameters: function(paramCount){
       // [<idntf> [, <idntf>]]
       var tok = this.tok;
       if (tok.isType(IDENTIFIER)) {
         if (paramCount === 0) throw 'Getters have no parameters';
-        if (this.isReservedIdentifier(false)) throw 'Function param name is reserved';
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved';
         tok.nextExpr();
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(0x2c)) { // ,
@@ -474,7 +494,7 @@
 
           // param name
           if (tok.isType(IDENTIFIER)) {
-            if (this.isReservedIdentifier(false)) throw 'Function param name is reserved';
+            if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved';
             tok.nextPunc();
           } else {
             throw 'Missing func param name';
@@ -484,6 +504,7 @@
         throw 'Setters have exactly one param';
       }
     },
+    // TODO: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
     parseBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
       // note: this parsing method is also used for functions. the only case where
@@ -492,7 +513,7 @@
       this.tok.mustBeNum(0x7d, notForFunctionExpression); // }
     },
     parseCompleteBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
-      this.tok.mustBeNum(0x7b, true); // {
+      this.tok.mustBeNum(0x7b, NEXTTOKENCANBEREGEX); // {
       this.parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet);
     },
     parseSemi: function(){
@@ -509,7 +530,7 @@
       if (tok.isNum(0x7d) || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
         return this.addAsi();
       }
-      return false;
+      return PARSEDNOTHING;
     },
     addAsi: function(){
       ++this.tok.tokenCount;
@@ -519,18 +540,8 @@
     parseExpressionStatement: function(){
       this.parseExpressions();
       this.parseSemi();
-
-      return true;
     },
     parseExpressionOrLabel: function(inFunction, inLoop, inSwitch, labelSet){
-      // note that this is a statement that starts with an identifier
-      // (could also be new or delete!)
-      if (this.parseExpressionForLabel(inFunction, inLoop, inSwitch, labelSet)) {
-        if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions(); // 2c=,
-        this.parseSemi();
-      }
-    },
-    parseExpressionForLabel: function(inFunction, inLoop, inSwitch, labelSet){
       // this method is only called at the start of
       // a statement that starts with an identifier.
       var labelName = this.tok.getLastValue();
@@ -554,16 +565,17 @@
         }
 
         labelSet.push(labelName);
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
         labelSet.pop();
-        return false;
+
+      } else {
+
+        this.parseAssignments(state & NONASSIGNEE > 0);
+        this.parseNonAssignments();
+
+        if (this.tok.nextExprIfNum(0x2c)) this.parseExpressions(); // 2c=,
+        this.parseSemi();
       }
-
-      this.parseAssignments(state & NONASSIGNEE > 0);
-      this.parseNonAssignments();
-
-      // tofix: make constant for boolean
-      return true;
     },
     parseOptionalExpressions: function(){
       var tok = this.tok;
@@ -597,7 +609,7 @@
       return nonAssignee;
     },
     parseExpressionOptional: function(){
-      var nonAssignee = this.parsePrimary(false);
+      var nonAssignee = this.parsePrimary(OPTIONAL);
       // if there was no assignment, state will be the same.
       nonAssignee = this.parseAssignments(nonAssignee);
 
@@ -613,24 +625,24 @@
         if (nonAssignee && this.options.strictAssignmentCheck) throw 'LHS is invalid assignee';
         // any assignment means not a for-in per definition
         this.tok.nextExpr();
-        nonAssignee = this.parsePrimary(true);
+        nonAssignee = this.parsePrimary(REQUIRED);
         nonForIn = NONFORIN; // always
       }
 
       return (nonAssignee ? NONASSIGNEE : NOPARSE) | nonForIn;
     },
     parseNonAssignments: function(){
-      var parsed = false;
+      var parsed = PARSEDNOTHING;
       // keep parsing non-assignment binary/ternary ops
       while (true) {
         if (this.isBinaryOperator()) {
           this.tok.nextExpr();
-          this.parsePrimary(true);
+          this.parsePrimary(REQUIRED);
         }
         else if (this.tok.isNum(0x3f)) this.parseTernary(); // ?
         else break;
         // any binary is a non-for-in
-        parsed = true;
+        parsed = PARSEDSOMETHING;
       }
       return parsed;
     },
@@ -638,14 +650,14 @@
       var tok = this.tok;
       tok.nextExpr();
       this.parseExpression();
-      tok.mustBeNum(0x3a,true); // :
+      tok.mustBeNum(0x3a, NEXTTOKENCANBEREGEX); // :
       this.parseExpression();
     },
     parseTernaryNoIn: function(){
       var tok = this.tok;
       tok.nextExpr();
       this.parseExpression();
-      tok.mustBeNum(0x3a,true); // :
+      tok.mustBeNum(0x3a, NEXTTOKENCANBEREGEX); // :
       this.parseExpressionNoIn();
     },
     parseExpressionsNoIn: function(){
@@ -660,7 +672,7 @@
       return state;
     },
     parseExpressionNoIn: function(){
-      var nonAssignee = this.parsePrimary(false);
+      var nonAssignee = this.parsePrimary(REQUIRED);
 
       var state = this.parseAssignments(nonAssignee);
 
@@ -678,7 +690,8 @@
             repeat = false;
           } else {
             this.tok.nextExpr();
-            this.parsePrimary(true);
+            // (seems this should be a required part...)
+            this.parsePrimary(REQUIRED);
             state = NEITHER;
           }
         } else if (tok.isNum(0x3f)) { // 3f=?
@@ -709,10 +722,10 @@
       if (tok.isType(IDENTIFIER)) {
         var identifier = tok.getLastValue();
         if (tok.isNum(0x66) && identifier === 'function') {
-          this.parseFunction(false);
+          this.parseFunction(NOTFORFUNCTIONDECL);
           nonAssignee = true;
         } else {
-          if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression';
+          if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression';
           tok.nextPunc();
           // any non-keyword identifier can be assigned to
           if (!nonAssignee && this.isValueKeyword(identifier)) nonAssignee = true;
@@ -750,7 +763,7 @@
         // identifiers (break, return, if) because parseIdentifierStatement
         // will already have ensured a different code path in that case!
         // TOFIX: check how often this is called and whether it's worth investigating...
-        if (this.isReservedIdentifier(true)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
+        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
 
         tok.nextPunc();
 
@@ -773,7 +786,7 @@
 
       return state;
     },
-    parsePrimaryValue: function(required){
+    parsePrimaryValue: function(optional){
       // at this point in the expression parser we will
       // have ruled out anything else. the next token(s) must
       // be some kind of expression value...
@@ -786,17 +799,17 @@
         if (tok.nextExprIfNum(0x28)) nonAssignee = this.parseGroup(); // (
         else if (tok.nextExprIfNum(0x7b)) this.parseObject(); // {
         else if (tok.nextExprIfNum(0x5b)) this.parseArray(); // [
-        else if (required) throw 'Unable to parse required primary value';
+        else if (!optional) throw 'Unable to parse required primary value';
       }
 
       return nonAssignee;
     },
     parseUnary: function(){
-      var parsed = false;
+      var parsed = PARSEDNOTHING;
       var tok = this.tok;
       while (!tok.isType(EOF) && this.testUnary()) {
         tok.nextExpr();
-        parsed = true;
+        parsed = PARSEDSOMETHING;
       }
       return parsed; // return bool to determine possibility of label
     },
@@ -841,15 +854,15 @@
       while (repeat) {
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
         if (tok.isType(PUNCTUATOR) && tok.nextExprIfNum(0x2e)) { // .
-          tok.mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = ASSIGNEE; // property name can be assigned to (for-in lhs)
         } else if (tok.nextExprIfNum(0x28)) { // (
           this.parseOptionalExpressions();
-          tok.mustBeNum(0x29, false); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          tok.mustBeNum(0x29, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = NONASSIGNEE; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
         } else if (tok.nextExprIfNum(0x5b)) { // [
           this.parseExpressions(); // required
-          tok.mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          tok.mustBeNum(0x5d, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = ASSIGNEE; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
         } else if (tok.isNum(0x2b) && tok.nextPuncIfString('++')) {
           // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
@@ -1004,7 +1017,7 @@
 
     parseGroup: function(){
       var nonAssignee = this.parseExpressions(); // required. nonassignable if multiple, or if the single expression is nonassignable
-      this.tok.mustBeNum(0x29, false); // 29=)  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+      this.tok.mustBeNum(0x29, NEXTTOKENCANBEDIV); // 29=)  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       return nonAssignee;
     },
     parseArray: function(){
@@ -1013,7 +1026,7 @@
         this.parseExpressionOptional(); // just one because they are all optional (and arent in expressions)
       } while (tok.nextExprIfNum(0x2c)); // elision
 
-      tok.mustBeNum(0x5d, false); // ]  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+      tok.mustBeNum(0x5d, NEXTTOKENCANBEDIV); // ]  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
     },
     parseObject: function(){
       var tok = this.tok;
@@ -1022,24 +1035,24 @@
         // since that's an error, it's unlikely you'll ever see that triggered.
         if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
       } while (tok.nextExprIfNum(0x2c)); // elision
-      tok.mustBeNum(0x7d, false); // }  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+      tok.mustBeNum(0x7d, NEXTTOKENCANBEDIV); // }  cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
     },
     parsePair: function(){
       var tok = this.tok;
       if (tok.isNum(0x67) && tok.nextPuncIfString('get')) {
         if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(false)) throw 'Getter name is reserved';
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved';
           tok.nextPunc();
 
-          this.parseFunctionRemainder(0, true);
+          this.parseFunctionRemainder(0, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
       } else if (tok.isNum(0x73) && tok.nextPuncIfString('set')) {
         if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(false)) throw 'Getter name is reserved';
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved';
           tok.nextPunc();
 
-          this.parseFunctionRemainder(1, true);
+          this.parseFunctionRemainder(1, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
       } else {
@@ -1051,7 +1064,7 @@
       this.parseDataPart();
     },
     parseDataPart: function(){
-      this.tok.mustBeNum(0x3a, true); // :
+      this.tok.mustBeNum(0x3a, NEXTTOKENCANBEREGEX); // :
       this.parseExpression();
     },
 
