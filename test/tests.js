@@ -1041,6 +1041,7 @@ var optional = [ // for expected: true = pass, false = throw
       ["(x,x) = 5", "Should throw an early error for being an \"obvious\" impossible assignment"],
       ["((x,x)) = 5", "Should throw an early error for being an \"obvious\" impossible assignment (double)"],
       ["(((x,x))) = 5", "Should throw an early error for being an \"obvious\" impossible assignment (triple)"],
+      ["(a=b)=c", "wrapped assignemnt is invalid assignee"],
 
       ["new foo = 5", "new always invalid assignee"],
       ["delete foo = 5", "delete always invalid assignee"],
