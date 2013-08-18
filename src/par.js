@@ -174,33 +174,53 @@
     parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
 
-      // yes, this makes "huge" difference
-      var len = tok.lastLen;
+      // The current token is an identifier. Either its value will be
+      // checked in this function (parseIdentifierStatement) or in the
+      // parseExpressionOrLabel function. So we can just get it now.
+      var value = tok.getLastValue();
+
+      // track whether this token was parsed. if not, do parseExpressionOrLabel at the end
+      var startCount = tok.tokenCountAll;
 
       // TODO: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
-      if (len < 2 || len > 8) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
-      else { // bcdfirstvw
+
+      // yes, this check makes a *huge* difference
+      var len = tok.lastLen;
+      if (len >= 2 || len <= 8) {
+        // bcdfirstvw, not in that order.
         var c = tok.getLastNum();
 
   //      if (c > ORD_L_F && c < ORD_L_R && c != ORD_L_I) this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet); // i dunno if this is a good idea
         if (c === ORD_L_I && len === 2 && tok.getLastNum2() === ORD_L_F) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_V && tok.getLastValue() === 'var') this.parseVar();
-        else if (c === ORD_L_R && tok.getLastValue() === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
-        else if (c === ORD_L_F && tok.getLastValue() === 'function') this.parseFunction(FORFUNCTIONDECL);
-        else if (c === ORD_L_F && tok.getLastValue() === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
-        // case and default are handled elsewhere
-        else if ((c === ORD_L_C && tok.getLastValue() === 'case') || (c === ORD_L_D && tok.getLastValue() === 'default')) return PARSEDNOTHING;
-        else if (c === ORD_L_B && tok.getLastValue() === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_W && tok.getLastValue() === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_D && len === 2 && tok.getLastNum2() === ORD_L_O) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_T && tok.getLastValue() === 'throw') this.parseThrow();
-        else if (c === ORD_L_S && tok.getLastValue() === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_T && tok.getLastValue() === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_D && tok.getLastValue() === 'debugger') this.parseDebugger();
-        else if (c === ORD_L_W && tok.getLastValue() === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_C && tok.getLastValue() === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
-        else this.parseExpressionOrLabel(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_V && value === 'var') this.parseVar();
+        else if (c === ORD_L_R && value === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
+        else if (c === ORD_L_F) {
+          if (value === 'function') this.parseFunction(FORFUNCTIONDECL);
+          else if (value === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === ORD_L_C) {
+          if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
+          else if (value === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === ORD_L_D) {
+          if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
+          else if (len === 2 && tok.getLastNum2() === ORD_L_O) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+          else if (value === 'debugger') this.parseDebugger();
+        }
+        else if (c === ORD_L_B && value === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_W) {
+          if (value === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
+          else if (value === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === ORD_L_T) {
+          if (value === 'throw') this.parseThrow();
+          else if (value === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === ORD_L_S && value === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
       }
+
+      // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
+      if (tok.tokenCountAll === startCount) this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
 
       return PARSEDSOMETHING;
     },
@@ -578,10 +598,9 @@
       this.parseExpressions();
       this.parseSemi();
     },
-    parseExpressionOrLabel: function(inFunction, inLoop, inSwitch, labelSet){
+    parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet){
       // this method is only called at the start of
       // a statement that starts with an identifier.
-      var labelName = this.tok.getLastValue();
 
       // ugly but mandatory label check
       // if this is a label, the parsePrimary parser
@@ -733,7 +752,6 @@
           }
         } else if (tok.isNum(ORD_QMARK)) {
           this.parseTernaryNoIn();
-          // TODO: add for-in tests that deal with ternary operator in lhs...
           state = NEITHER; // the lhs of a for-in cannot contain a ternary operator
         } else {
           repeat = false;
