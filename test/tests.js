@@ -612,18 +612,19 @@ var good = [
   // code coverage missing tests
   ["x!=y;",4,"cant believe this isnt tested by anything above"],
 
-  ["for(;function(){}/1;)break", 14, "forward slash after function _expression_ must be division (by @garethheyes)"],
-  ["function f(){}/1/;", 9, "forward slash after function _declaration_ must be regex"],
-  ["var i, x = x\n/x", 14, "division after newline (by @garethheyes)"],
-  ["var i, x = x\n/x/i", 16, "double division after newline (by @garethheyes)"],
+  ["for(;function(){}/1;)break", [13, 14], "forward slash after function _expression_ must be division (by @garethheyes)"],
+  ["function f(){}/1/;", 9, [true, true, true, true, true, true, true, true], "forward slash after function _declaration_ must be regex"],
+  ["var i, x = x\n/x", [13, 14], "division after newline (by @garethheyes)"],
+  ["var i, x = x\n/x/i", [15, 16], "double division after newline (by @garethheyes)"],
 
   // series of tests after discussion (https://twitter.com/kuvos/status/260487571623256064):
-  ["var x=\n/5/", 7, [true, true, true, true, true, true], "var-regex tests (regex assigned to x)"],
-  ["var x=\n/5/g", 7, [true, true, true, true, true, true], "var-regex tests (regex with flag assigned to x)"],
-  ["var x=5\n/5", 9, "var-regex tests (5/5=1 :)"],
-  ["var x=5\n/5/g", 11, "var-regex tests (5/5/g=? :)"],
-  ["var x=5,x=5\n/5", 13, "var-regex tests (same thing, second var)"],
-  ["var x=5,x=5\n/5/g", 15, "var-regex tests (same thing, second var)"],
+  ["var x=\n/5/", [6, 7], [true, true, true, true, true, true], "var-regex tests (regex assigned to x)"],
+  ["var x=\n/5/g", [6, 7], [true, true, true, true, true, true], "var-regex tests (regex with flag assigned to x)"],
+  ["var x=5\n/5", [8, 9], "var-regex tests (5/5=1 :)"],
+  ["var x=5\n/5/g", [10, 11], "var-regex tests (5/5/g=? :)"],
+  ["var x=5,x=5\n/5", [12, 13], "var-regex tests (same thing, second var)"],
+  ["var x=5,x=5\n/5/g", [14, 15], "var-regex tests (same thing, second var)"],
+  ["x\n/5/", 3, [true, true, true], "shorter test"],
 
   ["(function(){}.constructor());", 12, "func expr with method call"],
 

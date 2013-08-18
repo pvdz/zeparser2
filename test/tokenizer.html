@@ -14,7 +14,7 @@
 	<body>
 		(c) qfox.nl<br/>
     Testing tokenizer:<br/>
-    <script src="uni.js"></script>
+    <script src="../src/uni.js"></script>
     <script src="../src/tok.js"></script>
 		<script src="tests.js"></script>
 		<script>
@@ -41,24 +41,36 @@
 
           try {
             var found = 0;
-            var tok = new Tok(input);
+            var types = [];
+            var tok = new Tok(input, {});
+
             var protect = 1000;
-            while (--protect && tok.nextWhiteToken(regexHints[found]) != EOF) {
+            do {
+              var type = tok.nextWhiteToken(regexHints[found]);
+              types.push(type);
               ++found;
-            }
+            } while (--protect && type !== Tok.EOF);
+            --found;
+
           } catch (e) {
+            var errorThrown = e.toString();
             console.error('Crash for', input);
             console.error(e);
           }
 
-          if (found == outputLen) {
+          if (errorThrown) {
+            debug('<b class="red">Test failed:</span>',desc,'('+errorThrown+')'),console.log(desc, tok);
+            ++fail;
+          } else if (found == outputLen) {
             debug('<span class="green">Test '+i+' ok:</span>',desc);
             ++ok;
           } else {
             debug('<b class="red">Test failed:</span>',desc,'(found',found,'expected',outputLen+')'),console.log(desc, tok);
             ++fail;
           }
+          if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
           debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
+          debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
           debug('<br/>');
         }
         debug("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);

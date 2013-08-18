@@ -13,10 +13,8 @@
   </head>
   <body>
     (c) qfox.nl<br/>
-    Testing parser:<br/>
-    <script src="../src/uni.js"></script>
-    <script src="../src/tok.js"></script>
-    <script src="../src/par.js"></script>
+    Testing the build (<code>/build/zp.js</code>):<br/>
+    <script src="../build/zp.js"></script>
     <script src="tests.js"></script>
     <script>
       new function(){
@@ -50,16 +48,14 @@
             crashed = e;
           }
 
-          var tcount = par.tok.tokenCountAll - 1; // -1 = eof
-
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed.toString() + ')');
             ++fail;
-          } else if (tcount == outputLen) {
+          } else if (par.tok.tokenCount == outputLen) {
             debug('<span class="green">Test ' + i + ' ok:</span>', desc);
             ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
+            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', par.tok.tokenCount, 'expected', outputLen + ')'), console.log(desc, par);
             ++fail;
           }
           debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
