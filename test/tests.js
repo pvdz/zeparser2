@@ -624,7 +624,6 @@ var good = [
   ["var x=5\n/5/g", [10, 11], "var-regex tests (5/5/g=? :)"],
   ["var x=5,x=5\n/5", [12, 13], "var-regex tests (same thing, second var)"],
   ["var x=5,x=5\n/5/g", [14, 15], "var-regex tests (same thing, second var)"],
-  ["x\n/5/", 3, [true, true, true], "shorter test"],
 
   ["(function(){}.constructor());", 12, "func expr with method call"],
 
@@ -991,6 +990,8 @@ var bad = [
   ["var x=5,x\n/5/", "var-regex tests (no asi)"],
   ["var x=5,x\n/5/g", "var-regex tests (no asi)"],
   ["var x=5,x=5\n/5/", "var-regex tests"],
+  ["x\n/5/", "shorter regex test"],
+
 
   ["function(){}", "function declarations must have a name"],
   ["function if(){}", "function declarations name must be valid"],
