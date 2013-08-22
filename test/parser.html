@@ -50,14 +50,16 @@
             crashed = e;
           }
 
+          var tcount = par.tok.tokenCountAll - 1; // -1 = eof
+
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed.toString() + ')');
             ++fail;
-          } else if (par.tok.tokenCount == outputLen) {
+          } else if (tcount == outputLen) {
             debug('<span class="green">Test ' + i + ' ok:</span>', desc);
             ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', par.tok.tokenCount, 'expected', outputLen + ')'), console.log(desc, par);
+            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
             ++fail;
           }
           debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');

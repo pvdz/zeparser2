@@ -19,7 +19,7 @@
   var EOF = 14;
   var ASI = 15;
   var ERROR = 16;
-  var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
+  var WHITE = 18; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
   /**
    * Tokenizer for JS. After initializing the constructor
@@ -51,10 +51,13 @@
     // charCodeAt will never return -1, so -1 means "uninitialized". allows us to keep this value a number, always
     this.nextNum1 = -1;
     this.nextNum2 = -1;
-    this.nextNum3 = -1;
 
-    this.tokenCount = 0;
-    this.tokens = [];
+    this.tokenCountAll = 0;
+
+    if (options.saveTokens) {
+      this.tokens = [];
+      if (options.createBlackStream) this.black = [];
+    }
   };
 
   // reverse lookup (only used for error messages..)
@@ -77,7 +80,25 @@
   Tok[ERROR] = 'error';
   Tok[WHITE] = 'white';
 
-  Tok.prototype = {
+  Tok.WHITE_SPACE = WHITE_SPACE;
+  Tok.LINETERMINATOR = LINETERMINATOR;
+  Tok.COMMENT_SINGLE = COMMENT_SINGLE;
+  Tok.COMMENT_MULTI = COMMENT_MULTI;
+  Tok.STRING = STRING;
+  Tok.STRING_SINGLE = STRING_SINGLE;
+  Tok.STRING_DOUBLE = STRING_DOUBLE;
+  Tok.NUMBER = NUMBER;
+  Tok.NUMERIC_DEC = NUMERIC_DEC;
+  Tok.NUMERIC_HEX = NUMERIC_HEX;
+  Tok.REGEX = REGEX;
+  Tok.PUNCTUATOR = PUNCTUATOR;
+  Tok.IDENTIFIER = IDENTIFIER;
+  Tok.EOF = EOF;
+  Tok.ASI = ASI;
+  Tok.ERROR = ERROR;
+  Tok.WHITE = WHITE; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
+
+  var proto = {
     /** @property {string} input */
     input: '',
     /** @property {number} len */
@@ -90,7 +111,9 @@
      * Only properties relevant to Tok are listed in this jsdoc.
      *
      * @property {Object} options
-     * @property {boolean} [options.regexNoClassEscape] Don't interpret backslash in regex class as escape
+     * @property {boolean} [options.saveTokens=false] Put all found tokens in .tokens
+     * @property {boolean} [options.createBlackStream=false] Requires saveTokens, put black tokens in .black
+     * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      */
     options: null,
 
@@ -112,22 +135,16 @@
     // .charCodeAt(pos+n) cache
     nextNum1: -1,
     nextNum2: -1,
-    nextNum3: -1,
 
-    /** @property {number} tokenCount Simple counter, includes whitespace, excludes EOF */
-    tokenCount: 0,
-    /** @property {number tokenCountAll Add one for any token, including EOF (Par relies on this) */
+    /** @property {number} tokenCountAll Add one for any token, including EOF (Par relies on this) */
     tokenCountAll: 0,
-    /** @property {Object} tokens List of (all) tokens, if saving them is enabled */
+    /** @property {Object[]} tokens List of (all) tokens, if saving them is enabled (this.options.saveTokens) */
     tokens: null,
+    /** @property {Object[]} black List of only black tokens, if saving them is enabled (this.options.saveTokens) and createBlackStream is too */
+    black: null,
 
     // some of these regular expressions are so complex that i had to
     // write scripts to construct them. the only way to keep my sanity
-
-    /** @property {RegExp} rexNewlines Replace windows' CRLF with a single LF, as well as the weird newlines. this fixes positional stuff. */
-    rexNewlines: /[\u000A\u000d\u2028\u2029]/g, // used by comment parsers if in regex mode
-    /** @property {RegExp} rexNewlineSearchInMultilineComment After having found the * / (indexOf), apply this to quickly test for a newline in the comment */
-    rexNewlineSearchInMultilineComment:/[\u000A\u000D\u2028\u2029]|\*\//g, // used by m-comment parser if in regex mode
 
     /**
      * Check whether current token is of certain type
@@ -281,54 +298,45 @@
       this.lastNewline = false;
 
       var pos = this.pos;
-
-      if (pos >= this.len) {
-        if (this.lastType === EOF) throw 'Tried to parse beyond EOF, that cannot be good.';
-        this.lastType = EOF;
-        this.lastStart = this.lastStop = this.lastLen = pos;
-        ++this.tokenCountAll;
-        return EOF;
-      }
+      var toStream = this.options.saveTokens;
 
       do {
         var type = this.nextWhiteToken(expressionStart);
-  //      this.tokens.push({type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos});
-
-  //      console.log('token:', type, Tok[type], '`'+this.input.substring(this.lastStart, this.pos).replace(/\n/g,'\u23CE')+'`', 'start:',this.lastStart, 'len:',this.lastStop-this.lastStart);
+        if (toStream) {
+          var token = {type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos, white:this.tokens.length};
+          this.tokens.push(token);
+        }
       } while (type === WHITE);
+
+      if (toStream && this.options.createBlackStream) {
+        token.black = this.black.length;
+        this.black.push(token);
+      }
 
       this.lastType = type;
       return type;
     },
     nextWhiteToken: function(expressionStart){
       this.lastValue = '';
-      var lastLen = this.lastLen;
-      var start = this.lastStart = this.pos;
-      if (this.pos >= this.len) return EOF;
 
       // prepare charCodeAt cache...
-      if (lastLen === 1) {
-        this.nextNum1 = this.nextNum2;
-        this.nextNum2 = this.nextNum3;
-      } else if (lastLen === 2) {
-        this.nextNum1 = this.nextNum3;
-        this.nextNum2 = -1;
-      } else if (lastLen === 3) {
-        this.nextNum1 = -1;
-        this.nextNum2 = -1;
-      } else {
-        this.nextNum1 = -1;
-        this.nextNum2 = -1;
-      }
-      this.nextNum3 = -1;
+      if (this.lastLen === 1) this.nextNum1 = this.nextNum2;
+      else this.nextNum1 = -1;
+      this.nextNum2 = -1;
 
-      ++this.tokenCount;
       ++this.tokenCountAll;
 
-      var result = this.nextToken(expressionStart);
-
-      var stop = this.lastStop = this.pos;
-      this.lastLen = stop - start;
+      if (this.pos >= this.len) {
+        if (this.lastType === EOF) throw 'Tried to parse beyond EOF, that cannot be good.';
+        var result = EOF;
+        this.lastLen = 0;
+        this.lastStart = this.lastStop = this.len;
+      } else {
+        var start = this.lastStart = this.pos;
+        var result = this.nextToken(expressionStart);
+        var stop = this.lastStop = this.pos;
+        this.lastLen = stop - start;
+      }
 
       return result;
     },
@@ -371,24 +379,24 @@
   //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
   //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
 
-      //  (             )             ;             ,             {             }             :             [             ]             ?             ~
-      if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f || c === 0x7e) len = 1;
+      if (c === 0x2e) { // .
+        var d = this.getLastNum2();
+        // must check for a number because number parser comes after this
+        if (d < 0x0030 || d > 0x0039) len = 1;
+      }
+      else if (c === 0x3d) { // =
+        if (this.getLastNum2() === 0x3d) {
+          if (this.getLastNum3() === 0x3d) len = 3;
+          else len = 2;
+        }
+        else len = 1;
+      }
+      //       (             )             ;             ,             {             }             :             [             ]             ?             ~
+      else if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f || c === 0x7e) len = 1;
       else {
         var d = this.getLastNum2();
 
-        if (c === 0x2e) { // .
-          // must check for a number because number parser comes after this
-          if (d < 0x0030 || d > 0x0039) len = 1;
-        }
-        else if (c === 0x3d) { // =
-          if (d === 0x3d) {
-            var e = this.getLastNum3();
-            if (e === 0x3d) len = 3;
-            else  len = 2;
-          }
-          else len = 1;
-        }
-        else if (c === 0x2b) { // +
+        if (c === 0x2b) { // +
           if (d === 0x3d || d === 0x2b) len = 2;
           else len = 1;
         }
@@ -472,7 +480,7 @@
     },
 
     whitespace: function(c){
-      if (c === 0x0020 || c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x00A0 || c === 0xFFFF) {
+      if ((c <= 0x0020 || c >= 0x00A0) && (c === 0x0020 || c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x00A0 || c === 0xFFFF)) {
         ++this.pos;
         return true;
       }
@@ -506,15 +514,6 @@
       }
       this.pos = pos;
 
-  //    var rex = this.rexNewlines;
-  //    rex.lastIndex = this.pos;
-  //    rex.test(this.input);
-  //
-  //    // if not found, lastIndex will be 0. in this case, that means "eof".
-  //    var pos = rex.lastIndex;
-  //    if (pos === 0) this.pos = this.len;
-  //    else this.pos = pos - 1;
-
       return WHITE;
     },
     commentMulti: function(pos, input){
@@ -534,21 +533,6 @@
         if (hasNewline || c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) hasNewline = this.lastNewline = true;
       }
       this.pos = pos+1;
-
-      /*
-      var end = this.input.indexOf('*\/',this.pos+2)+2;
-      if (end == 1) throw new Error('Unable to find end of multiline comment started on pos '+this.pos);
-
-      // search for newline (important for ASI)
-      var nls = this.rexNewlineSearchInMultilineComment;
-      nls.lastIndex = this.pos+2;
-      // not dead code. we're checking the nls regex for its lastIndex property
-      // if it matches end, there was no newline (it will match * /), if it didnt
-      // match end, it will match a newline earlier
-      nls.test(this.input);
-      if (nls.lastIndex !== end) this.lastNewline = true;
-      this.pos = end;
-      */
 
       return WHITE;
     },
@@ -831,9 +815,7 @@
       return n;
     },
     getLastNum3: function(){
-      var n = this.nextNum3;
-      if (n === -1) return this.nextNum3 = this.input.charCodeAt(this.lastStart+2);
-      return n;
+      return this.input.charCodeAt(this.lastStart+2);
     },
     getLastNum4: function(){
       return this.input.charCodeAt(this.lastStart+3);
@@ -847,5 +829,10 @@
           '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
     },
   };
+
+  // workaround for https://code.google.com/p/v8/issues/detail?id=2246
+  var o = {};
+  for (var k in proto) o[k] = proto[k];
+  Tok.prototype = o;
 
 })(typeof exports === 'object' ? exports : window);
