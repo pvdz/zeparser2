@@ -1096,6 +1096,7 @@
       tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV);
     },
     parseObject: function(){
+      var lhc = this.tok.black[this.black.length-2];
       var tok = this.tok;
       do {
         // object literal keys can be most values, but not regex literal.
@@ -1105,6 +1106,10 @@
 
       // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       tok.mustBeNum(ORD_CLOSE_CURLY, NEXTTOKENCANBEDIV);
+      var rhc = this.tok.black[this.black.length-2];
+
+      lhc.rhc = rhc;
+      rhc.lhc = lhc;
     },
     parsePair: function(){
       var tok = this.tok;
