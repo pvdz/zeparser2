@@ -1638,9 +1638,17 @@
       } while (this_tok_nextExprIfNum(0x2c)); // elision
 
       // array lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+<<<<<<< HEAD
       this_tok_mustBeNum(0x5d, false);
     }
   function this_par_parseObject(){
+=======
+      tok.mustBeNum(0x5d, false);
+    },
+    parseObject: function(){
+      var lhc = this.tok.black[this.tok.black.length-2];
+      var tok = this.tok;
+>>>>>>> 731aa68... Bugfix
       do {
         // object literal keys can be most values, but not regex literal.
         // since that's an error, it's unlikely you'll ever see that triggered.
@@ -1648,6 +1656,7 @@
       } while (this_tok_nextExprIfNum(0x2c)); // elision
 
       // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+<<<<<<< HEAD
       this_tok_mustBeNum(0x7d, false);
     }
   function this_par_parsePair(){
@@ -1655,6 +1664,20 @@
         if (this_tok_isType(13)) {
           if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved';
           this_tok_nextPunc();
+=======
+      tok.mustBeNum(0x7d, false);
+      var rhc = this.tok.black[this.tok.black.length-2];
+
+      lhc.rhc = rhc;
+      rhc.lhc = lhc;
+    },
+    parsePair: function(){
+      var tok = this.tok;
+      if (tok.isNum(0x67) && tok.nextPuncIfString('get')) {
+        if (tok.isType(13)) {
+          if (this.isReservedIdentifier(false)) throw 'Getter name is reserved';
+          tok.nextPunc();
+>>>>>>> 731aa68... Bugfix
 
           this_par_parseFunctionRemainder(0, true);
         }
