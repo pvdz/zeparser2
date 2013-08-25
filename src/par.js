@@ -1101,7 +1101,10 @@
       do {
         // object literal keys can be most values, but not regex literal.
         // since that's an error, it's unlikely you'll ever see that triggered.
-        if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
+        if (tok.isValue() && !tok.isType(REGEX)) {
+          this.tok.black[this.tok.black.length-1].lhc = lhc;
+          this.parsePair();
+        }
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
       // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
