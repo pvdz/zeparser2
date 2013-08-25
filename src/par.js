@@ -48,8 +48,6 @@
   var NOTINSWITCH = false;
   var INFUNCTION = true;
   var NOTINFUNCTION = false;
-  var PARSEDLABEL = false;
-  var PARSEDNOLABEL = true;
   var IGNOREVALUES = true;
   var DONTIGNOREVALUES = false;
 
@@ -111,10 +109,12 @@
     if (!options.strictForInCheck) options.strictForInCheck = false;
     if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
 
-    this.tok = new Tok(input, this.options);
+    // `this['tok'] prevents build script mangling :)
+    this['tok'] = new Tok(input, this.options);
+    this['run'] = this.run; // used in Par.parse
   };
 
-  Par.parse = function(input, options){
+  exports.Par.parse = function(input, options){
     var par = new Par(input, options);
     par.run();
     return par;
@@ -135,13 +135,18 @@
      */
     options: null,
 
+    /**
+     * @property {Tok} tok
+     */
+    tok: null,
+
     run: function(){
       var tok = this.tok;
       // prepare
       tok.nextExpr();
       // go!
       this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, []);
-      if (tok.pos != tok.len) throw 'Did not complete parsing... '+tok.syntaxError();
+      if (tok.pos !== tok.len) throw 'Did not complete parsing... '+tok.syntaxError();
 
       return this;
     },
@@ -643,6 +648,7 @@
 
       } else {
 
+        // TOFIX: add test case where this fails; `state & NONASSIGNEE` needs parenthesis
         this.parseAssignments(state & NONASSIGNEE > 0);
         this.parseNonAssignments();
 
@@ -1267,9 +1273,11 @@
     },
   };
 
-  // workaround for https://code.google.com/p/v8/issues/detail?id=2246
-  var o = {};
-  for (var k in proto) o[k] = proto[k];
-  Par.prototype = o;
+  (function chromeWorkaround(){
+    // workaround for https://code.google.com/p/v8/issues/detail?id=2246
+    var o = {};
+    for (var k in proto) o[k] = proto[k];
+    Par.prototype = o;
+  })();
 
 })(typeof exports === 'object' ? exports : window);

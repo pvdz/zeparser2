@@ -33,7 +33,6 @@
    */
   var Tok = exports.Tok = function(input, options){
     this.options = options || {}; // should be same as in Par, if any
-    this.tokens = [];
 
     this.input = (input||'');
     this.len = this.input.length;
@@ -188,20 +187,6 @@
 
     /**
      * Parse the next token if the current
-     * token isType(type). Next token is parsed
-     * possibly expecting a division (so not
-     * a regex).
-     *
-     * @param {number} type
-     * @return {boolean}
-     */
-    nextPuncIfType: function(type){
-      var equals = this.isType(type);
-      if (equals) this.nextPunc();
-      return equals;
-    },
-    /**
-     * Parse the next token if the current
      * token a "value". Next token is parsed
      * possibly expecting a division (so not
      * a regex).
@@ -297,7 +282,6 @@
     next: function(expressionStart){
       this.lastNewline = false;
 
-      var pos = this.pos;
       var toStream = this.options.saveTokens;
 
       do {
@@ -637,7 +621,7 @@
     decimalFromDot: function(c, pos, input){
       if (c === 0x002e) { // dot
         c = input.charCodeAt(++pos);
-        while (c >= 0x30 & c <= 0x39) c = input.charCodeAt(++pos);
+        while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
       }
 
       if (c === 0x0045 || c === 0x0065) { // e or E
@@ -646,11 +630,11 @@
         if (c === 0x002b || c === 0x002d) c = input.charCodeAt(++pos);
 
         // first digit is mandatory
-        if (c >= 0x30 & c <= 0x39) c = input.charCodeAt(++pos);
+        if (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
         else throw 'Missing required digits after exponent. '+this.syntaxError();
 
         // rest is optional
-        while (c >= 0x30 & c <= 0x39) c = input.charCodeAt(++pos);
+        while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
       }
 
       this.pos = pos;
@@ -826,13 +810,15 @@
     },
     syntaxError: function(value){
       return 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` '+
-          '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
+          '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`';
     },
   };
 
-  // workaround for https://code.google.com/p/v8/issues/detail?id=2246
-  var o = {};
-  for (var k in proto) o[k] = proto[k];
-  Tok.prototype = o;
+  (function chromeWorkaround(){
+    // workaround for https://code.google.com/p/v8/issues/detail?id=2246
+    var o = {};
+    for (var k in proto) o[k] = proto[k];
+    Tok.prototype = o;
+  })();
 
 })(typeof exports === 'object' ? exports : window);
