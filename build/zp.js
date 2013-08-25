@@ -139,10 +139,10 @@
       else if (this_tok_lineTerminator(c, pos)) result = 18;
       else if (this_tok_asciiIdentifier(c)) result = 13;
       // forward slash before generic punctuators!
-      else if (c === 0x2f) { // / (forward slash)
+      else if (c === 0x2f) {
         var n = this_tok_getLastNum2(); // this.pos === this.lastStart+1
-        if (n === 0x2f) result = this_tok_commentSingle(pos, input); // 0x002f=/
-        else if (n === 0x2a) result = this_tok_commentMulti(pos, input); // 0x002f=*
+        if (n === 0x2f) result = this_tok_commentSingle(pos, input);
+        else if (n === 0x2a) result = this_tok_commentMulti(pos, input);
         else if (expressionStart) result = this_tok_regex();
         else result = this_tok_punctuatorDiv(c,n);
       }
@@ -161,85 +161,89 @@
   //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
   //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
 
-      if (c === 0x2e) { // .
+      if (c === 0x2e) {
         var d = this_tok_getLastNum2();
         // must check for a number because number parser comes after this
-        if (d < 0x0030 || d > 0x0039) len = 1;
+        if (d < 0x30 || d > 0x39) len = 1;
       }
-      else if (c === 0x3d) { // =
+      else if (c === 0x3d) {
         if (this_tok_getLastNum2() === 0x3d) {
           if (this_tok_getLastNum3() === 0x3d) len = 3;
           else len = 2;
         }
         else len = 1;
       }
-      //       (             )             ;             ,             {             }             :             [             ]             ?             ~
-      else if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f || c === 0x7e) len = 1;
+      else if (
+        c === 0x28 ||
+        c === 0x29 ||
+        c === 0x3b ||
+        c === 0x2c ||
+        c === 0x7b ||
+        c === 0x7d ||
+        c === 0x3a ||
+        c === 0x5b ||
+        c === 0x5d ||
+        c === 0x3f ||
+        c === 0x7e
+      ) len = 1;
       else {
         var d = this_tok_getLastNum2();
 
-        if (c === 0x2b) { // +
+        if (c === 0x2b) {
           if (d === 0x3d || d === 0x2b) len = 2;
           else len = 1;
         }
-        else if (c === 0x21) { // !
+        else if (c === 0x21) {
           if (d === 0x3d) {
-            var e = this_tok_getLastNum3();
-            if (e === 0x3d) len = 3;
+            if (this_tok_getLastNum3() === 0x3d) len = 3;
             else len = 2;
           }
           else len = 1;
         }
-        else if (c === 0x26) { // &
+        else if (c === 0x26) {
           if (d === 0x3d || d === 0x26) len = 2;
           else len = 1;
         }
-        else if (c === 0x7c) { // |
+        else if (c === 0x7c) {
           if (d === 0x3d || d === 0x7c) len = 2;
           else len = 1;
         }
-        else if (c === 0x2d) { // -
+        else if (c === 0x2d) {
           if (d === 0x3d || d === 0x2d) len = 2;
           else len = 1;
         }
-        else if (c === 0x3c) { // <
+        else if (c === 0x3c) {
           if (d === 0x3d) len = 2;
           else if (d === 0x3c) {
-            var e = this_tok_getLastNum3();
-            if (e === 0x3d) len = 3;
+            if (this_tok_getLastNum3() === 0x3d) len = 3;
             else len = 2;
           }
           else {
             len = 1;
           }
         }
-        else if (c === 0x2a) { // *
+        else if (c === 0x2a) {
           if (d === 0x3d) len = 2;
           else len = 1;
         }
-        else if (c === 0x3e) { // >
+        else if (c === 0x3e) {
           if (d === 0x3d) len = 2;
           else if (d === 0x3e) {
             var e = this_tok_getLastNum3();
             if (e === 0x3d) len = 3;
             else if (e === 0x3e) {
-              var f = this_tok_getLastNum4();
-              if (f === 0x3d) len = 4;
+              if (this_tok_getLastNum4() === 0x3d) len = 4;
               else  len = 3;
             }
-            else {
-              len = 2;
-            }
+            else len = 2;
           }
-          else {
-            len = 1;
-          }
+          else len = 1;
         }
-        else if (c === 0x25) { // %
+        else if (c === 0x25) {
           if (d === 0x3d) len = 2;
           else len = 1;
         }
-        else if (c === 0x5e) { // ^
+        else if (c === 0x5e) {
           if (d === 0x3d) len = 2;
           else len = 1;
         }
@@ -256,29 +260,30 @@
     }
   function this_tok_punctuatorDiv(c,d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
-      if (d === 0x3d) this_tok_pos += 2; // /=
+      if (d === 0x3d) this_tok_pos += 2;
       else ++this_tok_pos;
       return 9;
     }
   function this_tok_whitespace(c){
-      if ((c <= 0x0020 || c >= 0x00A0) && (c === 0x0020 || c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x00A0 || c === 0xFFFF)) {
+      // TODO: maybe i can improve this by combining <= with an extra check. depends on profiler results.
+      if ((c <= 0x20 || c >= 0xA0) && (c === 0x20 || c === 0x09 || c === 0x0B || c === 0x0C || c === 0xA0 || c === 0xFEFF)) {
         ++this_tok_pos;
         return true;
       }
       return false;
     }
   function this_tok_lineTerminator(c, pos){
-      if (c === 0x000D){
+      if (c === 0x0D){
         this_tok_lastNewline = true;
         // handle \r\n normalization here
         var d = this_tok_getLastNum2();
-        if (d === 0x000A) {
+        if (d === 0x0A) {
           this_tok_pos = pos + 2;
         } else {
           this_tok_pos = pos + 1;
         }
         return true;
-      } else if (c === 0x000A || c === 0x2028 || c === 0x2029) {
+      } else if (c === 0x0A || c === 0x2028 || c === 0x2029) {
         this_tok_lastNewline = true;
         this_tok_pos = pos + 1;
         return true;
@@ -291,7 +296,7 @@
       var c = -1;
       while (pos < len) {
         c = input.charCodeAt(++pos);
-        if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) break;
+        if (c === 0x0D || c === 0x0A || c === 0x2028 || c === 0x2029) break;
       }
       this_tok_pos = pos;
 
@@ -306,12 +311,12 @@
         c = d;
         d = input.charCodeAt(++pos);
 
-        if (c === 0x2a && d === 0x2f) break; // / *
+        if (c === 0x2a && d === 0x2f) break;
 
         // only check one newline
         // TODO: check whether the extra check is worth the overhead for eliminating repetitive checks
         // (hint: if you generally check more characters here than you can skip, it's not worth it)
-        if (hasNewline || c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) hasNewline = this_tok_lastNewline = true;
+        if (hasNewline || c === 0x0D || c === 0x0A || c === 0x2028 || c === 0x2029) hasNewline = this_tok_lastNewline = true;
       }
       this_tok_pos = pos+1;
 
@@ -322,14 +327,15 @@
       var input = this_tok_input;
       var len = input.length;
 
+      // TODO: rewrite this while
       while (pos < len) {
         var c = input.charCodeAt(pos++);
-        if (c === 0x0027) { // ' (single quote)
+        if (c === 0x27) {
             this_tok_pos = pos;
             return 10;
         }
-        if (c === 0x005c) pos = this_tok_stringEscape(pos); // \ (backslash)
-        if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        if (c === 0x5c) pos = this_tok_stringEscape(pos);
+        if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
       }
 
       throw 'Unterminated string found at '+pos;
@@ -339,15 +345,16 @@
       var input = this_tok_input;
       var len = input.length;
 
+      // TODO: rewrite this while
       while (pos < len) {
         var c = input.charCodeAt(pos++);
 
-        if (c === 0x0022) { // " (double quote)
+        if (c === 0x22) {
           this_tok_pos = pos;
           return 10;
         }
-        if (c === 0x005c) pos = this_tok_stringEscape(pos); // \ (backslash)
-        if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        if (c === 0x5c) pos = this_tok_stringEscape(pos);
+        if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
       }
 
       throw 'Unterminated string found at '+pos;
@@ -357,17 +364,17 @@
       var c = input.charCodeAt(pos);
 
       // unicode escapes
-      if (c === 0x0075) { // u
+      if (c === 0x75) {
         if (this_tok_unicode(pos+1)) pos += 4;
         else throw 'Invalid unicode escape';
       // line continuation; skip windows newlines as if they're one char
-      } else if (c === 0x000D) {
+      } else if (c === 0x0D) {
         // keep in mind, we are already skipping a char. no need to check
         // for other line terminators here. we are merely checking to see
         // whether we need to skip an additional character.
-        if (input.charCodeAt(pos+1) === 0x000A) ++pos;
+        if (input.charCodeAt(pos+1) === 0x0A) ++pos;
       // hex escapes
-      } else if (c === 0x0078) { // x
+      } else if (c === 0x78) {
         if (this_tok_hexicode(input.charCodeAt(pos+1)) && this_tok_hexicode(input.charCodeAt(pos+2))) pos += 2;
         else throw 'Invalid hex escape';
       }
@@ -384,9 +391,9 @@
     }
   function this_tok_number(c, pos, input){
       // 1-9 just means decimal literal
-      if (c >= 0x0031 && c <= 0x0039) this_tok_decimalNumber(this_tok_getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
+      if (c >= 0x31 && c <= 0x39) this_tok_decimalNumber(this_tok_getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
       // leading zero can mean decimal or hex literal
-      else if (c === 0x0030) this_tok_decOrHex(c, pos, input);
+      else if (c === 0x30) this_tok_decOrHex(c, pos, input);
       // dot means decimal, without the leading digits
       else if (c === 0x2e) this_tok_decimalFromDot(c, pos, input); // dot, start of the number (rare)
       // yeah, no number. move on.
@@ -399,7 +406,7 @@
       // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
       var d = this_tok_getLastNum2();
-      if (d !== 0x0058 && d !== 0x0078) { // x or X
+      if (d !== 0x78 && d !== 0x78) { // x or X
         // next can only be numbers or dots...
         this_tok_decimalNumber(d, pos+1, input);
       } else {
@@ -409,21 +416,22 @@
       return 7;
     }
   function this_tok_decimalNumber(c, pos, input){
+      // TOFIX: what?
       // leading digits. assume c is preceeded by at least one digit (that might have been zero..., tofix in the future)
       while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
       // .123e+40 part
       return this_tok_decimalFromDot(c, pos, input);
     }
   function this_tok_decimalFromDot(c, pos, input){
-      if (c === 0x002e) { // dot
+      if (c === 0x2e) { // dot
         c = input.charCodeAt(++pos);
         while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
       }
 
-      if (c === 0x0045 || c === 0x0065) { // e or E
+      if (c === 0x65 || c === 0x45) {
         c = input.charCodeAt(++pos);
-        // sign is optional
-        if (c === 0x002b || c === 0x002d) c = input.charCodeAt(++pos);
+        // sign is optional (especially for plus)
+        if (c === 0x2d || c === 0x2b) c = input.charCodeAt(++pos);
 
         // first digit is mandatory
         if (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
@@ -463,21 +471,20 @@
   function this_tok_regexBody(){
       var input = this_tok_input;
       var len = input.length;
+      // TOFIX: fix loop
       while (this_tok_pos < len) {
         var c = input.charCodeAt(this_tok_pos++);
 
-        if (c === 0x005c) { // backslash
+        if (c === 0x5c) { // backslash
           var d = input.charCodeAt(this_tok_pos++);
-          if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+          if (d === 0x0A || d === 0x0D || d === 0x2028 || d === 0x2029) {
             throw new Error('Newline can not be escaped in regular expression at '+this_tok_pos);
           }
-        } else if (c === 0x0028) { // opening paren
-          this_tok_regexBody();
-        } else if (c === 0x0029 || c === 0x002f) { // closing paren or forward slash
-          return;
-        } else if (c === 0x005b) { // opening square bracket
-          this_tok_regexClass();
-        } else if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) { // newlines
+        }
+        else if (c === 0x28) this_tok_regexBody();
+        else if (c === 0x29 || c === 0x2f) return;
+        else if (c === 0x5b) this_tok_regexClass();
+        else if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) {
           throw new Error('Newline can not be escaped in regular expression at '+this_tok_pos);
         }
       }
@@ -491,19 +498,19 @@
       while (pos < len) {
         var c = input.charCodeAt(pos++);
 
-        if (c === 0x005d) { // ]
+        if (c === 0x5d) {
           this_tok_pos = pos;
           return;
         }
-        if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) {
+        if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) {
           throw 'Illegal newline in regex char class at '+pos;
         }
-        if (c === 0x005c) { // backslash
+        if (c === 0x5c) { // backslash
           // there's a historical dispute over whether backslashes in regex classes
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this_tok_options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
-            if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+            if (d === 0x0A || d === 0x0D || d === 0x2028 || d === 0x2029) {
               throw new Error('Newline can not be escaped in regular expression at '+pos);
             }
           }
@@ -535,7 +542,7 @@
       // \uxxxx
       } else if (c === 0x5c) {
         var pos = this_tok_pos;
-        if (this_tok_getLastNum2() === 0x75 && this_tok_unicode(pos+2)) { // \
+        if (this_tok_getLastNum2() === 0x75 && this_tok_unicode(pos+2)) {
           return 6;
         } else {
           throw 'No backslash in identifier (xept for \\u). '+this_tok_syntaxError();

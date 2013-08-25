@@ -21,6 +21,63 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
+  var UNICODE_LIMIT = 127;
+
+  var ORD_L_A = 0x61;
+  var ORD_L_A_UC = 0x41;
+  var ORD_L_E = 0x65;
+  var ORD_L_E_UC = 0x45;
+  var ORD_L_F = 0x66;
+  var ORD_L_F_UC = 0x46;
+  var ORD_L_U = 0x75;
+  var ORD_L_X = 0x78;
+  var ORD_L_X_UC = 0x78;
+  var ORD_L_Z = 0x7a;
+  var ORD_L_Z_UC = 0x5a;
+  var ORD_L_0 = 0x30;
+  var ORD_L_1 = 0x31;
+  var ORD_L_9 = 0x39;
+
+  var ORD_OPEN_CURLY = 0x7b;
+  var ORD_CLOSE_CURLY = 0x7d;
+  var ORD_OPEN_PAREN = 0x28;
+  var ORD_CLOSE_PAREN = 0x29;
+  var ORD_OPEN_SQUARE = 0x5b;
+  var ORD_CLOSE_SQUARE = 0x5d;
+  var ORD_TILDE = 0x7e;
+  var ORD_PLUS = 0x2b;
+  var ORD_MIN = 0x2d;
+  var ORD_EXCL = 0x21;
+  var ORD_QMARK = 0x3f;
+  var ORD_COLON = 0x3a;
+  var ORD_SEMI = 0x3b;
+  var ORD_IS = 0x3d;
+  var ORD_COMMA = 0x2c;
+  var ORD_DOT = 0x2e;
+  var ORD_STAR = 0x2a;
+  var ORD_OR = 0x7c;
+  var ORD_AND = 0x26;
+  var ORD_PERCENT = 0x25;
+  var ORD_XOR = 0x5e;
+  var ORD_FWDSLASH = 0x2f;
+  var ORD_BACKSLASH = 0x5c;
+  var ORD_LT = 0x3c;
+  var ORD_GT = 0x3e;
+  var ORD_SQUOTE = 0x27;
+  var ORD_DQUOTE = 0x22;
+  var ORD_SPACE = 0x20;
+  var ORD_NBSP = 0xA0;
+  var ORD_TAB = 0x09;
+  var ORD_VTAB = 0x0B;
+  var ORD_FF = 0x0C;
+  var ORD_BOM = 0xFEFF;
+  var ORD_LF = 0x0A;
+  var ORD_CR = 0x0D;
+  var ORD_LS = 0x2029;
+  var ORD_PS = 0x2028;
+  var ORD_$ = 0x5f;
+  var ORD_LODASH = 0x24;
+
   /**
    * Tokenizer for JS. After initializing the constructor
    * you can fetch the next tokens by calling tok.next()
@@ -341,16 +398,16 @@
       else if (this.lineTerminator(c, pos)) result = WHITE;
       else if (this.asciiIdentifier(c)) result = IDENTIFIER;
       // forward slash before generic punctuators!
-      else if (c === 0x2f) { // / (forward slash)
+      else if (c === ORD_FWDSLASH) {
         var n = this.getLastNum2(); // this.pos === this.lastStart+1
-        if (n === 0x2f) result = this.commentSingle(pos, input); // 0x002f=/
-        else if (n === 0x2a) result = this.commentMulti(pos, input); // 0x002f=*
+        if (n === ORD_FWDSLASH) result = this.commentSingle(pos, input);
+        else if (n === ORD_STAR) result = this.commentMulti(pos, input);
         else if (expressionStart) result = this.regex();
         else result = this.punctuatorDiv(c,n);
       }
       else if (this.punctuator(c)) result = PUNCTUATOR;
-      else if (c === 0x27) result = this.stringSingle();
-      else if (c === 0x22) result = this.stringDouble();
+      else if (c === ORD_SQUOTE) result = this.stringSingle();
+      else if (c === ORD_DQUOTE) result = this.stringDouble();
       else if (this.number(c,pos,input)) result = NUMBER; // number after punctuator, check algorithm if that changes!
       else throw 'dont know what to parse now. '+this.syntaxError();
 
@@ -364,86 +421,90 @@
   //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
   //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
 
-      if (c === 0x2e) { // .
+      if (c === ORD_DOT) {
         var d = this.getLastNum2();
         // must check for a number because number parser comes after this
-        if (d < 0x0030 || d > 0x0039) len = 1;
+        if (d < ORD_L_0 || d > ORD_L_9) len = 1;
       }
-      else if (c === 0x3d) { // =
-        if (this.getLastNum2() === 0x3d) {
-          if (this.getLastNum3() === 0x3d) len = 3;
+      else if (c === ORD_IS) {
+        if (this.getLastNum2() === ORD_IS) {
+          if (this.getLastNum3() === ORD_IS) len = 3;
           else len = 2;
         }
         else len = 1;
       }
-      //       (             )             ;             ,             {             }             :             [             ]             ?             ~
-      else if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c || c === 0x7b || c === 0x7d || c === 0x3a || c === 0x5b || c === 0x5d || c === 0x3f || c === 0x7e) len = 1;
+      else if (
+        c === ORD_OPEN_PAREN ||
+        c === ORD_CLOSE_PAREN ||
+        c === ORD_SEMI ||
+        c === ORD_COMMA ||
+        c === ORD_OPEN_CURLY ||
+        c === ORD_CLOSE_CURLY ||
+        c === ORD_COLON ||
+        c === ORD_OPEN_SQUARE ||
+        c === ORD_CLOSE_SQUARE ||
+        c === ORD_QMARK ||
+        c === ORD_TILDE
+      ) len = 1;
       else {
         var d = this.getLastNum2();
 
-        if (c === 0x2b) { // +
-          if (d === 0x3d || d === 0x2b) len = 2;
+        if (c === ORD_PLUS) {
+          if (d === ORD_IS || d === ORD_PLUS) len = 2;
           else len = 1;
         }
-        else if (c === 0x21) { // !
-          if (d === 0x3d) {
-            var e = this.getLastNum3();
-            if (e === 0x3d) len = 3;
+        else if (c === ORD_EXCL) {
+          if (d === ORD_IS) {
+            if (this.getLastNum3() === ORD_IS) len = 3;
             else len = 2;
           }
           else len = 1;
         }
-        else if (c === 0x26) { // &
-          if (d === 0x3d || d === 0x26) len = 2;
+        else if (c === ORD_AND) {
+          if (d === ORD_IS || d === ORD_AND) len = 2;
           else len = 1;
         }
-        else if (c === 0x7c) { // |
-          if (d === 0x3d || d === 0x7c) len = 2;
+        else if (c === ORD_OR) {
+          if (d === ORD_IS || d === ORD_OR) len = 2;
           else len = 1;
         }
-        else if (c === 0x2d) { // -
-          if (d === 0x3d || d === 0x2d) len = 2;
+        else if (c === ORD_MIN) {
+          if (d === ORD_IS || d === ORD_MIN) len = 2;
           else len = 1;
         }
-        else if (c === 0x3c) { // <
-          if (d === 0x3d) len = 2;
-          else if (d === 0x3c) {
-            var e = this.getLastNum3();
-            if (e === 0x3d) len = 3;
+        else if (c === ORD_LT) {
+          if (d === ORD_IS) len = 2;
+          else if (d === ORD_LT) {
+            if (this.getLastNum3() === ORD_IS) len = 3;
             else len = 2;
           }
           else {
             len = 1;
           }
         }
-        else if (c === 0x2a) { // *
-          if (d === 0x3d) len = 2;
+        else if (c === ORD_STAR) {
+          if (d === ORD_IS) len = 2;
           else len = 1;
         }
-        else if (c === 0x3e) { // >
-          if (d === 0x3d) len = 2;
-          else if (d === 0x3e) {
+        else if (c === ORD_GT) {
+          if (d === ORD_IS) len = 2;
+          else if (d === ORD_GT) {
             var e = this.getLastNum3();
-            if (e === 0x3d) len = 3;
-            else if (e === 0x3e) {
-              var f = this.getLastNum4();
-              if (f === 0x3d) len = 4;
+            if (e === ORD_IS) len = 3;
+            else if (e === ORD_GT) {
+              if (this.getLastNum4() === ORD_IS) len = 4;
               else  len = 3;
             }
-            else {
-              len = 2;
-            }
+            else len = 2;
           }
-          else {
-            len = 1;
-          }
-        }
-        else if (c === 0x25) { // %
-          if (d === 0x3d) len = 2;
           else len = 1;
         }
-        else if (c === 0x5e) { // ^
-          if (d === 0x3d) len = 2;
+        else if (c === ORD_PERCENT) {
+          if (d === ORD_IS) len = 2;
+          else len = 1;
+        }
+        else if (c === ORD_XOR) {
+          if (d === ORD_IS) len = 2;
           else len = 1;
         }
         // else it wasnt a punctuator after all
@@ -459,30 +520,31 @@
     },
     punctuatorDiv: function(c,d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
-      if (d === 0x3d) this.pos += 2; // /=
+      if (d === ORD_IS) this.pos += 2;
       else ++this.pos;
       return PUNCTUATOR;
     },
 
     whitespace: function(c){
-      if ((c <= 0x0020 || c >= 0x00A0) && (c === 0x0020 || c === 0x0009 || c === 0x000B || c === 0x000C || c === 0x00A0 || c === 0xFFFF)) {
+      // TODO: maybe i can improve this by combining <= with an extra check. depends on profiler results.
+      if ((c <= ORD_SPACE || c >= ORD_NBSP) && (c === ORD_SPACE || c === ORD_TAB || c === ORD_VTAB || c === ORD_FF || c === ORD_NBSP || c === ORD_BOM)) {
         ++this.pos;
         return true;
       }
       return false;
     },
     lineTerminator: function(c, pos){
-      if (c === 0x000D){
+      if (c === ORD_CR){
         this.lastNewline = true;
         // handle \r\n normalization here
         var d = this.getLastNum2();
-        if (d === 0x000A) {
+        if (d === ORD_LF) {
           this.pos = pos + 2;
         } else {
           this.pos = pos + 1;
         }
         return true;
-      } else if (c === 0x000A || c === 0x2028 || c === 0x2029) {
+      } else if (c === ORD_LF || c === ORD_PS || c === ORD_LS) {
         this.lastNewline = true;
         this.pos = pos + 1;
         return true;
@@ -495,7 +557,7 @@
       var c = -1;
       while (pos < len) {
         c = input.charCodeAt(++pos);
-        if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) break;
+        if (c === ORD_CR || c === ORD_LF || c === ORD_PS || c === ORD_LS) break;
       }
       this.pos = pos;
 
@@ -510,12 +572,12 @@
         c = d;
         d = input.charCodeAt(++pos);
 
-        if (c === 0x2a && d === 0x2f) break; // / *
+        if (c === ORD_STAR && d === ORD_FWDSLASH) break;
 
         // only check one newline
         // TODO: check whether the extra check is worth the overhead for eliminating repetitive checks
         // (hint: if you generally check more characters here than you can skip, it's not worth it)
-        if (hasNewline || c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) hasNewline = this.lastNewline = true;
+        if (hasNewline || c === ORD_CR || c === ORD_LF || c === ORD_PS || c === ORD_LS) hasNewline = this.lastNewline = true;
       }
       this.pos = pos+1;
 
@@ -526,14 +588,15 @@
       var input = this.input;
       var len = input.length;
 
+      // TODO: rewrite this while
       while (pos < len) {
         var c = input.charCodeAt(pos++);
-        if (c === 0x0027) { // ' (single quote)
+        if (c === ORD_SQUOTE) {
             this.pos = pos;
             return STRING;
         }
-        if (c === 0x005c) pos = this.stringEscape(pos); // \ (backslash)
-        if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
+        if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
       }
 
       throw 'Unterminated string found at '+pos;
@@ -543,15 +606,16 @@
       var input = this.input;
       var len = input.length;
 
+      // TODO: rewrite this while
       while (pos < len) {
         var c = input.charCodeAt(pos++);
 
-        if (c === 0x0022) { // " (double quote)
+        if (c === ORD_DQUOTE) {
           this.pos = pos;
           return STRING;
         }
-        if (c === 0x005c) pos = this.stringEscape(pos); // \ (backslash)
-        if (c === 0x000A || c === 0x000D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
+        if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
       }
 
       throw 'Unterminated string found at '+pos;
@@ -561,17 +625,17 @@
       var c = input.charCodeAt(pos);
 
       // unicode escapes
-      if (c === 0x0075) { // u
+      if (c === ORD_L_U) {
         if (this.unicode(pos+1)) pos += 4;
         else throw 'Invalid unicode escape';
       // line continuation; skip windows newlines as if they're one char
-      } else if (c === 0x000D) {
+      } else if (c === ORD_CR) {
         // keep in mind, we are already skipping a char. no need to check
         // for other line terminators here. we are merely checking to see
         // whether we need to skip an additional character.
-        if (input.charCodeAt(pos+1) === 0x000A) ++pos;
+        if (input.charCodeAt(pos+1) === ORD_LF) ++pos;
       // hex escapes
-      } else if (c === 0x0078) { // x
+      } else if (c === ORD_L_X) {
         if (this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2))) pos += 2;
         else throw 'Invalid hex escape';
       }
@@ -584,16 +648,16 @@
     },
     hexicode: function(c){
       // 0-9, a-f, A-F
-      return ((c <= 0x39 && c >= 0x30) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
+      return ((c <= ORD_L_9 && c >= ORD_L_0) || (c >= ORD_L_A && c <= ORD_L_F) || (c >= ORD_L_A_UC && c <= ORD_L_F_UC));
     },
 
     number: function(c, pos, input){
       // 1-9 just means decimal literal
-      if (c >= 0x0031 && c <= 0x0039) this.decimalNumber(this.getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
+      if (c >= ORD_L_1 && c <= ORD_L_9) this.decimalNumber(this.getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
       // leading zero can mean decimal or hex literal
-      else if (c === 0x0030) this.decOrHex(c, pos, input);
+      else if (c === ORD_L_0) this.decOrHex(c, pos, input);
       // dot means decimal, without the leading digits
-      else if (c === 0x2e) this.decimalFromDot(c, pos, input); // dot, start of the number (rare)
+      else if (c === ORD_DOT) this.decimalFromDot(c, pos, input); // dot, start of the number (rare)
       // yeah, no number. move on.
       else return false;
       // we parsed a number.
@@ -604,7 +668,7 @@
       // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
       var d = this.getLastNum2();
-      if (d !== 0x0058 && d !== 0x0078) { // x or X
+      if (d !== ORD_L_X && d !== ORD_L_X_UC) { // x or X
         // next can only be numbers or dots...
         this.decimalNumber(d, pos+1, input);
       } else {
@@ -614,28 +678,29 @@
       return NUMBER;
     },
     decimalNumber: function(c, pos, input){
+      // TOFIX: what?
       // leading digits. assume c is preceeded by at least one digit (that might have been zero..., tofix in the future)
-      while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
+      while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
       // .123e+40 part
       return this.decimalFromDot(c, pos, input);
     },
     decimalFromDot: function(c, pos, input){
-      if (c === 0x002e) { // dot
+      if (c === ORD_DOT) { // dot
         c = input.charCodeAt(++pos);
-        while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
+        while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
       }
 
-      if (c === 0x0045 || c === 0x0065) { // e or E
+      if (c === ORD_L_E || c === ORD_L_E_UC) {
         c = input.charCodeAt(++pos);
-        // sign is optional
-        if (c === 0x002b || c === 0x002d) c = input.charCodeAt(++pos);
+        // sign is optional (especially for plus)
+        if (c === ORD_MIN || c === ORD_PLUS) c = input.charCodeAt(++pos);
 
         // first digit is mandatory
-        if (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
+        if (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
         else throw 'Missing required digits after exponent. '+this.syntaxError();
 
         // rest is optional
-        while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
+        while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
       }
 
       this.pos = pos;
@@ -669,21 +734,20 @@
     regexBody: function(){
       var input = this.input;
       var len = input.length;
+      // TOFIX: fix loop
       while (this.pos < len) {
         var c = input.charCodeAt(this.pos++);
 
-        if (c === 0x005c) { // backslash
+        if (c === ORD_BACKSLASH) { // backslash
           var d = input.charCodeAt(this.pos++);
-          if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+          if (d === ORD_LF || d === ORD_CR || d === ORD_PS || d === ORD_LS) {
             throw new Error('Newline can not be escaped in regular expression at '+this.pos);
           }
-        } else if (c === 0x0028) { // opening paren
-          this.regexBody();
-        } else if (c === 0x0029 || c === 0x002f) { // closing paren or forward slash
-          return;
-        } else if (c === 0x005b) { // opening square bracket
-          this.regexClass();
-        } else if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) { // newlines
+        }
+        else if (c === ORD_OPEN_PAREN) this.regexBody();
+        else if (c === ORD_CLOSE_PAREN || c === ORD_FWDSLASH) return;
+        else if (c === ORD_OPEN_SQUARE) this.regexClass();
+        else if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) {
           throw new Error('Newline can not be escaped in regular expression at '+this.pos);
         }
       }
@@ -697,19 +761,19 @@
       while (pos < len) {
         var c = input.charCodeAt(pos++);
 
-        if (c === 0x005d) { // ]
+        if (c === ORD_CLOSE_SQUARE) {
           this.pos = pos;
           return;
         }
-        if (c === 0x000D || c === 0x000A || c === 0x2028 || c === 0x2029) {
+        if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) {
           throw 'Illegal newline in regex char class at '+pos;
         }
-        if (c === 0x005c) { // backslash
+        if (c === ORD_BACKSLASH) { // backslash
           // there's a historical dispute over whether backslashes in regex classes
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this.options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
-            if (d === 0x000D || d === 0x000A || d === 0x2028 || d === 0x2029) {
+            if (d === ORD_LF || d === ORD_CR || d === ORD_PS || d === ORD_LS) {
               throw new Error('Newline can not be escaped in regular expression at '+pos);
             }
           }
@@ -736,18 +800,18 @@
     },
     asciiIdentifierStart: function(c){
       // a-z A-Z $ _ (no number here!)
-      if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c === 0x24) {
+      if ((c >= ORD_L_A && c <= ORD_L_Z) || (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) || c === ORD_$ || c === ORD_LODASH) {
         return 1;
       // \uxxxx
-      } else if (c === 0x5c) {
+      } else if (c === ORD_BACKSLASH) {
         var pos = this.pos;
-        if (this.getLastNum2() === 0x75 && this.unicode(pos+2)) { // \
+        if (this.getLastNum2() === ORD_L_U && this.unicode(pos+2)) {
           return 6;
         } else {
           throw 'No backslash in identifier (xept for \\u). '+this.syntaxError();
         }
       // above ascii range? might be valid unicode char
-      } else if (c > 127) {
+      } else if (c > UNICODE_LIMIT) {
         if (uniRegex.test(String.fromCharCode(c))) return 1;
       }
       // do nothing so we return 0
@@ -763,12 +827,12 @@
         var c = input.charCodeAt(pos);
 
         // a-z A-Z 0-9 $ _
-        if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x5f || c === 0x24) {
+        if ((c >= ORD_L_A && c <= ORD_L_Z) || (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) || (c >= ORD_L_0 && c <= ORD_L_9) || c === ORD_$ || c === ORD_LODASH) {
           ++pos;
           // \uxxxx
-        } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this.unicode(pos+2)) {
+        } else if (c === ORD_BACKSLASH && input.charCodeAt(pos+1) === ORD_L_U && this.unicode(pos+2)) {
           pos += 6;
-        } else if (c > 127 && uniRegex.test(String.fromCharCode(c))) {
+        } else if (c > UNICODE_LIMIT && uniRegex.test(String.fromCharCode(c))) {
           pos += 1;
         } else {
           break;

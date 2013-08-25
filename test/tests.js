@@ -83,7 +83,7 @@ var good = [
   ["\r\n\n\u2028\u2029\r", 5, "Various Line Terminators"],
 
   // Whitespace.
-  ["throw \t\u000b\u000c\u00a0\uffffb", [8, 9], "Whitespace"],
+  ["throw \t\u000b\u000c\u00a0\ufeffb", [8, 9], "Whitespace"],
   // Additional tests for whitespace...
 
   // http://code.google.com/p/es-lab/source/browse/trunk/tests/parser/parsertests.js?r=86 and 430.
