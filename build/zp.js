@@ -668,6 +668,7 @@
   Tok[16] = 'error';
   Tok[18] = 'white';
 
+<<<<<<< HEAD
   Tok.WHITE_SPACE = 1;
   Tok.LINETERMINATOR = 2;
   Tok.COMMENT_SINGLE = 3;
@@ -685,17 +686,45 @@
   Tok.ASI = 15;
   Tok.ERROR = 16;
   Tok.WHITE = 18; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
+=======
+    if (!options.saveTokens) options.saveTokens = true;
+    if (!options.createBlackStream) options.createBlackStream = true;
+    if (!options.functionMode) options.functionMode = false;
+    if (!options.regexNoClassEscape) options.regexNoClassEscape = false;
+    if (!options.strictForInCheck) options.strictForInCheck = false;
+    if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
+>>>>>>> fe12dbf... Add link to end of function body to function keyword token
 
 //######### end of tok.js #########
 
 //######### par.js #########
 
+<<<<<<< HEAD
 // If you see magic numbers and bools all over the place, it means this
 // file has been post-processed by a build script. If you want to read
 // this file, see https://github.com/qfox/zeparser2
   var this_par_options =  null;
   var this_par_tok =  null;
   function this_par_run(){
+=======
+  var proto = {
+    /**
+     * This object is shared with Tok.
+     *
+     * @property {Object} options
+     * @property {boolean} [options.saveTokens=true] Make the tokenizer put all found tokens in .tokens
+     * @property {boolean} [options.createBlackStream=true] Requires saveTokens, put black tokens in .black
+     * @property {boolean} [options.functionMode=false] In function mode, `return` is allowed in global space
+//     * @property {boolean} [options.scriptMode=false] (TODO, #12)
+     * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
+     * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
+     * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
+     */
+    options: null,
+
+    run: function(){
+      var tok = this.tok;
+>>>>>>> fe12dbf... Add link to end of function body to function keyword token
       // prepare
       this_tok_nextExpr();
       // go!
@@ -1068,6 +1097,7 @@
   function this_par_parseFunction(forFunctionDeclaration){
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
+<<<<<<< HEAD
       this_tok_nextPunc(); // 'function'
       if (this_tok_isType(13)) { // name
         if (this_par_isReservedIdentifier(false)) throw 'function name is reserved';
@@ -1084,6 +1114,38 @@
       this_par_parseCompleteBlock(forFunctionDeclaration, true, false, false, []);
     }
   function this_par_parseParameters(paramCount){
+=======
+      var tok = this.tok;
+      var functionToken = this.tok.black[this.tok.black.length-1];
+
+      tok.nextPunc(); // 'function'
+      if (tok.isType(13)) { // name
+        if (this.isReservedIdentifier(false)) throw 'function name is reserved';
+        tok.nextPunc();
+      } else if (forFunctionDeclaration) {
+        throw 'function declaration name is required';
+      }
+      this.parseFunctionRemainder(-1, forFunctionDeclaration);
+
+      var rhc = this.tok.black[this.tok.black.length-2];
+      rhc.functionToken = functionToken;
+      functionToken.rhc = rhc;
+    },
+    /**
+     * Parse the function param list and body
+     *
+     * @param {number} paramCount Number of expected params, -1/undefined means no requirement. used for getters and setters
+     * @param {boolean} forFunctionDeclaration Are we parsing a function declaration (determines whether we can parse a division next)
+     */
+    parseFunctionRemainder: function(paramCount, forFunctionDeclaration){
+      var tok = this.tok;
+      tok.mustBeNum(0x28, false);
+      this.parseParameters(paramCount);
+      tok.mustBeNum(0x29, false);
+      this.parseCompleteBlock(forFunctionDeclaration, true, false, false, []);
+    },
+    parseParameters: function(paramCount){
+>>>>>>> fe12dbf... Add link to end of function body to function keyword token
       // [<idntf> [, <idntf>]]
       if (this_tok_isType(13)) {
         if (paramCount === 0) throw 'Getters have no parameters';

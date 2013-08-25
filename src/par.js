@@ -102,8 +102,8 @@
   var Par = exports.Par = function(input, options){
     this.options = options = options || {};
 
-    if (!options.saveTokens) options.saveTokens = false;
-    if (!options.createBlackStream) options.createBlackStream = false;
+    if (!options.saveTokens) options.saveTokens = true;
+    if (!options.createBlackStream) options.createBlackStream = true;
     if (!options.functionMode) options.functionMode = false;
     if (!options.regexNoClassEscape) options.regexNoClassEscape = false;
     if (!options.strictForInCheck) options.strictForInCheck = false;
@@ -125,8 +125,8 @@
      * This object is shared with Tok.
      *
      * @property {Object} options
-     * @property {boolean} [options.saveTokens=false] Make the tokenizer put all found tokens in .tokens
-     * @property {boolean} [options.createBlackStream=false] Requires saveTokens, put black tokens in .black
+     * @property {boolean} [options.saveTokens=true] Make the tokenizer put all found tokens in .tokens
+     * @property {boolean} [options.createBlackStream=true] Requires saveTokens, put black tokens in .black
      * @property {boolean} [options.functionMode=false] In function mode, `return` is allowed in global space
 //     * @property {boolean} [options.scriptMode=false] (TODO, #12)
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
@@ -539,6 +539,8 @@
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
       var tok = this.tok;
+      var functionToken = this.tok.black[this.tok.black.length-1];
+
       tok.nextPunc(); // 'function'
       if (tok.isType(IDENTIFIER)) { // name
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'function name is reserved';
@@ -547,6 +549,10 @@
         throw 'function declaration name is required';
       }
       this.parseFunctionRemainder(-1, forFunctionDeclaration);
+
+      var rhc = this.tok.black[this.tok.black.length-2];
+      rhc.functionToken = functionToken;
+      functionToken.rhc = rhc;
     },
     /**
      * Parse the function param list and body

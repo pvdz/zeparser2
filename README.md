@@ -1,3 +1,13 @@
+# Meta branch for ZeParser2
+
+Adds certain meta information to the tokens, assuming you use them. Stuff like the start and end of a function, matching parenthesis, curly/square brackets, and ternary operators.
+
+For this version of ZeParser, `options.saveTokens` and `options.createBlackStream` are (forced) on by default.
+
+Work in progress.
+
+Master README.md:
+
 # ZeParser, v2
 
 This is a JS parser written in JS. It is blazingly faster but doesn't return you a parse tree. It's capable of parsing and validating JS on an OCD level at very high speeds.
