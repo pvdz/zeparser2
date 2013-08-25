@@ -54,8 +54,9 @@
     this.tokenCountAll = 0;
 
     if (options.saveTokens) {
-      this.tokens = [];
-      if (options.createBlackStream) this.black = [];
+      // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
+      this['tokens'] = this.tokens = [];
+      if (options.createBlackStream) this['black'] = this.black = [];
     }
   };
 

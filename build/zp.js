@@ -642,8 +642,9 @@
     this_tok_tokenCountAll = 0;
 
     if (options.saveTokens) {
-      this_tok_tokens = [];
-      if (options.createBlackStream) this_tok_black = [];
+      // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
+      this['tokens'] = this_tok_tokens = [];
+      if (options.createBlackStream) this['black'] = this_tok_black = [];
     }
   };
 
