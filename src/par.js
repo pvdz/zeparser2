@@ -260,7 +260,7 @@
       tok.nextPunc();
       do {
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
-        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
+        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX); // TOFIX: can never be regex nor div. does that matter?
         if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
           tok.nextExpr();
           this.parseExpression();
@@ -927,7 +927,7 @@
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
         if (c === ORD_DOT) {
           if (!tok.isType(PUNCTUATOR)) throw 'Number (?) after identifier?';
-          tok.next(NEXTTOKENCANBEDIV);
+          tok.nextPunc();
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = ASSIGNEE; // property name can be assigned to (for-in lhs)
         } else if (c === ORD_OPEN_PAREN) {

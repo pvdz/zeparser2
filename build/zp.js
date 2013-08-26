@@ -110,35 +110,39 @@
 
       ++this_tok_tokenCountAll;
 
-      if (this_tok_pos >= this_tok_len) {
-        if (this_tok_lastType === 14) throw 'Tried to parse beyond EOF, that cannot be good.';
-        var result = 14;
-        this_tok_lastLen = 0;
-        this_tok_lastStart = this_tok_lastStop = this_tok_len;
-      } else {
-        var start = this_tok_lastStart = this_tok_pos;
-        var result = this_tok_nextToken(expressionStart);
-        var stop = this_tok_lastStop = this_tok_pos;
-        this_tok_lastLen = stop - start;
-      }
+      var pos = this_tok_pos;
+      var start = this_tok_lastStart = pos;
+      var result = 14;
+      if (pos < this_tok_len) result = this_tok_nextToken(expressionStart, pos);
+      this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - start;
 
       return result;
     }
-  function this_tok_nextToken(expressionStart){
-      var pos = this_tok_pos;
+  function this_tok_nextToken(expressionStart, pos){
       var input = this_tok_input;
       var c = this_tok_getLastNum(); // this.pos === this.lastStart
-
       var result = -1;
 
       // https://twitter.com/ariyahidayat/status/225447566815395840
       // Punctuator, Identifier, Keyword, String, Numeric, Boolean, Null, RegularExpression
       // so:
       // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
-      if (this_tok_whitespace(c)) result = 18;
-      else if (this_tok_lineTerminator(c, pos)) result = 18;
+      if (c >= 0x21 && c <= 0x2f && this_tok_punctuator(c)) result = 9;
       else if (this_tok_asciiIdentifier(c)) result = 13;
-      // forward slash before generic punctuators!
+      else if (c >= 0x3a && this_tok_punctuator(c)) result = 9;
+      else if (c === 0x20) ++this_tok_pos, result = 18;
+      else result = this_tok_nextToken_2(c, pos, input, expressionStart);
+
+      return result;
+    }
+  function this_tok_nextToken_2(c, pos, input, expressionStart){
+      var result = -1;
+
+      if (this_tok_lineTerminator(c, pos)) result = 18;
+      else if (c === 0x22) result = this_tok_stringDouble();
+      else if (this_tok_number(c,pos,input)) result = 7; // number after punctuator, check algorithm if that changes!
+      else if (this_tok_whitespace(c)) result = 18; // (doesnt check for space, must go after lineterminator, update algo if this changes)
+      else if (c === 0x27) result = this_tok_stringSingle();
       else if (c === 0x2f) {
         var n = this_tok_getLastNum2(); // this.pos === this.lastStart+1
         if (n === 0x2f) result = this_tok_commentSingle(pos, input);
@@ -146,117 +150,121 @@
         else if (expressionStart) result = this_tok_regex();
         else result = this_tok_punctuatorDiv(c,n);
       }
-      else if (this_tok_punctuator(c)) result = 9;
-      else if (c === 0x27) result = this_tok_stringSingle();
-      else if (c === 0x22) result = this_tok_stringDouble();
-      else if (this_tok_number(c,pos,input)) result = 7; // number after punctuator, check algorithm if that changes!
       else throw 'dont know what to parse now. '+this_tok_syntaxError();
 
       return result;
     }
   function this_tok_punctuator(c){
       var len = 0;
-  //    >>>=,
-  //    === !== >>> <<= >>=
-  //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
-  //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
-
-      if (c === 0x2e) {
+      //    >>>=,
+      //    === !== >>> <<= >>=
+      //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
+      //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
+      if (c === 0x2e) { // 15.30%
         var d = this_tok_getLastNum2();
-        // must check for a number because number parser comes after this
         if (d < 0x30 || d > 0x39) len = 1;
-      }
-      else if (c === 0x3d) {
-        if (this_tok_getLastNum2() === 0x3d) {
-          if (this_tok_getLastNum3() === 0x3d) len = 3;
-          else len = 2;
-        }
-        else len = 1;
-      }
-      else if (
-        c === 0x28 ||
-        c === 0x29 ||
-        c === 0x3b ||
-        c === 0x2c ||
-        c === 0x7b ||
-        c === 0x7d ||
-        c === 0x3a ||
-        c === 0x5b ||
-        c === 0x5d ||
-        c === 0x3f ||
-        c === 0x7e
-      ) len = 1;
-      else {
-        var d = this_tok_getLastNum2();
-
-        if (c === 0x2b) {
-          if (d === 0x3d || d === 0x2b) len = 2;
-          else len = 1;
-        }
-        else if (c === 0x21) {
-          if (d === 0x3d) {
-            if (this_tok_getLastNum3() === 0x3d) len = 3;
-            else len = 2;
-          }
-          else len = 1;
-        }
-        else if (c === 0x26) {
-          if (d === 0x3d || d === 0x26) len = 2;
-          else len = 1;
-        }
-        else if (c === 0x7c) {
-          if (d === 0x3d || d === 0x7c) len = 2;
-          else len = 1;
-        }
-        else if (c === 0x2d) {
-          if (d === 0x3d || d === 0x2d) len = 2;
-          else len = 1;
-        }
-        else if (c === 0x3c) {
-          if (d === 0x3d) len = 2;
-          else if (d === 0x3c) {
-            if (this_tok_getLastNum3() === 0x3d) len = 3;
-            else len = 2;
-          }
-          else {
-            len = 1;
-          }
-        }
-        else if (c === 0x2a) {
-          if (d === 0x3d) len = 2;
-          else len = 1;
-        }
-        else if (c === 0x3e) {
-          if (d === 0x3d) len = 2;
-          else if (d === 0x3e) {
-            var e = this_tok_getLastNum3();
-            if (e === 0x3d) len = 3;
-            else if (e === 0x3e) {
-              if (this_tok_getLastNum4() === 0x3d) len = 4;
-              else  len = 3;
-            }
-            else len = 2;
-          }
-          else len = 1;
-        }
-        else if (c === 0x25) {
-          if (d === 0x3d) len = 2;
-          else len = 1;
-        }
-        else if (c === 0x5e) {
-          if (d === 0x3d) len = 2;
-          else len = 1;
-        }
-        // else it wasnt a punctuator after all
+      } else if (
+        c === 0x28 || // 11.9%
+        c === 0x29 || // 11.90%
+        c === 0x3b || // 8.44%
+        c === 0x2c // 8.09%
+      ) {
+        len = 1;
+      } else if (c === 0x3d) { // 7.45%
+        len = this_tok_punctuatorCompare(c);
+      } else if (
+        c === 0x7b || // 4.96%
+        c === 0x7d // 4.96%
+      ) {
+        len = 1;
+      } else if (c >= 0x3a) {
+        len = this_tok_punctuator_2(c);
+      } else if (c >= 0x21 && c <= 0x2d) {
+        len = this_tok_punctuator_3(c);
       }
 
       if (len) {
         this_tok_pos += len;
-
         return true;
-      } else {
-        return false;
       }
+      return false;
+    }
+  function this_tok_punctuator_2(c){
+      var len = 0;
+      if (
+        c === 0x3a || // 2.98%
+        c === 0x5b || // 2.63%
+        c === 0x5d || // 2.63%
+        c === 0x3f // 0.40%
+      ) {
+        len = 1;
+      } else if (c === 0x7c) { // 0.55%
+        len = this_tok_punctuatorSame(c);
+      } else if (
+        c === 0x3c || // 0.33%
+        c === 0x3e // 0.19%
+      ) {
+        len = this_tok_punctuatorLtgt(c);
+      } else if (
+        c === 0x5e || // 0.01%
+        c === 0x7e // 0.00%
+      ) {
+        len = this_tok_punctuatorCompound(c);
+      }
+      return len;
+    }
+  function this_tok_punctuator_3(c){
+      var len = 0;
+      if (c === 0x22) { // 3.67%
+        // string, wont be a punctuator
+      } else if (c === 0x2b) { // 1.49%
+        len = this_tok_punctuatorSame(c);
+      } else if (c === 0x21) { // 0.84%
+        len = this_tok_punctuatorCompare(c);
+      } else if (
+        c === 0x26 || // 0.66%
+        c === 0x2d // 0.45%
+      ) {
+        len = this_tok_punctuatorSame(c);
+      } else if (
+        c === 0x2a || // 0.26%
+        c === 0x25 // 0.02%
+      ) {
+        len = this_tok_punctuatorLtgt(c);
+      }
+      return len;
+    }
+  function this_tok_punctuatorSame(c){
+      var d = this_tok_getLastNum2();
+      return (d === 0x3d || d === c) ? 2 : 1;
+    }
+  function this_tok_punctuatorCompare(c){
+      var len = 1;
+      if (this_tok_getLastNum2() === 0x3d) {
+        len = 2;
+        if (this_tok_getLastNum3() === 0x3d) len = 3;
+      }
+      return len;
+    }
+  function this_tok_punctuatorLtgt(c){
+      var len = 1;
+      var d = this_tok_getLastNum2();
+      if (d === 0x3d) len = 2;
+      else if (d === c) {
+        len = 2;
+        var e = this_tok_getLastNum3();
+        if (e === 0x3d) len = 3;
+        else if (e === c && c !== 0x3c) {
+          len = 3;
+          if (this_tok_getLastNum4() === 0x3d) len = 4;
+        }
+      }
+      return len;
+    }
+  function this_tok_punctuatorCompound(c){
+      var len = 1;
+      if (this_tok_getLastNum2() === 0x3d) len = 2;
+      return len;
     }
   function this_tok_punctuatorDiv(c,d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
@@ -265,14 +273,18 @@
       return 9;
     }
   function this_tok_whitespace(c){
-      // TODO: maybe i can improve this by combining <= with an extra check. depends on profiler results.
-      if ((c <= 0x20 || c >= 0xA0) && (c === 0x20 || c === 0x09 || c === 0x0B || c === 0x0C || c === 0xA0 || c === 0xFEFF)) {
+      // space is already checked in nextToken
+//      if (/*c === ORD_SPACE || */c === ORD_TAB || c === ORD_VTAB || c === ORD_FF || c === ORD_NBSP || c === ORD_BOM) {
+      // note: tab=0x09, ff=0x0c, vtab=0x0b
+      // cr=0x0a but whitespace() should go after lineterminator()! (update this if that changes)
+      if ((c <= 0x0C && c >= 0x09) || c === 0xA0 || c === 0xFEFF) {
         ++this_tok_pos;
         return true;
       }
       return false;
     }
   function this_tok_lineTerminator(c, pos){
+      var parsed = false;
       if (c === 0x0D){
         this_tok_lastNewline = true;
         // handle \r\n normalization here
@@ -282,13 +294,13 @@
         } else {
           this_tok_pos = pos + 1;
         }
-        return true;
+        parsed = true;
       } else if (c === 0x0A || c === 0x2028 || c === 0x2029) {
         this_tok_lastNewline = true;
         this_tok_pos = pos + 1;
-        return true;
+        parsed = true;
       }
-      return false;
+      return parsed;
     }
   function this_tok_commentSingle(pos, input){
       var len = input.length;
@@ -328,17 +340,17 @@
       var len = input.length;
 
       // TODO: rewrite this while
-      while (pos < len) {
-        var c = input.charCodeAt(pos++);
-        if (c === 0x27) {
-            this_tok_pos = pos;
-            return 10;
-        }
+      var c;
+      while (c !== 0x27) {
+        if (pos >= len) throw 'Unterminated string found at '+pos;
+        c = input.charCodeAt(pos++);
+
         if (c === 0x5c) pos = this_tok_stringEscape(pos);
-        if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
       }
 
-      throw 'Unterminated string found at '+pos;
+      this_tok_pos = pos;
+      return 10;
     }
   function this_tok_stringDouble(){
       var pos = this_tok_pos + 1;
@@ -346,18 +358,17 @@
       var len = input.length;
 
       // TODO: rewrite this while
-      while (pos < len) {
-        var c = input.charCodeAt(pos++);
+      var c;
+      while (c !== 0x22) {
+        if (pos >= len) throw 'Unterminated string found at '+pos;
+        c = input.charCodeAt(pos++);
 
-        if (c === 0x22) {
-          this_tok_pos = pos;
-          return 10;
-        }
         if (c === 0x5c) pos = this_tok_stringEscape(pos);
-        if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
       }
 
-      throw 'Unterminated string found at '+pos;
+      this_tok_pos = pos;
+      return 10;
     }
   function this_tok_stringEscape(pos){
       var input = this_tok_input;
@@ -371,7 +382,7 @@
       } else if (c === 0x0D) {
         // keep in mind, we are already skipping a char. no need to check
         // for other line terminators here. we are merely checking to see
-        // whether we need to skip an additional character.
+        // whether we need to skip an additional character for CRLF.
         if (input.charCodeAt(pos+1) === 0x0A) ++pos;
       // hex escapes
       } else if (c === 0x78) {
@@ -581,23 +592,21 @@
   function this_tok_getLastValue(){
       return this_tok_lastValue || (this_tok_lastValue = this_tok_input.substring(this_tok_lastStart, this_tok_lastStop));
 
-  //    // this seems slightly slower
-  //    var val = this.lastValue;
-  //    if (!val) {
-  //      var input = this.input;
-  //      val = this.lastValue = input.substring(this.lastStart, this.lastStop);
-  //    }
-  //    return val;
+      // this seems slightly slower
+//      var val = this.lastValue;
+//      if (!val) {
+//        var input = this.input;
+//        val = this.lastValue = input.substring(this.lastStart, this.lastStop);
+//      }
+//      return val;
     }
   function this_tok_getLastNum(){
       var n = this_tok_nextNum1;
-      if (n === -1) return this_tok_nextNum1 = this_tok_input.charCodeAt(this_tok_lastStart);
-      return n;
+      return n === -1 ? this_tok_nextNum1 = this_tok_input.charCodeAt(this_tok_lastStart) : n;
     }
   function this_tok_getLastNum2(){
       var n = this_tok_nextNum2;
-      if (n === -1) return this_tok_nextNum2 = this_tok_input.charCodeAt(this_tok_lastStart+1);
-      return n;
+      return (n === -1)  ? this_tok_nextNum2 = this_tok_input.charCodeAt(this_tok_lastStart+1) : n;
     }
   function this_tok_getLastNum3(){
       return this_tok_input.charCodeAt(this_tok_lastStart+2);
@@ -632,7 +641,7 @@
     this_tok_input = (input||'');
     this_tok_len = this_tok_input.length;
 
-    // v8 "appreciates" to be set all instance properties explicitly
+    // v8 "appreciates" it when all instance properties are set explicitly
     this_tok_pos = 0;
 
     this_tok_lastStart = 0;
@@ -813,7 +822,7 @@
       this_tok_nextPunc();
       do {
         if (this_par_isReservedIdentifier(false)) throw 'var name is reserved';
-        this_tok_mustBeIdentifier(true);
+        this_tok_mustBeIdentifier(true); // TOFIX: can never be regex nor div. does that matter?
         if (this_tok_isNum(0x3d) && this_tok_lastLen === 1) {
           this_tok_nextExpr();
           this_par_parseExpression();
@@ -1427,7 +1436,7 @@
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
         if (c === 0x2e) {
           if (!this_tok_isType(9)) throw 'Number (?) after identifier?';
-          this_tok_next(false);
+          this_tok_nextPunc();
           this_tok_mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = 4; // property name can be assigned to (for-in lhs)
         } else if (c === 0x28) {

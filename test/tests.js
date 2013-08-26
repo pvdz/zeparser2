@@ -1003,6 +1003,10 @@ var bad = [
   ["({get if(){}})", "getter name must be valid"],
   ["({set while(x){}})", "setter name must be valid"],
   ["({set a(if){}})", "setter param name must be valid"],
+
+  ["x %== y", "making sure weird punctuators are not valid: %=="],
+  ["x ==== y", "making sure weird punctuators are not valid: ===="],
+  ["x +== y", "making sure weird punctuators are not valid: +=="],
 ];
 
 

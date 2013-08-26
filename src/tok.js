@@ -94,7 +94,7 @@
     this.input = (input||'');
     this.len = this.input.length;
 
-    // v8 "appreciates" to be set all instance properties explicitly
+    // v8 "appreciates" it when all instance properties are set explicitly
     this.pos = 0;
 
     this.lastStart = 0;
@@ -368,36 +368,41 @@
 
       ++this.tokenCountAll;
 
-      if (this.pos >= this.len) {
-        if (this.lastType === EOF) throw 'Tried to parse beyond EOF, that cannot be good.';
-        var result = EOF;
-        this.lastLen = 0;
-        this.lastStart = this.lastStop = this.len;
-      } else {
-        var start = this.lastStart = this.pos;
-        var result = this.nextToken(expressionStart);
-        var stop = this.lastStop = this.pos;
-        this.lastLen = stop - start;
-      }
+      var pos = this.pos;
+      var start = this.lastStart = pos;
+      var result = EOF;
+      if (pos < this.len) result = this.nextToken(expressionStart, pos);
+      this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
     },
 
-    nextToken: function(expressionStart){
-      var pos = this.pos;
+    nextToken: function(expressionStart, pos){
       var input = this.input;
       var c = this.getLastNum(); // this.pos === this.lastStart
-
       var result = -1;
+
 
       // https://twitter.com/ariyahidayat/status/225447566815395840
       // Punctuator, Identifier, Keyword, String, Numeric, Boolean, Null, RegularExpression
       // so:
       // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
-      if (this.whitespace(c)) result = WHITE;
-      else if (this.lineTerminator(c, pos)) result = WHITE;
+      if (c >= 0x21 && c <= 0x2f && this.punctuator(c)) result = PUNCTUATOR;
       else if (this.asciiIdentifier(c)) result = IDENTIFIER;
-      // forward slash before generic punctuators!
+      else if (c >= 0x3a && this.punctuator(c)) result = PUNCTUATOR;
+      else if (c === ORD_SPACE) ++this.pos, result = WHITE;
+      else result = this.nextToken_2(c, pos, input, expressionStart);
+
+      return result;
+    },
+    nextToken_2: function(c, pos, input, expressionStart){
+      var result = -1;
+
+      if (this.lineTerminator(c, pos)) result = WHITE;
+      else if (c === ORD_DQUOTE) result = this.stringDouble();
+      else if (this.number(c,pos,input)) result = NUMBER; // number after punctuator, check algorithm if that changes!
+      else if (this.whitespace(c)) result = WHITE; // (doesnt check for space, must go after lineterminator, update algo if this changes)
+      else if (c === ORD_SQUOTE) result = this.stringSingle();
       else if (c === ORD_FWDSLASH) {
         var n = this.getLastNum2(); // this.pos === this.lastStart+1
         if (n === ORD_FWDSLASH) result = this.commentSingle(pos, input);
@@ -405,10 +410,6 @@
         else if (expressionStart) result = this.regex();
         else result = this.punctuatorDiv(c,n);
       }
-      else if (this.punctuator(c)) result = PUNCTUATOR;
-      else if (c === ORD_SQUOTE) result = this.stringSingle();
-      else if (c === ORD_DQUOTE) result = this.stringDouble();
-      else if (this.number(c,pos,input)) result = NUMBER; // number after punctuator, check algorithm if that changes!
       else throw 'dont know what to parse now. '+this.syntaxError();
 
       return result;
@@ -416,107 +417,115 @@
 
     punctuator: function(c){
       var len = 0;
-  //    >>>=,
-  //    === !== >>> <<= >>=
-  //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
-  //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
-
-      if (c === ORD_DOT) {
+      //    >>>=,
+      //    === !== >>> <<= >>=
+      //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
+      //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
+      if (c === ORD_DOT) { // 15.30%
         var d = this.getLastNum2();
-        // must check for a number because number parser comes after this
         if (d < ORD_L_0 || d > ORD_L_9) len = 1;
-      }
-      else if (c === ORD_IS) {
-        if (this.getLastNum2() === ORD_IS) {
-          if (this.getLastNum3() === ORD_IS) len = 3;
-          else len = 2;
-        }
-        else len = 1;
-      }
-      else if (
-        c === ORD_OPEN_PAREN ||
-        c === ORD_CLOSE_PAREN ||
-        c === ORD_SEMI ||
-        c === ORD_COMMA ||
-        c === ORD_OPEN_CURLY ||
-        c === ORD_CLOSE_CURLY ||
-        c === ORD_COLON ||
-        c === ORD_OPEN_SQUARE ||
-        c === ORD_CLOSE_SQUARE ||
-        c === ORD_QMARK ||
-        c === ORD_TILDE
-      ) len = 1;
-      else {
-        var d = this.getLastNum2();
-
-        if (c === ORD_PLUS) {
-          if (d === ORD_IS || d === ORD_PLUS) len = 2;
-          else len = 1;
-        }
-        else if (c === ORD_EXCL) {
-          if (d === ORD_IS) {
-            if (this.getLastNum3() === ORD_IS) len = 3;
-            else len = 2;
-          }
-          else len = 1;
-        }
-        else if (c === ORD_AND) {
-          if (d === ORD_IS || d === ORD_AND) len = 2;
-          else len = 1;
-        }
-        else if (c === ORD_OR) {
-          if (d === ORD_IS || d === ORD_OR) len = 2;
-          else len = 1;
-        }
-        else if (c === ORD_MIN) {
-          if (d === ORD_IS || d === ORD_MIN) len = 2;
-          else len = 1;
-        }
-        else if (c === ORD_LT) {
-          if (d === ORD_IS) len = 2;
-          else if (d === ORD_LT) {
-            if (this.getLastNum3() === ORD_IS) len = 3;
-            else len = 2;
-          }
-          else {
-            len = 1;
-          }
-        }
-        else if (c === ORD_STAR) {
-          if (d === ORD_IS) len = 2;
-          else len = 1;
-        }
-        else if (c === ORD_GT) {
-          if (d === ORD_IS) len = 2;
-          else if (d === ORD_GT) {
-            var e = this.getLastNum3();
-            if (e === ORD_IS) len = 3;
-            else if (e === ORD_GT) {
-              if (this.getLastNum4() === ORD_IS) len = 4;
-              else  len = 3;
-            }
-            else len = 2;
-          }
-          else len = 1;
-        }
-        else if (c === ORD_PERCENT) {
-          if (d === ORD_IS) len = 2;
-          else len = 1;
-        }
-        else if (c === ORD_XOR) {
-          if (d === ORD_IS) len = 2;
-          else len = 1;
-        }
-        // else it wasnt a punctuator after all
+      } else if (
+        c === ORD_OPEN_PAREN || // 11.9%
+        c === ORD_CLOSE_PAREN || // 11.90%
+        c === ORD_SEMI || // 8.44%
+        c === ORD_COMMA // 8.09%
+      ) {
+        len = 1;
+      } else if (c === ORD_IS) { // 7.45%
+        len = this.punctuatorCompare(c);
+      } else if (
+        c === ORD_OPEN_CURLY || // 4.96%
+        c === ORD_CLOSE_CURLY // 4.96%
+      ) {
+        len = 1;
+      } else if (c >= 0x3a) {
+        len = this.punctuator_2(c);
+      } else if (c >= 0x21 && c <= 0x2d) {
+        len = this.punctuator_3(c);
       }
 
       if (len) {
         this.pos += len;
-
         return true;
-      } else {
-        return false;
       }
+      return false;
+    },
+    punctuator_2: function(c){
+      var len = 0;
+      if (
+        c === ORD_COLON || // 2.98%
+        c === ORD_OPEN_SQUARE || // 2.63%
+        c === ORD_CLOSE_SQUARE || // 2.63%
+        c === ORD_QMARK // 0.40%
+      ) {
+        len = 1;
+      } else if (c === ORD_OR) { // 0.55%
+        len = this.punctuatorSame(c);
+      } else if (
+        c === ORD_LT || // 0.33%
+        c === ORD_GT // 0.19%
+      ) {
+        len = this.punctuatorLtgt(c);
+      } else if (
+        c === ORD_XOR || // 0.01%
+        c === ORD_TILDE // 0.00%
+      ) {
+        len = this.punctuatorCompound(c);
+      }
+      return len;
+    },
+    punctuator_3: function(c){
+      var len = 0;
+      if (c === ORD_DQUOTE) { // 3.67%
+        // string, wont be a punctuator
+      } else if (c === ORD_PLUS) { // 1.49%
+        len = this.punctuatorSame(c);
+      } else if (c === ORD_EXCL) { // 0.84%
+        len = this.punctuatorCompare(c);
+      } else if (
+        c === ORD_AND || // 0.66%
+        c === ORD_MIN // 0.45%
+      ) {
+        len = this.punctuatorSame(c);
+      } else if (
+        c === ORD_STAR || // 0.26%
+        c === ORD_PERCENT // 0.02%
+      ) {
+        len = this.punctuatorLtgt(c);
+      }
+      return len;
+    },
+    punctuatorSame: function(c){
+      var d = this.getLastNum2();
+      return (d === ORD_IS || d === c) ? 2 : 1;
+    },
+    punctuatorCompare: function(c){
+      var len = 1;
+      if (this.getLastNum2() === ORD_IS) {
+        len = 2;
+        if (this.getLastNum3() === ORD_IS) len = 3;
+      }
+      return len;
+    },
+    punctuatorLtgt: function(c){
+      var len = 1;
+      var d = this.getLastNum2();
+      if (d === ORD_IS) len = 2;
+      else if (d === c) {
+        len = 2;
+        var e = this.getLastNum3();
+        if (e === ORD_IS) len = 3;
+        else if (e === c && c !== ORD_LT) {
+          len = 3;
+          if (this.getLastNum4() === ORD_IS) len = 4;
+        }
+      }
+      return len;
+    },
+    punctuatorCompound: function(c){
+      var len = 1;
+      if (this.getLastNum2() === ORD_IS) len = 2;
+      return len;
     },
     punctuatorDiv: function(c,d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
@@ -526,14 +535,18 @@
     },
 
     whitespace: function(c){
-      // TODO: maybe i can improve this by combining <= with an extra check. depends on profiler results.
-      if ((c <= ORD_SPACE || c >= ORD_NBSP) && (c === ORD_SPACE || c === ORD_TAB || c === ORD_VTAB || c === ORD_FF || c === ORD_NBSP || c === ORD_BOM)) {
+      // space is already checked in nextToken
+//      if (/*c === ORD_SPACE || */c === ORD_TAB || c === ORD_VTAB || c === ORD_FF || c === ORD_NBSP || c === ORD_BOM) {
+      // note: tab=0x09, ff=0x0c, vtab=0x0b
+      // cr=0x0a but whitespace() should go after lineterminator()! (update this if that changes)
+      if ((c <= ORD_FF && c >= ORD_TAB) || c === ORD_NBSP || c === ORD_BOM) {
         ++this.pos;
         return true;
       }
       return false;
     },
     lineTerminator: function(c, pos){
+      var parsed = false;
       if (c === ORD_CR){
         this.lastNewline = true;
         // handle \r\n normalization here
@@ -543,13 +556,13 @@
         } else {
           this.pos = pos + 1;
         }
-        return true;
+        parsed = true;
       } else if (c === ORD_LF || c === ORD_PS || c === ORD_LS) {
         this.lastNewline = true;
         this.pos = pos + 1;
-        return true;
+        parsed = true;
       }
-      return false;
+      return parsed;
     },
     commentSingle: function(pos, input){
       var len = input.length;
@@ -589,17 +602,17 @@
       var len = input.length;
 
       // TODO: rewrite this while
-      while (pos < len) {
-        var c = input.charCodeAt(pos++);
-        if (c === ORD_SQUOTE) {
-            this.pos = pos;
-            return STRING;
-        }
+      var c;
+      while (c !== ORD_SQUOTE) {
+        if (pos >= len) throw 'Unterminated string found at '+pos;
+        c = input.charCodeAt(pos++);
+
         if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
+        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
       }
 
-      throw 'Unterminated string found at '+pos;
+      this.pos = pos;
+      return STRING;
     },
     stringDouble: function(){
       var pos = this.pos + 1;
@@ -607,18 +620,17 @@
       var len = input.length;
 
       // TODO: rewrite this while
-      while (pos < len) {
-        var c = input.charCodeAt(pos++);
+      var c;
+      while (c !== ORD_DQUOTE) {
+        if (pos >= len) throw 'Unterminated string found at '+pos;
+        c = input.charCodeAt(pos++);
 
-        if (c === ORD_DQUOTE) {
-          this.pos = pos;
-          return STRING;
-        }
         if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
+        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
       }
 
-      throw 'Unterminated string found at '+pos;
+      this.pos = pos;
+      return STRING;
     },
     stringEscape: function(pos){
       var input = this.input;
@@ -632,7 +644,7 @@
       } else if (c === ORD_CR) {
         // keep in mind, we are already skipping a char. no need to check
         // for other line terminators here. we are merely checking to see
-        // whether we need to skip an additional character.
+        // whether we need to skip an additional character for CRLF.
         if (input.charCodeAt(pos+1) === ORD_LF) ++pos;
       // hex escapes
       } else if (c === ORD_L_X) {
@@ -845,13 +857,13 @@
     getLastValue: function(){
       return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
 
-  //    // this seems slightly slower
-  //    var val = this.lastValue;
-  //    if (!val) {
-  //      var input = this.input;
-  //      val = this.lastValue = input.substring(this.lastStart, this.lastStop);
-  //    }
-  //    return val;
+      // this seems slightly slower
+//      var val = this.lastValue;
+//      if (!val) {
+//        var input = this.input;
+//        val = this.lastValue = input.substring(this.lastStart, this.lastStop);
+//      }
+//      return val;
     },
     getLastNum: function(){
       var n = this.nextNum1;
