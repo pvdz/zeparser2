@@ -602,11 +602,13 @@
     }
   function this_tok_getLastNum(){
       var n = this_tok_nextNum1;
-      return n === -1 ? this_tok_nextNum1 = this_tok_input.charCodeAt(this_tok_lastStart) : n;
+      if (n === -1) return this_tok_nextNum1 = this_tok_input.charCodeAt(this_tok_lastStart);
+      return n;
     }
   function this_tok_getLastNum2(){
       var n = this_tok_nextNum2;
-      return (n === -1)  ? this_tok_nextNum2 = this_tok_input.charCodeAt(this_tok_lastStart+1) : n;
+      if (n === -1) return this_tok_nextNum2 = this_tok_input.charCodeAt(this_tok_lastStart+1);
+      return n;
     }
   function this_tok_getLastNum3(){
       return this_tok_input.charCodeAt(this_tok_lastStart+2);
@@ -715,7 +717,7 @@
       // prepare
       this_tok_nextExpr();
       // go!
-      this_par_parseStatements(false, false, false, []);
+      this_par_parseStatements(false, false, false, null);
       if (this_tok_pos !== this_tok_len) throw 'Did not complete parsing... '+this_tok_syntaxError();
 
       return this;
@@ -1097,7 +1099,7 @@
       this_tok_mustBeNum(0x28, false);
       this_par_parseParameters(paramCount);
       this_tok_mustBeNum(0x29, false);
-      this_par_parseCompleteBlock(forFunctionDeclaration, true, false, false, []);
+      this_par_parseCompleteBlock(forFunctionDeclaration, true, false, false, null);
     }
   function this_par_parseParameters(paramCount){
       // [<idntf> [, <idntf>]]
@@ -1176,7 +1178,9 @@
           throw 'Reserved identifier found in label. '+this_tok_syntaxError();
         }
 
-        labelSet.push(labelName);
+        if (!labelSet) labelSet = [labelName];
+        else labelSet.push(labelName);
+
         this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
         labelSet.pop();
 
@@ -1396,7 +1400,8 @@
     }
   function this_par_parseUnary(){
       var parsed = false;
-      while (!this_tok_isType(14) && this_par_testUnary()) {
+      // TOFIX: why was there an EOF check here?
+      while (/*!this_tok_isType(EOF) && */this_par_testUnary()) {
         this_tok_nextExpr();
         parsed = true;
       }
@@ -1434,7 +1439,17 @@
       while (repeat) {
         var c = this_tok_getLastNum();
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
-        if (c === 0x2e) {
+        if (((c/10)|0)!==4) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
+//        if (c > 0x2e) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
+          if (c === 0x5b) {
+            this_tok_nextExpr();
+            this_par_parseExpressions(); // required
+            this_tok_mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+            nonAssignee = 4; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
+          } else {
+            repeat = false;
+          }
+        } else if (c === 0x2e) {
           if (!this_tok_isType(9)) throw 'Number (?) after identifier?';
           this_tok_nextPunc();
           this_tok_mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
@@ -1444,11 +1459,6 @@
           this_par_parseOptionalExpressions();
           this_tok_mustBeNum(0x29, false); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = 1; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
-        } else if (c === 0x5b) {
-          this_tok_nextExpr();
-          this_par_parseExpressions(); // required
-          this_tok_mustBeNum(0x5d, false); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = 4; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
         } else if (c === 0x2b && this_tok_getLastNum2() === 0x2b) {
           this_tok_nextPunc();
           // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression

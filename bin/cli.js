@@ -15,5 +15,5 @@ process.stdin.on('end', function () {
   console.log(data);
   var par = new Par(data);
   par.run();
-  console.log('-- finished ('+par.tok.tokenCount+' tokens)');
+  console.log('-- finished ('+par.tok.tokenCountAll+' tokens)');
 });

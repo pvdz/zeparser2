@@ -145,7 +145,7 @@
       // prepare
       tok.nextExpr();
       // go!
-      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, []);
+      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, null);
       if (tok.pos !== tok.len) throw 'Did not complete parsing... '+tok.syntaxError();
 
       return this;
@@ -157,12 +157,15 @@
       while (!tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
-      var tok = this.tok;
-      if (tok.isType(IDENTIFIER)) {
+      if (this.tok.isType(IDENTIFIER)) {
         // dont "just" return true. case and default still return false
         return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
+      } else {
+        return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
       }
-
+    },
+    parseNonIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
+      var tok = this.tok;
       var c = tok.getLastNum();
 
       if (c === ORD_OPEN_CURLY) {
@@ -559,7 +562,7 @@
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
       this.parseParameters(paramCount);
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
-      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, []);
+      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, null);
     },
     parseParameters: function(paramCount){
       // [<idntf> [, <idntf>]]
@@ -642,14 +645,16 @@
           throw 'Reserved identifier found in label. '+this.tok.syntaxError();
         }
 
-        labelSet.push(labelName);
+        if (!labelSet) labelSet = [labelName];
+        else labelSet.push(labelName);
+
         this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
         labelSet.pop();
 
       } else {
 
         // TOFIX: add test case where this fails; `state & NONASSIGNEE` needs parenthesis
-        this.parseAssignments(state & NONASSIGNEE > 0);
+        this.parseAssignments((state & NONASSIGNEE) > 0);
         this.parseNonAssignments();
 
         if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
@@ -885,7 +890,8 @@
     parseUnary: function(){
       var parsed = PARSEDNOTHING;
       var tok = this.tok;
-      while (!tok.isType(EOF) && this.testUnary()) {
+      // TOFIX: why was there an EOF check here?
+      while (/*!tok.isType(EOF) && */this.testUnary()) {
         tok.nextExpr();
         parsed = PARSEDSOMETHING;
       }
@@ -904,6 +910,7 @@
       else if (c === ORD_L_D) return tok.getLastValue() === 'delete';
       else if (c === ORD_EXCL) return true;
       else if (c === ORD_L_V) return tok.getLastValue() === 'void';
+      // TODO do i actually need to check for lastLen? tok should already be a "clean" token. what other values might start with "-"? - -- -=
       else if (c === ORD_MIN) return (tok.lastLen === 1 || (tok.getLastNum2() === ORD_MIN));
       else if (c === ORD_PLUS) return (tok.lastLen === 1 || (tok.getLastNum2() === ORD_PLUS));
       else if (c === ORD_TILDE) return true;
@@ -925,7 +932,17 @@
       while (repeat) {
         var c = tok.getLastNum();
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
-        if (c === ORD_DOT) {
+//        if (((c/10)|0)!==4) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
+        if (c > 0x2e) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
+          if (c === ORD_OPEN_SQUARE) {
+            tok.nextExpr();
+            this.parseExpressions(); // required
+            tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+            nonAssignee = ASSIGNEE; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
+          } else {
+            repeat = false;
+          }
+        } else if (c === ORD_DOT) {
           if (!tok.isType(PUNCTUATOR)) throw 'Number (?) after identifier?';
           tok.nextPunc();
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
@@ -935,11 +952,6 @@
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = NONASSIGNEE; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
-        } else if (c === ORD_OPEN_SQUARE) {
-          tok.nextExpr();
-          this.parseExpressions(); // required
-          tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = ASSIGNEE; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
         } else if (c === ORD_PLUS && tok.getLastNum2() === ORD_PLUS) {
           tok.nextPunc();
           // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression

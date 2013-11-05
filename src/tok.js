@@ -220,7 +220,10 @@
      * @return {boolean}
      */
     isValue: function(){
-      return this.lastType === STRING || this.lastType === NUMBER || this.lastType === IDENTIFIER || this.lastType === REGEX || false;
+      return (
+        (this.lastType !== PUNCTUATOR) && // fail fast
+        (this.lastType === STRING || this.lastType === NUMBER || this.lastType === IDENTIFIER || this.lastType === REGEX)
+      );
     },
     /**
      * Compare the first character of the current token
@@ -368,10 +371,9 @@
 
       ++this.tokenCountAll;
 
-      var pos = this.pos;
-      var start = this.lastStart = pos;
+      var start = this.lastStart = this.pos;
       var result = EOF;
-      if (pos < this.len) result = this.nextToken(expressionStart, pos);
+      if (start < this.len) result = this.nextToken(expressionStart, start);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
