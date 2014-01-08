@@ -462,6 +462,7 @@ var good = [
   ["({get:5});", 8, "`get` Used As Standard Property Name"],
   ["({set:5});", 8, "`get` Used As Standard Property Name"],
   ["l !== \"px\" && (d.style(h, c, (k || 1) + l), j = (k || 1) / f.cur() * j, d.style(h, c, j + l)), i[1] && (k = (i[1] === \"-=\" ? -1 : 1) * k + j), f.custom(j, k, l)", [131, 132], "Regression Test: RegExp/Division"],
+  ["x === 'y';", 6, "Regression Test, testing single char punctuators before longer ones"],
 
   ["(/'/g, '\\\\\\'') + \"'\";", 11, [false, true], "Regression Test: Confusing Escape Character Sequence"],
   ["/abc\//no_comment", [3, 4], [true, false, false], "RegExp Followed By Line Comment"],
@@ -605,6 +606,7 @@ var good = [
   ["0e1", [1,2], "some number checks i needed to do"],
   ["0.e1", [1,2], "some number checks i needed to do"],
   ["0,1", [3,4], "uhm, yeah, still just two numbers, right?"],
+  ["a.b", [3,4], "dot is not always a number"],
 
   ["(function(){}());", 10, "iife, cant believe i wasnt testing this yet"],
   ["+function(){};", 7, "can believe I wasnt testing for this though"],
@@ -686,6 +688,8 @@ var good = [
   ["for (var a=b=c in d);", 16, "for-in assignment to initializer"],
   ["for (new a().b in c);", 16, "new as lhs for-in"],
   ["for (undefined in {});", 11, "undefined could be redefined so this might be valid"],
+
+  ["/*!fooo\n*/", [1,2], "copyright comment"],
 ];
 
 
