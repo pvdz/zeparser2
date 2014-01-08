@@ -59,13 +59,13 @@
           }
 
           if (errorThrown) {
-            debug('<b class="red">Test failed:</span>',desc,'('+errorThrown+')'),console.log(desc, tok);
+            debug('<b class="red">Test failed:</b>',desc,'<span class="red">('+errorThrown+')</span>'),console.log(desc, tok);
             ++fail;
           } else if (found == outputLen) {
             debug('<span class="green">Test '+i+' ok:</span>',desc);
             ++ok;
           } else {
-            debug('<b class="red">Test failed:</span>',desc,'(found',found,'expected',outputLen+')'),console.log(desc, tok);
+            debug('<b class="red">Test failed:</b>',desc,'<span class="red">(found',found,'expected',outputLen+')</span>'),console.log(desc, tok);
             ++fail;
           }
           if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
