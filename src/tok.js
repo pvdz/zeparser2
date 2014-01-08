@@ -1,6 +1,9 @@
 (function(exports){
   var uniRegex = exports.uni || require(__dirname+'/uni.js').uni;
 
+  // punctuator occurrence stats: http://qfox.nl/weblog/301
+  // token start stats: http://qfox.nl/weblog/302
+
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
   var WHITE_SPACE = 1;
@@ -21,21 +24,69 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
-  var UNICODE_LIMIT = 127;
+  var UNICODE_LIMIT_127 = 127;
 
   var ORD_L_A = 0x61;
   var ORD_L_A_UC = 0x41;
+  var ORD_L_B = 0x62;
+  var ORD_L_B_UC = 0x42;
+  var ORD_L_C = 0x63;
+  var ORD_L_C_UC = 0x43;
+  var ORD_L_D = 0x64;
+  var ORD_L_D_UC = 0x44;
   var ORD_L_E = 0x65;
   var ORD_L_E_UC = 0x45;
   var ORD_L_F = 0x66;
   var ORD_L_F_UC = 0x46;
+  var ORD_L_G = 0x67;
+  var ORD_L_G_UC = 0x47;
+  var ORD_L_H = 0x68;
+  var ORD_L_H_UC = 0x48;
+  var ORD_L_I = 0x69;
+  var ORD_L_I_UC = 0x49;
+  var ORD_L_J = 0x6A;
+  var ORD_L_J_UC = 0x4A;
+  var ORD_L_K = 0x6B;
+  var ORD_L_K_UC = 0x4B;
+  var ORD_L_L = 0x6C;
+  var ORD_L_L_UC = 0x4C;
+  var ORD_L_M = 0x6D;
+  var ORD_L_M_UC = 0x4D;
+  var ORD_L_N = 0x6E;
+  var ORD_L_N_UC = 0x4E;
+  var ORD_L_O = 0x6F;
+  var ORD_L_O_UC = 0x4F;
+  var ORD_L_P = 0x70;
+  var ORD_L_P_UC = 0x50;
+  var ORD_L_Q = 0x71;
+  var ORD_L_Q_UC = 0x51;
+  var ORD_L_R = 0x72;
+  var ORD_L_R_UC = 0x52;
+  var ORD_L_S = 0x73;
+  var ORD_L_S_UC = 0x53;
+  var ORD_L_T = 0x74;
+  var ORD_L_T_UC = 0x54;
   var ORD_L_U = 0x75;
+  var ORD_L_U_UC = 0x55;
+  var ORD_L_V = 0x76;
+  var ORD_L_V_UC = 0x56;
+  var ORD_L_W = 0x77;
+  var ORD_L_W_UC = 0x57;
   var ORD_L_X = 0x78;
-  var ORD_L_X_UC = 0x78;
+  var ORD_L_X_UC = 0x58;
+  var ORD_L_Y = 0x79;
+  var ORD_L_Y_UC = 0x59;
   var ORD_L_Z = 0x7a;
   var ORD_L_Z_UC = 0x5a;
   var ORD_L_0 = 0x30;
   var ORD_L_1 = 0x31;
+  var ORD_L_2 = 0x32;
+  var ORD_L_3 = 0x33;
+  var ORD_L_4 = 0x34;
+  var ORD_L_5 = 0x35;
+  var ORD_L_6 = 0x36;
+  var ORD_L_7 = 0x37;
+  var ORD_L_8 = 0x38;
   var ORD_L_9 = 0x39;
 
   var ORD_OPEN_CURLY = 0x7b;
@@ -48,6 +99,8 @@
   var ORD_PLUS = 0x2b;
   var ORD_MIN = 0x2d;
   var ORD_EXCL = 0x21;
+  var ORD_HASH = 0x23;
+  var ORD_$ = 0x24;
   var ORD_QMARK = 0x3f;
   var ORD_COLON = 0x3a;
   var ORD_SEMI = 0x3b;
@@ -75,8 +128,7 @@
   var ORD_CR = 0x0D;
   var ORD_LS = 0x2029;
   var ORD_PS = 0x2028;
-  var ORD_$ = 0x5f;
-  var ORD_LODASH = 0x24;
+  var ORD_LODASH = 0x5f;
 
   /**
    * Tokenizer for JS. After initializing the constructor
@@ -373,143 +425,269 @@
 
       var start = this.lastStart = this.pos;
       var result = EOF;
-      if (start < this.len) result = this.nextToken(expressionStart, start);
+      // TOFIX: nextToken or nextTokenSwitch?
+      if (start < this.len) result = this.nextTokenSwitch(expressionStart, start);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
     },
 
-    nextToken: function(expressionStart, pos){
-      var input = this.input;
-      var c = this.getLastNum(); // this.pos === this.lastStart
-      var result = -1;
+    nextTokenIfElse: function(expressionStart, pos){
+      var c = this.getLastNum();
 
+      // 58% of tokens is caught here
+      // http://qfox.nl/weblog/301
 
-      // https://twitter.com/ariyahidayat/status/225447566815395840
-      // Punctuator, Identifier, Keyword, String, Numeric, Boolean, Null, RegularExpression
-      // so:
-      // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
-      if (c >= 0x21 && c <= 0x2f && this.punctuator(c)) result = PUNCTUATOR;
-      else if (this.asciiIdentifier(c)) result = IDENTIFIER;
-      else if (c >= 0x3a && this.punctuator(c)) result = PUNCTUATOR;
-      else if (c === ORD_SPACE) ++this.pos, result = WHITE;
-      else result = this.nextToken_2(c, pos, input, expressionStart);
-
-      return result;
-    },
-    nextToken_2: function(c, pos, input, expressionStart){
-      var result = -1;
-
-      if (this.lineTerminator(c, pos)) result = WHITE;
-      else if (c === ORD_DQUOTE) result = this.stringDouble();
-      else if (this.number(c,pos,input)) result = NUMBER; // number after punctuator, check algorithm if that changes!
-      else if (this.whitespace(c)) result = WHITE; // (doesnt check for space, must go after lineterminator, update algo if this changes)
-      else if (c === ORD_SQUOTE) result = this.stringSingle();
-      else if (c === ORD_FWDSLASH) {
-        var n = this.getLastNum2(); // this.pos === this.lastStart+1
-        if (n === ORD_FWDSLASH) result = this.commentSingle(pos, input);
-        else if (n === ORD_STAR) result = this.commentMulti(pos, input);
-        else if (expressionStart) result = this.regex();
-        else result = this.punctuatorDiv(c,n);
+      if (c === ORD_SPACE) return this.__plusOne(WHITE);
+      if (c === ORD_DOT) return this.__parseDot();
+      if (c === ORD_OPEN_PAREN || c === ORD_CLOSE_PAREN || c === ORD_SEMI || c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
+      if (c === ORD_IS) return this.__parseEqualSigns();
+      if (c >= ORD_L_A && c <= ORD_L_Z) return this.__parseIdentifier(); // 25%
+      if (c === ORD_CR) return this.__parseCR();
+      if (c === ORD_LF) {
+        this.lastNewline = true;
+        ++this.pos;
+        return WHITE;
       }
-      else throw 'dont know what to parse now. '+this.syntaxError();
+      if (c === ORD_OPEN_CURLY || c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
+      // while the
 
-      return result;
-    },
+//      // split to another function to prevent too many branches in this function
+//      return this.nextToken_center(c, expressionStart);
+//    },
+//    nextToken_center: function(c, expressionStart){
+      // 25% of tokens is caught here
 
-    punctuator: function(c){
-      var len = 0;
-      //    >>>=,
-      //    === !== >>> <<= >>=
-      //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
-      //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
-      if (c === ORD_DOT) { // 15.30%
-        var d = this.getLastNum2();
-        if (d < ORD_L_0 || d > ORD_L_9) len = 1;
-      } else if (
-        c === ORD_OPEN_PAREN || // 11.9%
-        c === ORD_CLOSE_PAREN || // 11.90%
-        c === ORD_SEMI || // 8.44%
-        c === ORD_COMMA // 8.09%
-      ) {
-        len = 1;
-      } else if (c === ORD_IS) { // 7.45%
-        len = this.punctuatorCompare(c);
-      } else if (
-        c === ORD_OPEN_CURLY || // 4.96%
-        c === ORD_CLOSE_CURLY // 4.96%
-      ) {
-        len = 1;
-      } else if (c >= 0x3a) {
-        len = this.punctuator_2(c);
-      } else if (c >= 0x21 && c <= 0x2d) {
-        len = this.punctuator_3(c);
-      }
-
-      if (len) {
-        this.pos += len;
-        return true;
-      }
-      return false;
-    },
-    punctuator_2: function(c){
-      var len = 0;
+      if (c === ORD_DQUOTE) return this.__parseDoubleString();
       if (
-        c === ORD_COLON || // 2.98%
-        c === ORD_OPEN_SQUARE || // 2.63%
-        c === ORD_CLOSE_SQUARE || // 2.63%
-        c === ORD_QMARK // 0.40%
-      ) {
-        len = 1;
-      } else if (c === ORD_OR) { // 0.55%
-        len = this.punctuatorSame(c);
-      } else if (
-        c === ORD_LT || // 0.33%
-        c === ORD_GT // 0.19%
-      ) {
-        len = this.punctuatorLtgt(c);
-      } else if (
-        c === ORD_XOR || // 0.01%
-        c === ORD_TILDE // 0.00%
-      ) {
-        len = this.punctuatorCompound(c);
+        c === ORD_COLON ||
+        c === ORD_OPEN_SQUARE ||
+        c === ORD_CLOSE_SQUARE
+      ) { ++this.pos; return PUNCTUATOR; }
+//      return this.nextToken_tail(c, expressionStart);
+//    },
+//    nextToken_tail: function(c, expressionStart){
+      // remaining 17% of tokens is caught here
+
+      if (c === ORD_LODASH) return this.__parseIdentifier();
+      if (c === ORD_PLUS) return this.__parseSameOrCompound(c);
+      if (c === ORD_L_0) return this.__parseZero();
+      if (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) return this.__parseIdentifier();
+      if (c === ORD_EXCL) return this.__parseEqualSigns();
+      if (c >= ORD_L_1 && c <= ORD_L_9) return this.__parseNumber();
+      if (c === ORD_AND || c === ORD_OR) return this.__parseSameOrCompound(c);
+      if (c === ORD_SQUOTE) return this.__parseSingleString();
+      if (c === ORD_MIN) return this.__parseSameOrCompound(c);
+      if (c === ORD_TAB) return this.__plusOne(WHITE);
+      if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
+      if (c === ORD_$) return this.__parseIdentifier();
+      if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
+      if (c === ORD_LT) return this.__parseLtgtPunctuator(c);
+      if (c === ORD_STAR) return this.__parseCompound();
+      if (c === ORD_GT) return this.__parseLtgtPunctuator(c);
+      if (
+        c === ORD_PERCENT ||
+          c === ORD_XOR ||
+          c === ORD_TILDE
+        ) return this.__parseCompound();
+
+//      return this.nextToken_exotic(c);
+//    },
+//    nextToken_exotic: function(c){
+      // the rest is exotic. order is not really important at this point...
+
+      // TOFIX: should ORD_LF go with CR? because OSX...
+      if (c === ORD_PS || c === ORD_LS) {
+        this.lastNewline = true;
+        ++this.pos;
+        return WHITE;
       }
-      return len;
-    },
-    punctuator_3: function(c){
-      var len = 0;
-      if (c === ORD_DQUOTE) { // 3.67%
-        // string, wont be a punctuator
-      } else if (c === ORD_PLUS) { // 1.49%
-        len = this.punctuatorSame(c);
-      } else if (c === ORD_EXCL) { // 0.84%
-        len = this.punctuatorCompare(c);
-      } else if (
-        c === ORD_AND || // 0.66%
-        c === ORD_MIN // 0.45%
-      ) {
-        len = this.punctuatorSame(c);
-      } else if (
-        c === ORD_STAR || // 0.26%
-        c === ORD_PERCENT // 0.02%
-      ) {
-        len = this.punctuatorLtgt(c);
+
+      // space and tab are already checked
+      if (c === ORD_FF || c === ORD_VTAB || c === ORD_NBSP || c === ORD_BOM) return this.__plusOne(WHITE);
+
+      if (c === ORD_BACKSLASH && this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
+        this.pos += 6;
+        return this.__parseIdentifier();
       }
-      return len;
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       throw 'fixme ['+c+']';
+       return this.__parseIdentifier();
+       */
     },
-    punctuatorSame: function(c){
+
+    nextTokenSwitch: function(expressionStart, pos){
+      var c = this.getLastNum();
+
+      switch (c) {
+        case ORD_SPACE: return this.__plusOne(WHITE);
+        case ORD_DOT: return this.__parseDot();
+        case ORD_OPEN_PAREN: return this.__plusOne(PUNCTUATOR);
+        case ORD_CLOSE_PAREN: return this.__plusOne(PUNCTUATOR);
+        case ORD_SEMI: return this.__plusOne(PUNCTUATOR);
+        case ORD_COMMA: return this.__plusOne(PUNCTUATOR);
+        case ORD_IS: return this.__parseEqualSigns();
+        case ORD_L_T: return this.__parseIdentifier();
+        case ORD_CR: return this.__parseCR();
+        case ORD_LF:
+          this.lastNewline = true;
+          return this.__plusOne(WHITE);
+        case ORD_OPEN_CURLY:
+        case ORD_CLOSE_CURLY: return this.__plusOne(PUNCTUATOR);
+        case ORD_L_A: return this.__parseIdentifier();
+        case ORD_L_I: return this.__parseIdentifier();
+        case ORD_DQUOTE: return this.__parseDoubleString();
+        case ORD_L_F: return this.__parseIdentifier();
+        case ORD_L_C: return this.__parseIdentifier();
+        case ORD_COLON: return this.__plusOne(PUNCTUATOR);
+        case ORD_OPEN_SQUARE: return this.__plusOne(PUNCTUATOR);
+        case ORD_CLOSE_SQUARE: return this.__plusOne(PUNCTUATOR);
+        case ORD_L_B: return this.__parseIdentifier();
+        case ORD_L_R: return this.__parseIdentifier();
+        case ORD_L_E: return this.__parseIdentifier();
+        case ORD_L_V: return this.__parseIdentifier();
+        case ORD_L_S: return this.__parseIdentifier();
+        case ORD_L_D: return this.__parseIdentifier();
+        case ORD_L_N: return this.__parseIdentifier();
+        case ORD_LODASH: return this.__parseIdentifier();
+        case ORD_L_P: return this.__parseIdentifier();
+        case ORD_L_G: return this.__parseIdentifier();
+        case ORD_PLUS: return this.__parseSameOrCompound(c);
+        case ORD_L_M: return this.__parseIdentifier();
+        case ORD_L_O: return this.__parseIdentifier();
+        case ORD_L_0: return this.__parseZero();
+        case ORD_L_L: return this.__parseIdentifier();
+        case ORD_L_Z_UC: return this.__parseIdentifier();
+        case ORD_L_H: return this.__parseIdentifier();
+        case ORD_L_E_UC: return this.__parseIdentifier();
+        case ORD_EXCL: return this.__parseEqualSigns();
+        case ORD_L_1: return this.__parseNumber();
+        case ORD_L_D_UC: return this.__parseIdentifier();
+        case ORD_L_U: return this.__parseIdentifier();
+        case ORD_AND: return this.__parseSameOrCompound(c);
+        case ORD_L_A_UC: return this.__parseIdentifier();
+        case ORD_L_W: return this.__parseIdentifier();
+        case ORD_L_F_UC: return this.__parseIdentifier();
+        case ORD_OR: return this.__parseSameOrCompound(c);
+        case ORD_SQUOTE: return this.__parseSingleString();
+        case ORD_L_K: return this.__parseIdentifier();
+        case ORD_MIN: return this.__parseSameOrCompound(c);
+        case ORD_L_X: return this.__parseIdentifier();
+        case ORD_TAB: return this.__plusOne(WHITE);
+        case ORD_L_C_UC: return this.__parseIdentifier();
+        case ORD_L_J: return this.__parseIdentifier();
+        case ORD_QMARK: return this.__plusOne(PUNCTUATOR);
+        case ORD_$: return this.__parseIdentifier();
+        case ORD_L_M_UC: return this.__parseIdentifier();
+        case ORD_L_Y: return this.__parseIdentifier();
+        case ORD_L_S_UC: return this.__parseIdentifier();
+        case ORD_FWDSLASH: return this.__parseFwdSlash(expressionStart);
+        case ORD_LT: return this.__parseLtgtPunctuator(c);
+        case ORD_L_B_UC: return this.__parseIdentifier();
+        case ORD_L_H_UC: return this.__parseIdentifier();
+        case ORD_L_I_UC: return this.__parseIdentifier();
+        case ORD_L_2: return this.__parseNumber();
+        case ORD_L_O_UC: return this.__parseIdentifier();
+        case ORD_STAR: return this.__parseCompound();
+        case ORD_L_Q: return this.__parseIdentifier();
+        case ORD_L_G_UC: return this.__parseIdentifier();
+        case ORD_L_P_UC: return this.__parseIdentifier();
+        case ORD_L_T_UC: return this.__parseIdentifier();
+        case ORD_L_R_UC: return this.__parseIdentifier();
+        case ORD_L_Z: return this.__parseIdentifier();
+        case ORD_L_N_UC: return this.__parseIdentifier();
+        case ORD_L_Y_UC: return this.__parseIdentifier();
+        case ORD_L_J_UC: return this.__parseIdentifier();
+        case ORD_L_L_UC: return this.__parseIdentifier();
+        case ORD_GT: return this.__parseLtgtPunctuator(c);
+        case ORD_L_K_UC: return this.__parseIdentifier();
+        case ORD_L_X_UC: return this.__parseIdentifier();
+        case ORD_L_3: return this.__parseNumber();
+        case ORD_L_Q_UC: return this.__parseIdentifier();
+        case ORD_L_U_UC: return this.__parseIdentifier();
+        case ORD_L_V_UC: return this.__parseIdentifier();
+        case ORD_L_W_UC: return this.__parseIdentifier();
+        case ORD_L_4: return this.__parseNumber();
+        case ORD_L_5: return this.__parseNumber();
+        case ORD_L_6: return this.__parseNumber();
+        case ORD_L_7: return this.__parseNumber();
+        case ORD_L_8: return this.__parseNumber();
+        case ORD_L_9: return this.__parseNumber();
+        case ORD_PERCENT: return this.__parseCompound();
+        case ORD_XOR: return this.__parseCompound();
+        case ORD_TILDE: return this.__parseCompound();
+        case ORD_PS:
+          this.lastNewline = true;
+          return this.__plusOne(WHITE);
+        case ORD_LS:
+          this.lastNewline = true;
+          return this.__plusOne(WHITE);
+        case ORD_FF: return this.__plusOne(WHITE);
+        case ORD_VTAB: return this.__plusOne(WHITE);
+        case ORD_NBSP: return this.__plusOne(WHITE);
+        case ORD_BOM: return this.__plusOne(WHITE);
+        case ORD_BACKSLASH:
+          if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
+            this.pos += 6;
+            return this.__parseIdentifier();
+          } else {
+            throw 'error';
+          }
+        default:
+          throw 'fixme ['+c+']';
+      }
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       return this.__parseIdentifier();
+       */
+    },
+
+    __plusOne: function(type){
+      ++this.pos;
+      return type;
+    },
+
+    __parseFwdSlash: function(expressionStart){
       var d = this.getLastNum2();
-      return (d === ORD_IS || d === c) ? 2 : 1;
+      if (d === ORD_FWDSLASH) return this.__parseSingleComment();
+      if (d === ORD_STAR) return this.__parseMultiComment();
+      if (expressionStart) return this.__parseRegex();
+      return this.__parseDivPunctuator(d);
     },
-    punctuatorCompare: function(c){
+
+    __parseCR: function(){
+      this.lastNewline = true;
+      // handle \r\n normalization here
+      // (could rewrite into OR, eliminating a branch)
+      var d = this.getLastNum2();
+      if (d === ORD_LF) {
+        this.pos += 2;
+      } else {
+        this.pos += 1;
+      }
+
+      return WHITE;
+    },
+
+    __parseSameOrCompound: function(c){
+      var d = this.getLastNum2();
+      this.pos += (d === ORD_IS || d === c) ? 2 : 1;
+//      this.pos += ((d === ORD_IS) | (d === c)) + 1; // ;)
+      return PUNCTUATOR;
+    },
+    __parseEqualSigns: function(){
       var len = 1;
       if (this.getLastNum2() === ORD_IS) {
         len = 2;
         if (this.getLastNum3() === ORD_IS) len = 3;
       }
-      return len;
+      this.pos += len;
+      return PUNCTUATOR;
     },
-    punctuatorLtgt: function(c){
+    __parseLtgtPunctuator: function(c){
       var len = 1;
       var d = this.getLastNum2();
       if (d === ORD_IS) len = 2;
@@ -522,15 +700,18 @@
           if (this.getLastNum4() === ORD_IS) len = 4;
         }
       }
-      return len;
+      this.pos += len;
+      return PUNCTUATOR;
     },
-    punctuatorCompound: function(c){
+    __parseCompound: function(){
       var len = 1;
       if (this.getLastNum2() === ORD_IS) len = 2;
-      return len;
+      this.pos += len;
+      return PUNCTUATOR;
     },
-    punctuatorDiv: function(c,d){
+    __parseDivPunctuator: function(d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
+      // could rewrite this to OR magic and eliminate a branch
       if (d === ORD_IS) this.pos += 2;
       else ++this.pos;
       return PUNCTUATOR;
@@ -566,23 +747,28 @@
       }
       return parsed;
     },
-    commentSingle: function(pos, input){
+    __parseSingleComment: function(){
+      var pos = this.pos + 2;
+      var input = this.input;
       var len = input.length;
-      ++pos;
-      var c = -1;
-      while (pos < len) {
-        c = input.charCodeAt(++pos);
-        if (c === ORD_CR || c === ORD_LF || c === ORD_PS || c === ORD_LS) break;
+
+      if (pos < len) {
+        do var c = input.charCodeAt(pos);
+        while (c !== ORD_CR && c !== ORD_LF && c !== ORD_PS && c !== ORD_LS && ++pos < len);
       }
+
       this.pos = pos;
 
       return WHITE;
     },
-    commentMulti: function(pos, input){
+    __parseMultiComment: function(){
+      var pos = this.pos + 2;
+      var input = this.input;
       var len = input.length;
+
       var hasNewline = false;
-      var c=0,d = this.getLastNum3(); // at this point we are reading this.lastStart+2
-      pos += 2;
+      var c = 0;
+      var d = this.getLastNum3();
       while (pos < len) {
         c = d;
         d = input.charCodeAt(++pos);
@@ -598,7 +784,7 @@
 
       return WHITE;
     },
-    stringSingle: function(){
+    __parseSingleString: function(){
       var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
@@ -610,13 +796,13 @@
         c = input.charCodeAt(pos++);
 
         if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
+        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings! '+this.syntaxError();
       }
 
       this.pos = pos;
       return STRING;
     },
-    stringDouble: function(){
+    __parseDoubleString: function(){
       var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
@@ -628,7 +814,7 @@
         c = input.charCodeAt(pos++);
 
         if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!';
+        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings! '+this.syntaxError();
       }
 
       this.pos = pos;
@@ -665,45 +851,83 @@
       return ((c <= ORD_L_9 && c >= ORD_L_0) || (c >= ORD_L_A && c <= ORD_L_F) || (c >= ORD_L_A_UC && c <= ORD_L_F_UC));
     },
 
-    number: function(c, pos, input){
-      // 1-9 just means decimal literal
-      if (c >= ORD_L_1 && c <= ORD_L_9) this.decimalNumber(this.getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
-      // leading zero can mean decimal or hex literal
-      else if (c === ORD_L_0) this.decOrHex(c, pos, input);
-      // dot means decimal, without the leading digits
-      else if (c === ORD_DOT) this.decimalFromDot(c, pos, input); // dot, start of the number (rare)
-      // yeah, no number. move on.
-      else return false;
-      // we parsed a number.
-      return true;
+    __parseDot: function(){
+      var c = this.getLastNum2();
+
+      if (c >= ORD_L_0 && c <= ORD_L_9) return this.__parseAfterDot(this.pos+2);
+
+      ++this.pos;
+      return PUNCTUATOR;
     },
-    decOrHex: function(c, pos, input){
-      // numeric is either a decimal or hex
-      // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
+
+    __parseZero: function(){
+      // a numeric that starts with zero is is either a decimal or hex
+      // 0.1234  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
       var d = this.getLastNum2();
-      if (d !== ORD_L_X && d !== ORD_L_X_UC) { // x or X
-        // next can only be numbers or dots...
-        this.decimalNumber(d, pos+1, input);
+      if (d === ORD_L_X || d === ORD_L_X_UC) { // x or X
+        this.__parseHex(2);
+      } else if (d === ORD_DOT) {
+        this.__parseAfterDot(this.pos+2);
+      } else if (d <= ORD_L_9 && d >= ORD_L_0) {
+        throw 'Invalid octal literal';
       } else {
-        this.hexNumber(pos+2);
+        this.pos = this.__parseExponent(d, this.pos+1, this.input);
       }
 
       return NUMBER;
     },
-    decimalNumber: function(c, pos, input){
-      // TOFIX: what?
-      // leading digits. assume c is preceeded by at least one digit (that might have been zero..., tofix in the future)
-      while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
-      // .123e+40 part
-      return this.decimalFromDot(c, pos, input);
-    },
-    decimalFromDot: function(c, pos, input){
-      if (c === ORD_DOT) { // dot
-        c = input.charCodeAt(++pos);
-        while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
-      }
+    __parseHex: function(delta){
+      var pos = this.pos + delta;
+      var input = this.input;
+      var len = input.length;
 
+      // (could use OR, eliminate casing branch)
+      do var c = input.charCodeAt(pos);
+      while (((c <= ORD_L_9 && c >= ORD_L_0) || (c >= ORD_L_A && c <= ORD_L_F) || (c >= ORD_L_A_UC && c <= ORD_L_F_UC)) && ++pos < input.length);
+
+      this.pos = pos;
+      return NUMBER;
+    },
+    __parseDigits: function(delta){
+      var pos = this.pos + delta;
+      var input = this.input;
+      var len = input.length;
+
+      do var c = input.charCodeAt(pos);
+      while (c >= ORD_L_0 && c <= ORD_L_9 && ++pos < input.length);
+
+      this.pos = pos;
+      return NUMBER;
+    },
+
+    __parseNumber: function(){
+      // just encountered a 1-9 as the start of a token...
+
+      var pos = this.pos;
+      var input = this.input;
+      var len = input.length;
+
+      do var c = input.charCodeAt(pos);
+      while (c >= ORD_L_0 && c <= ORD_L_9 && ++pos < input.length);
+
+      if (c === ORD_DOT) return this.__parseAfterDot(pos+1);
+
+      this.pos = this.__parseExponent(c, pos, input);
+      return NUMBER;
+    },
+    __parseAfterDot: function(pos){
+      var input = this.input;
+      var c = input.charCodeAt(pos);
+      while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
+
+      pos = this.__parseExponent(c, pos, input);
+
+      this.pos = pos;
+
+      return NUMBER;
+    },
+    __parseExponent: function(c, pos, input){
       if (c === ORD_L_E || c === ORD_L_E_UC) {
         c = input.charCodeAt(++pos);
         // sign is optional (especially for plus)
@@ -716,10 +940,7 @@
         // rest is optional
         while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
       }
-
-      this.pos = pos;
-
-      return NUMBER;
+      return pos;
     },
     hexNumber: function(pos){
       var input = this.input;
@@ -729,7 +950,7 @@
       this.pos = pos;
     },
 
-    regex: function(){
+    __parseRegex: function(){
       // /foo/
       // /foo[xyz]/
       // /foo(xyz)/
@@ -740,7 +961,6 @@
       // /foo\dbar/
       this.pos++;
       this.regexBody();
-  //    this.pos++;
       this.regexFlags();
 
       return REGEX;
@@ -801,52 +1021,30 @@
       // starts at the beginning of this token, which is not the case for regular expressions.
       // so we use the remainder parser, which parses the second up to the rest of the identifier
 
-      this.pos = this.asciiIdentifierRest(0);
+      this.pos = this.__parseIdentifierRest();
     },
-    asciiIdentifier: function(c){
-      var toAdd = this.asciiIdentifierStart(c);
-      if (toAdd === 0) return false;
+    __parseIdentifier: function(){
+      this.pos = this.__parseIdentifierRest();
+      return IDENTIFIER;
+    },
+    __parseIdentifierRest: function(){
+      // also used by regex flag parser!
 
-      // 2nd char up till the end of the identifier
-      this.pos = this.asciiIdentifierRest(toAdd);
-
-      return true;
-    },
-    asciiIdentifierStart: function(c){
-      // a-z A-Z $ _ (no number here!)
-      if ((c >= ORD_L_A && c <= ORD_L_Z) || (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) || c === ORD_$ || c === ORD_LODASH) {
-        return 1;
-      // \uxxxx
-      } else if (c === ORD_BACKSLASH) {
-        var pos = this.pos;
-        if (this.getLastNum2() === ORD_L_U && this.unicode(pos+2)) {
-          return 6;
-        } else {
-          throw 'No backslash in identifier (xept for \\u). '+this.syntaxError();
-        }
-      // above ascii range? might be valid unicode char
-      } else if (c > UNICODE_LIMIT) {
-        if (uniRegex.test(String.fromCharCode(c))) return 1;
-      }
-      // do nothing so we return 0
-      return 0;
-    },
-    asciiIdentifierRest: function(toAdd){
       var input = this.input;
       var len = input.length;
-      var pos = this.pos + toAdd;
+      var pos = this.pos;
 
-      // also used by regex flag parser
       while (pos < len) {
         var c = input.charCodeAt(pos);
 
         // a-z A-Z 0-9 $ _
+        // TODO: character occurrence analysis
         if ((c >= ORD_L_A && c <= ORD_L_Z) || (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) || (c >= ORD_L_0 && c <= ORD_L_9) || c === ORD_$ || c === ORD_LODASH) {
           ++pos;
-          // \uxxxx
+        // \uxxxx (TOFIX: validate?)
         } else if (c === ORD_BACKSLASH && input.charCodeAt(pos+1) === ORD_L_U && this.unicode(pos+2)) {
           pos += 6;
-        } else if (c > UNICODE_LIMIT && uniRegex.test(String.fromCharCode(c))) {
+        } else if (c > UNICODE_LIMIT_127 && uniRegex.test(String.fromCharCode(c))) {
           pos += 1;
         } else {
           break;
@@ -888,7 +1086,7 @@
       return '`'+this.getLastValue()+'` @ '+this.pos+' ('+Tok[this.lastType]+')';
     },
     syntaxError: function(value){
-      return 'A syntax error at pos='+this.pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` '+
+      return 'A syntax error at pos='+this.pos+' expected '+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` '+
           '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`';
     },
   };
