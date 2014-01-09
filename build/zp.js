@@ -4,7 +4,7 @@
 // http://qfox.nl/notes/155
 // http://qfox.nl/notes/90
 
-  var uniRegex = exports.uni = /[\u0030-\u0039\u0041-\u005a\u005f\u0061-\u007a\u00aa\u00b5\u00ba\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0300-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u0483-\u0487\u048a-\u0524\u0526\u0531-\u0556\u0559\u0561-\u0587\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u05d0-\u05ea\u05f0-\u05f2\u0610-\u061a\u0621-\u065e\u0660-\u0669\u066e-\u06d3\u06d5-\u06dc\u06df-\u06e8\u06ea-\u06fc\u06ff\u0710-\u074a\u074d-\u07b1\u07c0-\u07f5\u07fa\u0901-\u0939\u093c-\u094d\u0950-\u0954\u0958-\u0963\u0966-\u096f\u0971\u0972\u097b-\u097f\u0981-\u0983\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bc-\u09c4\u09c7\u09c8\u09cb-\u09ce\u09d7\u09dc\u09dd\u09df-\u09e3\u09e6-\u09f1\u0a01-\u0a03\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a59-\u0a5c\u0a5e\u0a66-\u0a75\u0a81-\u0a83\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abc-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ad0\u0ae0-\u0ae3\u0ae6-\u0aef\u0b01-\u0b03\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3c-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b5c\u0b5d\u0b5f-\u0b63\u0b66-\u0b6f\u0b71\u0b82\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd0\u0bd7\u0be6-\u0bef\u0c01-\u0c03\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c58\u0c59\u0c60-\u0c63\u0c66-\u0c6f\u0c82\u0c83\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbc-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0cde\u0ce0-\u0ce3\u0ce6-\u0cef\u0d02\u0d03\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d28\u0d2a-\u0d39\u0d3d-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d60-\u0d63\u0d66-\u0d6f\u0d7a-\u0d7f\u0d82\u0d83\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e01-\u0e3a\u0e40-\u0e4e\u0e50-\u0e59\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb9\u0ebb-\u0ebd\u0ec0-\u0ec4\u0ec6\u0ec8-\u0ecd\u0ed0-\u0ed9\u0edc\u0edd\u0f00\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e-\u0f47\u0f49-\u0f6c\u0f71-\u0f84\u0f86-\u0f8b\u0f90-\u0f97\u0f99-\u0fbc\u0fc6\u1000-\u1049\u1050-\u1099\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc\u1100-\u1159\u115f-\u11a2\u11a8-\u11f9\u1200-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u135f\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u1676\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1714\u1720-\u1734\u1740-\u1753\u1760-\u176c\u176e-\u1770\u1772\u1773\u1780-\u17b3\u17b6-\u17d3\u17d7\u17dc\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u1820-\u1877\u1880-\u18aa\u1900-\u191c\u1920-\u192b\u1930-\u193b\u1946-\u196d\u1970-\u1974\u1980-\u19a9\u19b0-\u19c9\u19d0-\u19d9\u1a00-\u1a1b\u1b00-\u1b4b\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1baa\u1bae-\u1bb9\u1c00-\u1c37\u1c40-\u1c49\u1c4d-\u1c7d\u1d00-\u1de6\u1dfe-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffb\u203f\u2040\u2054\u2071\u207f\u2090-\u2094\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb\u2ced\u2cf2\u2d00-\u2d25\u2d30-\u2d65\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2de0-\u2dff\u2e2f\u3005-\u3007\u3021-\u302f\u3031-\u3035\u3038-\u303c\u3041-\u3096\u3099\u309a\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31b7\u31f0-\u31ff\u3400\u4db5\u4e00\u9fc3\ua000-\ua1af\ua60c\ua620-\ua629\ua640-\ua660\ua662-\ua66d\ua66f\ua67c\ua67d\ua67f-\ua697\ua717-\ua71f\ua722-\ua788\ua78b-\ua78d\ua790\ua792\ua7a0\ua7a2\ua7a4\ua7a6\ua7a8\ua7aa\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c4\ua8d0-\ua8d9\ua900-\ua909\ua926-\ua92d\ua947-\ua953\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\ufb00-\ufb06\ufb13-\ufb17\ufb1e\ufe00-\ufe0f\ufe20-\ufe26\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff21-\uff3a\uff3f\uff41-\uff5a\uff70\uff9e\uff9f]/;
+  var uniRegex = exports.uni = /[\u00aa\u00b5\u00ba\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0300-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u0483-\u0487\u048a-\u0524\u0526\u0531-\u0556\u0559\u0561-\u0587\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u05d0-\u05ea\u05f0-\u05f2\u0610-\u061a\u0621-\u065e\u0660-\u0669\u066e-\u06d3\u06d5-\u06dc\u06df-\u06e8\u06ea-\u06fc\u06ff\u0710-\u074a\u074d-\u07b1\u07c0-\u07f5\u07fa\u0901-\u0939\u093c-\u094d\u0950-\u0954\u0958-\u0963\u0966-\u096f\u0971\u0972\u097b-\u097f\u0981-\u0983\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bc-\u09c4\u09c7\u09c8\u09cb-\u09ce\u09d7\u09dc\u09dd\u09df-\u09e3\u09e6-\u09f1\u0a01-\u0a03\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a59-\u0a5c\u0a5e\u0a66-\u0a75\u0a81-\u0a83\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abc-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ad0\u0ae0-\u0ae3\u0ae6-\u0aef\u0b01-\u0b03\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3c-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b5c\u0b5d\u0b5f-\u0b63\u0b66-\u0b6f\u0b71\u0b82\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd0\u0bd7\u0be6-\u0bef\u0c01-\u0c03\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c58\u0c59\u0c60-\u0c63\u0c66-\u0c6f\u0c82\u0c83\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbc-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0cde\u0ce0-\u0ce3\u0ce6-\u0cef\u0d02\u0d03\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d28\u0d2a-\u0d39\u0d3d-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d60-\u0d63\u0d66-\u0d6f\u0d7a-\u0d7f\u0d82\u0d83\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e01-\u0e3a\u0e40-\u0e4e\u0e50-\u0e59\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb9\u0ebb-\u0ebd\u0ec0-\u0ec4\u0ec6\u0ec8-\u0ecd\u0ed0-\u0ed9\u0edc\u0edd\u0f00\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e-\u0f47\u0f49-\u0f6c\u0f71-\u0f84\u0f86-\u0f8b\u0f90-\u0f97\u0f99-\u0fbc\u0fc6\u1000-\u1049\u1050-\u1099\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc\u1100-\u1159\u115f-\u11a2\u11a8-\u11f9\u1200-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u135f\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u1676\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1714\u1720-\u1734\u1740-\u1753\u1760-\u176c\u176e-\u1770\u1772\u1773\u1780-\u17b3\u17b6-\u17d3\u17d7\u17dc\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u1820-\u1877\u1880-\u18aa\u1900-\u191c\u1920-\u192b\u1930-\u193b\u1946-\u196d\u1970-\u1974\u1980-\u19a9\u19b0-\u19c9\u19d0-\u19d9\u1a00-\u1a1b\u1b00-\u1b4b\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1baa\u1bae-\u1bb9\u1c00-\u1c37\u1c40-\u1c49\u1c4d-\u1c7d\u1d00-\u1de6\u1dfe-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffb\u203f\u2040\u2054\u2071\u207f\u2090-\u2094\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb\u2ced\u2cf2\u2d00-\u2d25\u2d30-\u2d65\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2de0-\u2dff\u2e2f\u3005-\u3007\u3021-\u302f\u3031-\u3035\u3038-\u303c\u3041-\u3096\u3099\u309a\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31b7\u31f0-\u31ff\u3400\u4db5\u4e00\u9fc3\ua000-\ua1af\ua60c\ua620-\ua629\ua640-\ua660\ua662-\ua66d\ua66f\ua67c\ua67d\ua67f-\ua697\ua717-\ua71f\ua722-\ua788\ua78b-\ua78d\ua790\ua792\ua7a0\ua7a2\ua7a4\ua7a6\ua7a8\ua7aa\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c4\ua8d0-\ua8d9\ua900-\ua909\ua926-\ua92d\ua947-\ua953\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\ufb00-\ufb06\ufb13-\ufb17\ufb1e\ufe00-\ufe0f\ufe20-\ufe26\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff21-\uff3a\uff3f\uff41-\uff5a\uff70\uff9e\uff9f]/;
 
 //######### end of uni.js #########
 
@@ -29,7 +29,10 @@
       return this_tok_lastType === t;
     }
   function this_tok_isValue(){
-      return this_tok_lastType === 10 || this_tok_lastType === 7 || this_tok_lastType === 13 || this_tok_lastType === 8 || false;
+      return (
+        (this_tok_lastType !== 9) && // fail fast
+        (this_tok_lastType === 10 || this_tok_lastType === 7 || this_tok_lastType === 13 || this_tok_lastType === 8)
+      );
     }
   function this_tok_isNum(n){
       return this_tok_getLastNum() === n;
@@ -110,143 +113,265 @@
 
       ++this_tok_tokenCountAll;
 
-      var pos = this_tok_pos;
-      var start = this_tok_lastStart = pos;
+      var start = this_tok_lastStart = this_tok_pos;
       var result = 14;
-      if (pos < this_tok_len) result = this_tok_nextToken(expressionStart, pos);
+      // TOFIX: nextToken or nextTokenSwitch?
+      if (start < this_tok_len) result = this_tok_nextTokenSwitch(expressionStart, start);
       this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - start;
 
       return result;
     }
-  function this_tok_nextToken(expressionStart, pos){
-      var input = this_tok_input;
-      var c = this_tok_getLastNum(); // this.pos === this.lastStart
-      var result = -1;
+  function this_tok_nextTokenIfElse(expressionStart, pos){
+      var c = this_tok_getLastNum();
 
-      // https://twitter.com/ariyahidayat/status/225447566815395840
-      // Punctuator, Identifier, Keyword, String, Numeric, Boolean, Null, RegularExpression
-      // so:
-      // Whitespace, RegularExpression, Punctuator, Identifier, LineTerminator, String, Numeric
-      if (c >= 0x21 && c <= 0x2f && this_tok_punctuator(c)) result = 9;
-      else if (this_tok_asciiIdentifier(c)) result = 13;
-      else if (c >= 0x3a && this_tok_punctuator(c)) result = 9;
-      else if (c === 0x20) ++this_tok_pos, result = 18;
-      else result = this_tok_nextToken_2(c, pos, input, expressionStart);
+      // 58% of tokens is caught here
+      // http://qfox.nl/weblog/301
 
-      return result;
-    }
-  function this_tok_nextToken_2(c, pos, input, expressionStart){
-      var result = -1;
-
-      if (this_tok_lineTerminator(c, pos)) result = 18;
-      else if (c === 0x22) result = this_tok_stringDouble();
-      else if (this_tok_number(c,pos,input)) result = 7; // number after punctuator, check algorithm if that changes!
-      else if (this_tok_whitespace(c)) result = 18; // (doesnt check for space, must go after lineterminator, update algo if this changes)
-      else if (c === 0x27) result = this_tok_stringSingle();
-      else if (c === 0x2f) {
-        var n = this_tok_getLastNum2(); // this.pos === this.lastStart+1
-        if (n === 0x2f) result = this_tok_commentSingle(pos, input);
-        else if (n === 0x2a) result = this_tok_commentMulti(pos, input);
-        else if (expressionStart) result = this_tok_regex();
-        else result = this_tok_punctuatorDiv(c,n);
+      if (c === 0x20) return this_tok___plusOne(18);
+      if (c === 0x2e) return this_tok___parseDot();
+      if (c === 0x28 || c === 0x29 || c === 0x3b || c === 0x2c) return this_tok___plusOne(9);
+      if (c === 0x3d) return this_tok___parseEqualSigns();
+      if (c >= 0x61 && c <= 0x7a) return this_tok___parseIdentifier(); // 25%
+      if (c === 0x0D) return this_tok___parseCR();
+      if (c === 0x0A) {
+        this_tok_lastNewline = true;
+        ++this_tok_pos;
+        return 18;
       }
-      else throw 'dont know what to parse now. '+this_tok_syntaxError();
+      if (c === 0x7b || c === 0x7d) return this_tok___plusOne(9);
+      // while the
 
-      return result;
-    }
-  function this_tok_punctuator(c){
-      var len = 0;
-      //    >>>=,
-      //    === !== >>> <<= >>=
-      //    <= >= == != ++ -- << >> && || += -= *= %= &= |= ^= /=
-      //    { } ( ) [ ] . ; ,< > + - * % | & ^ ! ~ ? : = /
-      if (c === 0x2e) { // 15.30%
-        var d = this_tok_getLastNum2();
-        if (d < 0x30 || d > 0x39) len = 1;
-      } else if (
-        c === 0x28 || // 11.9%
-        c === 0x29 || // 11.90%
-        c === 0x3b || // 8.44%
-        c === 0x2c // 8.09%
-      ) {
-        len = 1;
-      } else if (c === 0x3d) { // 7.45%
-        len = this_tok_punctuatorCompare(c);
-      } else if (
-        c === 0x7b || // 4.96%
-        c === 0x7d // 4.96%
-      ) {
-        len = 1;
-      } else if (c >= 0x3a) {
-        len = this_tok_punctuator_2(c);
-      } else if (c >= 0x21 && c <= 0x2d) {
-        len = this_tok_punctuator_3(c);
-      }
+//      // split to another function to prevent too many branches in this function
+//      return this.nextToken_center(c, expressionStart);
+//    },
+//    nextToken_center: function(c, expressionStart){
+      // 25% of tokens is caught here
 
-      if (len) {
-        this_tok_pos += len;
-        return true;
-      }
-      return false;
-    }
-  function this_tok_punctuator_2(c){
-      var len = 0;
+      if (c === 0x22) return this_tok___parseDoubleString();
       if (
-        c === 0x3a || // 2.98%
-        c === 0x5b || // 2.63%
-        c === 0x5d || // 2.63%
-        c === 0x3f // 0.40%
-      ) {
-        len = 1;
-      } else if (c === 0x7c) { // 0.55%
-        len = this_tok_punctuatorSame(c);
-      } else if (
-        c === 0x3c || // 0.33%
-        c === 0x3e // 0.19%
-      ) {
-        len = this_tok_punctuatorLtgt(c);
-      } else if (
-        c === 0x5e || // 0.01%
-        c === 0x7e // 0.00%
-      ) {
-        len = this_tok_punctuatorCompound(c);
+        c === 0x3a ||
+        c === 0x5b ||
+        c === 0x5d
+      ) { ++this_tok_pos; return 9; }
+//      return this.nextToken_tail(c, expressionStart);
+//    },
+//    nextToken_tail: function(c, expressionStart){
+      // remaining 17% of tokens is caught here
+
+      if (c === 0x5f) return this_tok___parseIdentifier();
+      if (c === 0x2b) return this_tok___parseSameOrCompound(c);
+      if (c === 0x30) return this_tok___parseZero();
+      if (c >= 0x41 && c <= 0x5a) return this_tok___parseIdentifier();
+      if (c === 0x21) return this_tok___parseEqualSigns();
+      if (c >= 0x31 && c <= 0x39) return this_tok___parseNumber();
+      if (c === 0x26 || c === 0x7c) return this_tok___parseSameOrCompound(c);
+      if (c === 0x27) return this_tok___parseSingleString();
+      if (c === 0x2d) return this_tok___parseSameOrCompound(c);
+      if (c === 0x09) return this_tok___plusOne(18);
+      if (c === 0x3f) return this_tok___plusOne(9);
+      if (c === 0x24) return this_tok___parseIdentifier();
+      if (c === 0x2f) return this_tok___parseFwdSlash(expressionStart);
+      if (c === 0x3c) return this_tok___parseLtgtPunctuator(c);
+      if (c === 0x2a) return this_tok___parseCompound();
+      if (c === 0x3e) return this_tok___parseLtgtPunctuator(c);
+      if (
+        c === 0x25 ||
+          c === 0x5e ||
+          c === 0x7e
+        ) return this_tok___parseCompound();
+
+//      return this.nextToken_exotic(c);
+//    },
+//    nextToken_exotic: function(c){
+      // the rest is exotic. order is not really important at this point...
+
+      // TOFIX: should ORD_LF go with CR? because OSX...
+      if (c === 0x2028 || c === 0x2029) {
+        this_tok_lastNewline = true;
+        ++this_tok_pos;
+        return 18;
       }
-      return len;
-    }
-  function this_tok_punctuator_3(c){
-      var len = 0;
-      if (c === 0x22) { // 3.67%
-        // string, wont be a punctuator
-      } else if (c === 0x2b) { // 1.49%
-        len = this_tok_punctuatorSame(c);
-      } else if (c === 0x21) { // 0.84%
-        len = this_tok_punctuatorCompare(c);
-      } else if (
-        c === 0x26 || // 0.66%
-        c === 0x2d // 0.45%
-      ) {
-        len = this_tok_punctuatorSame(c);
-      } else if (
-        c === 0x2a || // 0.26%
-        c === 0x25 // 0.02%
-      ) {
-        len = this_tok_punctuatorLtgt(c);
+
+      // space and tab are already checked
+      if (c === 0x0C || c === 0x0B || c === 0xA0 || c === 0xFEFF) return this_tok___plusOne(18);
+
+      if (c === 0x5c && this_tok_getLastNum2() === 0x75 && this_tok_unicode(this_tok_pos+2)) {
+        this_tok_pos += 6;
+        return this_tok___parseIdentifier();
       }
-      return len;
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       throw 'fixme ['+c+']';
+       return this.__parseIdentifier();
+       */
     }
-  function this_tok_punctuatorSame(c){
+  function this_tok_nextTokenSwitch(expressionStart, pos){
+      var c = this_tok_getLastNum();
+
+      switch (c) {
+        case 0x20: return this_tok___plusOne(18);
+        case 0x2e: return this_tok___parseDot();
+        case 0x28: return this_tok___plusOne(9);
+        case 0x29: return this_tok___plusOne(9);
+        case 0x3b: return this_tok___plusOne(9);
+        case 0x2c: return this_tok___plusOne(9);
+        case 0x3d: return this_tok___parseEqualSigns();
+        case 0x74: return this_tok___parseIdentifier();
+        case 0x0D: return this_tok___parseCR();
+        case 0x0A:
+          this_tok_lastNewline = true;
+          return this_tok___plusOne(18);
+        case 0x7b:
+        case 0x7d: return this_tok___plusOne(9);
+        case 0x61: return this_tok___parseIdentifier();
+        case 0x69: return this_tok___parseIdentifier();
+        case 0x22: return this_tok___parseDoubleString();
+        case 0x66: return this_tok___parseIdentifier();
+        case 0x63: return this_tok___parseIdentifier();
+        case 0x3a: return this_tok___plusOne(9);
+        case 0x5b: return this_tok___plusOne(9);
+        case 0x5d: return this_tok___plusOne(9);
+        case 0x62: return this_tok___parseIdentifier();
+        case 0x72: return this_tok___parseIdentifier();
+        case 0x65: return this_tok___parseIdentifier();
+        case 0x76: return this_tok___parseIdentifier();
+        case 0x73: return this_tok___parseIdentifier();
+        case 0x64: return this_tok___parseIdentifier();
+        case 0x6e: return this_tok___parseIdentifier();
+        case 0x5f: return this_tok___parseIdentifier();
+        case 0x70: return this_tok___parseIdentifier();
+        case 0x67: return this_tok___parseIdentifier();
+        case 0x2b: return this_tok___parseSameOrCompound(c);
+        case 0x6d: return this_tok___parseIdentifier();
+        case 0x6f: return this_tok___parseIdentifier();
+        case 0x30: return this_tok___parseZero();
+        case 0x6c: return this_tok___parseIdentifier();
+        case 0x5a: return this_tok___parseIdentifier();
+        case 0x68: return this_tok___parseIdentifier();
+        case 0x45: return this_tok___parseIdentifier();
+        case 0x21: return this_tok___parseEqualSigns();
+        case 0x31: return this_tok___parseNumber();
+        case 0x44: return this_tok___parseIdentifier();
+        case 0x75: return this_tok___parseIdentifier();
+        case 0x26: return this_tok___parseSameOrCompound(c);
+        case 0x41: return this_tok___parseIdentifier();
+        case 0x77: return this_tok___parseIdentifier();
+        case 0x46: return this_tok___parseIdentifier();
+        case 0x7c: return this_tok___parseSameOrCompound(c);
+        case 0x27: return this_tok___parseSingleString();
+        case 0x6B: return this_tok___parseIdentifier();
+        case 0x2d: return this_tok___parseSameOrCompound(c);
+        case 0x78: return this_tok___parseIdentifier();
+        case 0x09: return this_tok___plusOne(18);
+        case 0x43: return this_tok___parseIdentifier();
+        case 0x6A: return this_tok___parseIdentifier();
+        case 0x3f: return this_tok___plusOne(9);
+        case 0x24: return this_tok___parseIdentifier();
+        case 0x4D: return this_tok___parseIdentifier();
+        case 0x79: return this_tok___parseIdentifier();
+        case 0x53: return this_tok___parseIdentifier();
+        case 0x2f: return this_tok___parseFwdSlash(expressionStart);
+        case 0x3c: return this_tok___parseLtgtPunctuator(c);
+        case 0x42: return this_tok___parseIdentifier();
+        case 0x48: return this_tok___parseIdentifier();
+        case 0x49: return this_tok___parseIdentifier();
+        case 0x32: return this_tok___parseNumber();
+        case 0x4F: return this_tok___parseIdentifier();
+        case 0x2a: return this_tok___parseCompound();
+        case 0x71: return this_tok___parseIdentifier();
+        case 0x47: return this_tok___parseIdentifier();
+        case 0x50: return this_tok___parseIdentifier();
+        case 0x54: return this_tok___parseIdentifier();
+        case 0x52: return this_tok___parseIdentifier();
+        case 0x7a: return this_tok___parseIdentifier();
+        case 0x4E: return this_tok___parseIdentifier();
+        case 0x59: return this_tok___parseIdentifier();
+        case 0x4A: return this_tok___parseIdentifier();
+        case 0x4C: return this_tok___parseIdentifier();
+        case 0x3e: return this_tok___parseLtgtPunctuator(c);
+        case 0x4B: return this_tok___parseIdentifier();
+        case 0x58: return this_tok___parseIdentifier();
+        case 0x33: return this_tok___parseNumber();
+        case 0x51: return this_tok___parseIdentifier();
+        case 0x55: return this_tok___parseIdentifier();
+        case 0x56: return this_tok___parseIdentifier();
+        case 0x57: return this_tok___parseIdentifier();
+        case 0x34: return this_tok___parseNumber();
+        case 0x35: return this_tok___parseNumber();
+        case 0x36: return this_tok___parseNumber();
+        case 0x37: return this_tok___parseNumber();
+        case 0x38: return this_tok___parseNumber();
+        case 0x39: return this_tok___parseNumber();
+        case 0x25: return this_tok___parseCompound();
+        case 0x5e: return this_tok___parseCompound();
+        case 0x7e: return this_tok___parseCompound();
+        case 0x2028:
+          this_tok_lastNewline = true;
+          return this_tok___plusOne(18);
+        case 0x2029:
+          this_tok_lastNewline = true;
+          return this_tok___plusOne(18);
+        case 0x0C: return this_tok___plusOne(18);
+        case 0x0B: return this_tok___plusOne(18);
+        case 0xA0: return this_tok___plusOne(18);
+        case 0xFEFF: return this_tok___plusOne(18);
+        case 0x5c:
+          if (this_tok_getLastNum2() === 0x75 && this_tok_unicode(this_tok_pos+2)) {
+            this_tok_pos += 6;
+            return this_tok___parseIdentifier();
+          } else {
+            throw 'error';
+          }
+        default:
+          throw 'fixme ['+c+']';
+      }
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       return this.__parseIdentifier();
+       */
+    }
+  function this_tok___plusOne(type){
+      ++this_tok_pos;
+      return type;
+    }
+  function this_tok___parseFwdSlash(expressionStart){
       var d = this_tok_getLastNum2();
-      return (d === 0x3d || d === c) ? 2 : 1;
+      if (d === 0x2f) return this_tok___parseSingleComment();
+      if (d === 0x2a) return this_tok___parseMultiComment();
+      if (expressionStart) return this_tok___parseRegex();
+      return this_tok___parseDivPunctuator(d);
     }
-  function this_tok_punctuatorCompare(c){
+  function this_tok___parseCR(){
+      this_tok_lastNewline = true;
+      // handle \r\n normalization here
+      // (could rewrite into OR, eliminating a branch)
+      var d = this_tok_getLastNum2();
+      if (d === 0x0A) {
+        this_tok_pos += 2;
+      } else {
+        this_tok_pos += 1;
+      }
+
+      return 18;
+    }
+  function this_tok___parseSameOrCompound(c){
+      var d = this_tok_getLastNum2();
+      this_tok_pos += (d === 0x3d || d === c) ? 2 : 1;
+//      this.pos += ((d === ORD_IS) | (d === c)) + 1; // ;)
+      return 9;
+    }
+  function this_tok___parseEqualSigns(){
       var len = 1;
       if (this_tok_getLastNum2() === 0x3d) {
         len = 2;
         if (this_tok_getLastNum3() === 0x3d) len = 3;
       }
-      return len;
+      this_tok_pos += len;
+      return 9;
     }
-  function this_tok_punctuatorLtgt(c){
+  function this_tok___parseLtgtPunctuator(c){
       var len = 1;
       var d = this_tok_getLastNum2();
       if (d === 0x3d) len = 2;
@@ -259,15 +384,18 @@
           if (this_tok_getLastNum4() === 0x3d) len = 4;
         }
       }
-      return len;
+      this_tok_pos += len;
+      return 9;
     }
-  function this_tok_punctuatorCompound(c){
+  function this_tok___parseCompound(){
       var len = 1;
       if (this_tok_getLastNum2() === 0x3d) len = 2;
-      return len;
+      this_tok_pos += len;
+      return 9;
     }
-  function this_tok_punctuatorDiv(c,d){
+  function this_tok___parseDivPunctuator(d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
+      // could rewrite this to OR magic and eliminate a branch
       if (d === 0x3d) this_tok_pos += 2;
       else ++this_tok_pos;
       return 9;
@@ -302,23 +430,28 @@
       }
       return parsed;
     }
-  function this_tok_commentSingle(pos, input){
+  function this_tok___parseSingleComment(){
+      var pos = this_tok_pos + 2;
+      var input = this_tok_input;
       var len = input.length;
-      ++pos;
-      var c = -1;
-      while (pos < len) {
-        c = input.charCodeAt(++pos);
-        if (c === 0x0D || c === 0x0A || c === 0x2028 || c === 0x2029) break;
+
+      if (pos < len) {
+        do var c = input.charCodeAt(pos);
+        while (c !== 0x0D && c !== 0x0A && c !== 0x2028 && c !== 0x2029 && ++pos < len);
       }
+
       this_tok_pos = pos;
 
       return 18;
     }
-  function this_tok_commentMulti(pos, input){
+  function this_tok___parseMultiComment(){
+      var pos = this_tok_pos + 2;
+      var input = this_tok_input;
       var len = input.length;
+
       var hasNewline = false;
-      var c=0,d = this_tok_getLastNum3(); // at this point we are reading this.lastStart+2
-      pos += 2;
+      var c = 0;
+      var d = this_tok_getLastNum3();
       while (pos < len) {
         c = d;
         d = input.charCodeAt(++pos);
@@ -334,7 +467,7 @@
 
       return 18;
     }
-  function this_tok_stringSingle(){
+  function this_tok___parseSingleString(){
       var pos = this_tok_pos + 1;
       var input = this_tok_input;
       var len = input.length;
@@ -346,13 +479,13 @@
         c = input.charCodeAt(pos++);
 
         if (c === 0x5c) pos = this_tok_stringEscape(pos);
-        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings! '+this_tok_syntaxError();
       }
 
       this_tok_pos = pos;
       return 10;
     }
-  function this_tok_stringDouble(){
+  function this_tok___parseDoubleString(){
       var pos = this_tok_pos + 1;
       var input = this_tok_input;
       var len = input.length;
@@ -364,7 +497,7 @@
         c = input.charCodeAt(pos++);
 
         if (c === 0x5c) pos = this_tok_stringEscape(pos);
-        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!';
+        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings! '+this_tok_syntaxError();
       }
 
       this_tok_pos = pos;
@@ -400,45 +533,81 @@
       // 0-9, a-f, A-F
       return ((c <= 0x39 && c >= 0x30) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
     }
-  function this_tok_number(c, pos, input){
-      // 1-9 just means decimal literal
-      if (c >= 0x31 && c <= 0x39) this_tok_decimalNumber(this_tok_getLastNum2(), pos+1, input); // do this after punctuator... the -1 is kind of a hack in that
-      // leading zero can mean decimal or hex literal
-      else if (c === 0x30) this_tok_decOrHex(c, pos, input);
-      // dot means decimal, without the leading digits
-      else if (c === 0x2e) this_tok_decimalFromDot(c, pos, input); // dot, start of the number (rare)
-      // yeah, no number. move on.
-      else return false;
-      // we parsed a number.
-      return true;
+  function this_tok___parseDot(){
+      var c = this_tok_getLastNum2();
+
+      if (c >= 0x30 && c <= 0x39) return this_tok___parseAfterDot(this_tok_pos+2);
+
+      ++this_tok_pos;
+      return 9;
     }
-  function this_tok_decOrHex(c, pos, input){
-      // numeric is either a decimal or hex
-      // 0.1234  .123  .0  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
+  function this_tok___parseZero(){
+      // a numeric that starts with zero is is either a decimal or hex
+      // 0.1234  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
       var d = this_tok_getLastNum2();
-      if (d !== 0x78 && d !== 0x78) { // x or X
-        // next can only be numbers or dots...
-        this_tok_decimalNumber(d, pos+1, input);
+      if (d === 0x78 || d === 0x58) { // x or X
+        this_tok___parseHex(2);
+      } else if (d === 0x2e) {
+        this_tok___parseAfterDot(this_tok_pos+2);
+      } else if (d <= 0x39 && d >= 0x30) {
+        throw 'Invalid octal literal';
       } else {
-        this_tok_hexNumber(pos+2);
+        this_tok_pos = this_tok___parseExponent(d, this_tok_pos+1, this_tok_input);
       }
 
       return 7;
     }
-  function this_tok_decimalNumber(c, pos, input){
-      // TOFIX: what?
-      // leading digits. assume c is preceeded by at least one digit (that might have been zero..., tofix in the future)
-      while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
-      // .123e+40 part
-      return this_tok_decimalFromDot(c, pos, input);
-    }
-  function this_tok_decimalFromDot(c, pos, input){
-      if (c === 0x2e) { // dot
-        c = input.charCodeAt(++pos);
-        while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
-      }
+  function this_tok___parseHex(delta){
+      var pos = this_tok_pos + delta;
+      var input = this_tok_input;
+      var len = input.length;
 
+      // (could use OR, eliminate casing branch)
+      do var c = input.charCodeAt(pos);
+      while (((c <= 0x39 && c >= 0x30) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46)) && ++pos < input.length);
+
+      this_tok_pos = pos;
+      return 7;
+    }
+  function this_tok___parseDigits(delta){
+      var pos = this_tok_pos + delta;
+      var input = this_tok_input;
+      var len = input.length;
+
+      do var c = input.charCodeAt(pos);
+      while (c >= 0x30 && c <= 0x39 && ++pos < input.length);
+
+      this_tok_pos = pos;
+      return 7;
+    }
+  function this_tok___parseNumber(){
+      // just encountered a 1-9 as the start of a token...
+
+      var pos = this_tok_pos;
+      var input = this_tok_input;
+      var len = input.length;
+
+      do var c = input.charCodeAt(pos);
+      while (c >= 0x30 && c <= 0x39 && ++pos < input.length);
+
+      if (c === 0x2e) return this_tok___parseAfterDot(pos+1);
+
+      this_tok_pos = this_tok___parseExponent(c, pos, input);
+      return 7;
+    }
+  function this_tok___parseAfterDot(pos){
+      var input = this_tok_input;
+      var c = input.charCodeAt(pos);
+      while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
+
+      pos = this_tok___parseExponent(c, pos, input);
+
+      this_tok_pos = pos;
+
+      return 7;
+    }
+  function this_tok___parseExponent(c, pos, input){
       if (c === 0x65 || c === 0x45) {
         c = input.charCodeAt(++pos);
         // sign is optional (especially for plus)
@@ -451,10 +620,7 @@
         // rest is optional
         while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
       }
-
-      this_tok_pos = pos;
-
-      return 7;
+      return pos;
     }
   function this_tok_hexNumber(pos){
       var input = this_tok_input;
@@ -463,7 +629,7 @@
       while (pos < len && this_tok_hexicode(input.charCodeAt(pos))) ++pos;
       this_tok_pos = pos;
     }
-  function this_tok_regex(){
+  function this_tok___parseRegex(){
       // /foo/
       // /foo[xyz]/
       // /foo(xyz)/
@@ -474,7 +640,6 @@
       // /foo\dbar/
       this_tok_pos++;
       this_tok_regexBody();
-  //    this.pos++;
       this_tok_regexFlags();
 
       return 8;
@@ -535,49 +700,27 @@
       // starts at the beginning of this token, which is not the case for regular expressions.
       // so we use the remainder parser, which parses the second up to the rest of the identifier
 
-      this_tok_pos = this_tok_asciiIdentifierRest(0);
+      this_tok_pos = this_tok___parseIdentifierRest();
     }
-  function this_tok_asciiIdentifier(c){
-      var toAdd = this_tok_asciiIdentifierStart(c);
-      if (toAdd === 0) return false;
+  function this_tok___parseIdentifier(){
+      this_tok_pos = this_tok___parseIdentifierRest();
+      return 13;
+    }
+  function this_tok___parseIdentifierRest(){
+      // also used by regex flag parser!
 
-      // 2nd char up till the end of the identifier
-      this_tok_pos = this_tok_asciiIdentifierRest(toAdd);
-
-      return true;
-    }
-  function this_tok_asciiIdentifierStart(c){
-      // a-z A-Z $ _ (no number here!)
-      if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || c === 0x5f || c === 0x24) {
-        return 1;
-      // \uxxxx
-      } else if (c === 0x5c) {
-        var pos = this_tok_pos;
-        if (this_tok_getLastNum2() === 0x75 && this_tok_unicode(pos+2)) {
-          return 6;
-        } else {
-          throw 'No backslash in identifier (xept for \\u). '+this_tok_syntaxError();
-        }
-      // above ascii range? might be valid unicode char
-      } else if (c > 127) {
-        if (uniRegex.test(String.fromCharCode(c))) return 1;
-      }
-      // do nothing so we return 0
-      return 0;
-    }
-  function this_tok_asciiIdentifierRest(toAdd){
       var input = this_tok_input;
       var len = input.length;
-      var pos = this_tok_pos + toAdd;
+      var pos = this_tok_pos;
 
-      // also used by regex flag parser
       while (pos < len) {
         var c = input.charCodeAt(pos);
 
         // a-z A-Z 0-9 $ _
-        if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x5f || c === 0x24) {
+        // TODO: character occurrence analysis
+        if ((c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a) || (c >= 0x30 && c <= 0x39) || c === 0x24 || c === 0x5f) {
           ++pos;
-          // \uxxxx
+        // \uxxxx (TOFIX: validate?)
         } else if (c === 0x5c && input.charCodeAt(pos+1) === 0x75 && this_tok_unicode(pos+2)) {
           pos += 6;
         } else if (c > 127 && uniRegex.test(String.fromCharCode(c))) {
@@ -620,9 +763,12 @@
       return '`'+this_tok_getLastValue()+'` @ '+this_tok_pos+' ('+Tok[this_tok_lastType]+')';
     }
   function this_tok_syntaxError(value){
-      return 'A syntax error at pos='+this_tok_pos+" expected "+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this_tok_getLastValue()+'` '+
+      return 'A syntax error at pos='+this_tok_pos+' expected '+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this_tok_getLastValue()+'` '+
           '('+Tok[this_tok_lastType]+') #### `'+this_tok_input.substring(this_tok_pos-2000, this_tok_pos)+'#|#'+this_tok_input.substring(this_tok_pos, this_tok_pos+2000)+'`';
     }
+  // punctuator occurrence stats: http://qfox.nl/weblog/301
+  // token start stats: http://qfox.nl/weblog/302
+
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
       // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
@@ -730,8 +876,11 @@
       if (this_tok_isType(13)) {
         // dont "just" return true. case and default still return false
         return this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
+      } else {
+        return this_par_parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
       }
-
+    }
+  function this_par_parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional){
       var c = this_tok_getLastNum();
 
       if (c === 0x7b) {
@@ -1187,7 +1336,7 @@
       } else {
 
         // TOFIX: add test case where this fails; `state & NONASSIGNEE` needs parenthesis
-        this_par_parseAssignments(state & 1 > 0);
+        this_par_parseAssignments((state & 1) > 0);
         this_par_parseNonAssignments();
 
         if (this_tok_nextExprIfNum(0x2c)) this_par_parseExpressions();
@@ -1419,6 +1568,7 @@
       else if (c === 0x64) return this_tok_getLastValue() === 'delete';
       else if (c === 0x21) return true;
       else if (c === 0x76) return this_tok_getLastValue() === 'void';
+      // TODO do i actually need to check for lastLen? tok should already be a "clean" token. what other values might start with "-"? - -- -=
       else if (c === 0x2d) return (this_tok_lastLen === 1 || (this_tok_getLastNum2() === 0x2d));
       else if (c === 0x2b) return (this_tok_lastLen === 1 || (this_tok_getLastNum2() === 0x2b));
       else if (c === 0x7e) return true;
@@ -1439,8 +1589,8 @@
       while (repeat) {
         var c = this_tok_getLastNum();
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
-        if (((c/10)|0)!==4) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
-//        if (c > 0x2e) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
+//        if (((c/10)|0)!==4) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
+        if (c > 0x2e) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
           if (c === 0x5b) {
             this_tok_nextExpr();
             this_par_parseExpressions(); // required
