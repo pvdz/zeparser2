@@ -416,25 +416,28 @@
     nextWhiteToken: function(expressionStart){
       this.lastValue = '';
 
+      var start = this.lastStart = this.pos;
+
       // prepare charCodeAt cache...
-      if (this.lastLen === 1) this.nextNum1 = this.nextNum2;
-      else this.nextNum1 = -1;
+      var nextChar;
+      if (this.lastLen !== 1 || this.nextNum2 === -1) {
+        nextChar = this.nextNum1 = this.input.charCodeAt(start);
+      } else {
+        nextChar = this.nextNum1 = this.nextNum2;
+      }
       this.nextNum2 = -1;
 
       ++this.tokenCountAll;
 
-      var start = this.lastStart = this.pos;
       var result = EOF;
       // TOFIX: nextToken or nextTokenSwitch?
-      if (start < this.len) result = this.nextTokenSwitch(expressionStart, start);
+      if (start < this.len) result = this.nextTokenSwitch(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
     },
 
-    nextTokenIfElse: function(expressionStart, pos){
-      var c = this.getLastNum();
-
+    nextTokenIfElse: function(c, expressionStart, pos){
       // 58% of tokens is caught here
       // http://qfox.nl/weblog/301
 
@@ -518,9 +521,7 @@
        */
     },
 
-    nextTokenSwitch: function(expressionStart, pos){
-      var c = this.getLastNum();
-
+    nextTokenSwitch: function(c, expressionStart){
       switch (c) {
         case ORD_SPACE: return this.__plusOne(WHITE);
         case ORD_DOT: return this.__parseDot();

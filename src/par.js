@@ -1106,6 +1106,7 @@
       do {
         // object literal keys can be most values, but not regex literal.
         // since that's an error, it's unlikely you'll ever see that triggered.
+        // TOFIX: REGEX is checked by isValue: tok.isValue() && !tok.isType(REGEX)
         if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
