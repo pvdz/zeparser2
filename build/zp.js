@@ -59,7 +59,7 @@
       if (this_tok_isNum(num)) {
         this_tok_next(nextIsExpr);
       } else {
-        throw this_tok_syntaxError(num);
+        throw 'Expected char='+String.fromCharCode(num)+' got='+String.fromCharCode(this_tok_getLastNum())+'.'+ this_tok_syntaxError();
       }
     }
   function this_tok_mustBeIdentifier(nextIsExpr){
@@ -321,11 +321,10 @@
           if (this_tok_getLastNum2() === 0x75 && this_tok_unicode(this_tok_pos+2)) {
             this_tok_pos += 6;
             return this_tok___parseIdentifier();
-          } else {
-            throw 'error';
           }
+          throw 'Token scanner saw backslash where it did not expect one.'+this_tok_syntaxError();
         default:
-          throw 'fixme ['+c+']';
+          throw 'Unexpected character in token scanner... fixme! ['+c+']'+this_tok_syntaxError();
       }
 
       /*
@@ -476,11 +475,11 @@
       // TODO: rewrite this while
       var c;
       while (c !== 0x27) {
-        if (pos >= len) throw 'Unterminated string found at '+pos;
+        if (pos >= len) throw 'Unterminated string found.'+this_tok_syntaxError();
         c = input.charCodeAt(pos++);
 
         if (c === 0x5c) pos = this_tok_stringEscape(pos);
-        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings! '+this_tok_syntaxError();
+        else if ((c <= 0x0D && (c === 0x0A || c === 0x0D)) || c === 0x2028 || c === 0x2029) throw 'No newlines in strings!'+this_tok_syntaxError();
       }
 
       this_tok_pos = pos;
@@ -511,7 +510,7 @@
       // unicode escapes
       if (c === 0x75) {
         if (this_tok_unicode(pos+1)) pos += 4;
-        else throw 'Invalid unicode escape';
+        else throw 'Invalid unicode escape.'+this_tok_syntaxError();
       // line continuation; skip windows newlines as if they're one char
       } else if (c === 0x0D) {
         // keep in mind, we are already skipping a char. no need to check
@@ -521,7 +520,7 @@
       // hex escapes
       } else if (c === 0x78) {
         if (this_tok_hexicode(input.charCodeAt(pos+1)) && this_tok_hexicode(input.charCodeAt(pos+2))) pos += 2;
-        else throw 'Invalid hex escape';
+        else throw 'Invalid hex escape.'+this_tok_syntaxError();
       }
       return pos+1;
     }
@@ -552,7 +551,7 @@
       } else if (d === 0x2e) {
         this_tok___parseAfterDot(this_tok_pos+2);
       } else if (d <= 0x39 && d >= 0x30) {
-        throw 'Invalid octal literal';
+        throw 'Invalid octal literal.'+this_tok_syntaxError();
       } else {
         this_tok_pos = this_tok___parseExponent(d, this_tok_pos+1, this_tok_input);
       }
@@ -616,7 +615,7 @@
 
         // first digit is mandatory
         if (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
-        else throw 'Missing required digits after exponent. '+this_tok_syntaxError();
+        else throw 'Missing required digits after exponent.'+this_tok_syntaxError();
 
         // rest is optional
         while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
@@ -655,18 +654,18 @@
         if (c === 0x5c) { // backslash
           var d = input.charCodeAt(this_tok_pos++);
           if (d === 0x0A || d === 0x0D || d === 0x2028 || d === 0x2029) {
-            throw new Error('Newline can not be escaped in regular expression at '+this_tok_pos);
+            throw 'Newline can not be escaped in regular expression.'+this_tok_syntaxError();
           }
         }
         else if (c === 0x28) this_tok_regexBody();
         else if (c === 0x29 || c === 0x2f) return;
         else if (c === 0x5b) this_tok_regexClass();
         else if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) {
-          throw new Error('Newline can not be escaped in regular expression at '+this_tok_pos);
+          throw 'Newline can not be escaped in regular expression.'+this_tok_syntaxError();
         }
       }
 
-      throw new Error('Unterminated regular expression at eof');
+      throw 'Unterminated regular expression at eof.'+this_tok_syntaxError();
     }
   function this_tok_regexClass(){
       var input = this_tok_input;
@@ -680,7 +679,7 @@
           return;
         }
         if (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029) {
-          throw 'Illegal newline in regex char class at '+pos;
+          throw 'Illegal newline in regex char class.'+this_tok_syntaxError();
         }
         if (c === 0x5c) { // backslash
           // there's a historical dispute over whether backslashes in regex classes
@@ -688,13 +687,13 @@
           if (this_tok_options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
             if (d === 0x0A || d === 0x0D || d === 0x2028 || d === 0x2029) {
-              throw new Error('Newline can not be escaped in regular expression at '+pos);
+              throw 'Newline can not be escaped in regular expression.'+this_tok_syntaxError();
             }
           }
         }
       }
 
-      throw new Error('Unterminated regular expression at eof');
+      throw 'Unterminated regular expression at eof.'+this_tok_syntaxError();
     }
   function this_tok_regexFlags(){
       // we cant use the actual identifier parser because that's assuming the identifier
@@ -760,12 +759,18 @@
   function this_tok_getLastNum4(){
       return this_tok_input.charCodeAt(this_tok_lastStart+3);
     }
-  function this_tok_debug(){
-      return '`'+this_tok_getLastValue()+'` @ '+this_tok_pos+' ('+Tok[this_tok_lastType]+')';
-    }
   function this_tok_syntaxError(value){
-      return 'A syntax error at pos='+this_tok_pos+' expected '+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this_tok_getLastValue()+'` '+
-          '('+Tok[this_tok_lastType]+') #### `'+this_tok_input.substring(this_tok_pos-2000, this_tok_pos)+'#|#'+this_tok_input.substring(this_tok_pos, this_tok_pos+2000)+'`';
+      return (
+        ' A syntax error at pos='+this_tok_pos+' '+
+        (
+          typeof value !== 'undefined' ?
+            'expected '+(typeof value === 'number' ? 'type='+Tok[value] : 'value=`'+value+'`') +
+            ' is '+(typeof value === 'number' ? Tok[this_tok_lastType] : '`'+this_tok_getLastValue()+'`') + ' '
+            :
+            ''
+        ) +
+        'Search for #|#: `'+this_tok_input.substring(this_tok_pos-2000, this_tok_pos)+'#|#'+this_tok_input.substring(this_tok_pos, this_tok_pos+2000)+'`'
+      );
     }
   // punctuator occurrence stats: http://qfox.nl/weblog/301
   // token start stats: http://qfox.nl/weblog/302
@@ -973,7 +978,7 @@
 
       this_tok_nextPunc();
       do {
-        if (this_par_isReservedIdentifier(false)) throw 'var name is reserved';
+        if (this_par_isReservedIdentifier(false)) throw 'Var name is reserved.'+this_tok_syntaxError();
         this_tok_mustBeIdentifier(true); // TOFIX: can never be regex nor div. does that matter?
         if (this_tok_isNum(0x3d) && this_tok_lastLen === 1) {
           this_tok_nextExpr();
@@ -985,7 +990,7 @@
   function this_par_parseVarPartNoIn(){
       var state = 0;
       do {
-        if (this_par_isReservedIdentifier(false)) throw 'var name is reserved';
+        if (this_par_isReservedIdentifier(false)) throw 'Var name is reserved.'+this_tok_syntaxError();
         this_tok_mustBeIdentifier(true);
 
         if (this_tok_isNum(0x3d) && this_tok_lastLen === 1) {
@@ -1052,8 +1057,8 @@
         else state = this_par_parseExpressionsNoIn();
 
         if (this_tok_nextExprIfNum(0x3b)) this_par_parseForEachHeader();
-        else if (this_tok_getLastNum() !== 0x69 || this_tok_getLastNum2() !== 0x6e || this_tok_lastLen !== 2) throw 'Expected `in` or `;` here... '+this_tok_syntaxError();
-        else if (state && this_par_options.strictForInCheck) throw 'Encountered illegal for-in lhs. '+this_tok_syntaxError();
+        else if (this_tok_getLastNum() !== 0x69 || this_tok_getLastNum2() !== 0x6e || this_tok_lastLen !== 2) throw 'Expected `in` or `;` here...'+this_tok_syntaxError();
+        else if (state && this_par_options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+this_tok_syntaxError();
         else this_par_parseForInHeader();
       }
 
@@ -1078,7 +1083,7 @@
       // continue <idntf> ;
       // newline right after keyword = asi
 
-      if (!inLoop) throw 'Can only continue in a loop. '+this_tok_syntaxError();
+      if (!inLoop) throw 'Can only continue in a loop.'+this_tok_syntaxError();
 
       this_tok_nextPunc(); // token after continue cannot be a regex, either way.
 
@@ -1099,7 +1104,7 @@
       if (this_tok_lastNewline || !this_tok_isType(13)) { // no label after break?
         if (!inLoop && !inSwitch) {
           // break without label
-          throw 'Break without value only in loops or switches. '+this_tok_syntaxError();
+          throw 'Break without value only in loops or switches.'+this_tok_syntaxError();
         }
       } else {
         this_par_parseLabel(labelSet);
@@ -1113,7 +1118,7 @@
       if (labelSet.indexOf(label) >= 0) {
         this_tok_nextExpr(); // label (already validated)
       } else {
-        throw 'Label ['+label+'] not found in label set. '+this_tok_syntaxError();
+        throw 'Label ['+label+'] not found in label set.'+this_tok_syntaxError();
       }
     }
   function this_par_parseReturn(inFunction, inLoop, inSwitch){
@@ -1121,7 +1126,7 @@
       // return <exprs> ;
       // newline right after keyword = asi
 
-      if (!inFunction && !this_par_options.functionMode) throw 'Can only return in a function '+this_tok_syntaxError('break');
+      if (!inFunction && !this_par_options.functionMode) throw 'Can only return in a function.'+this_tok_syntaxError('break');
 
       this_tok_nextExpr();
       if (this_tok_lastNewline) this_par_addAsi();
@@ -1135,7 +1140,7 @@
 
       this_tok_nextExpr();
       if (this_tok_lastNewline) {
-        throw 'No newline allowed directly after a throw, ever. '+this_tok_syntaxError();
+        throw 'No newline allowed directly after a throw, ever.'+this_tok_syntaxError();
       } else {
         this_par_parseExpressions();
         this_par_parseSemi();
@@ -1187,7 +1192,7 @@
       var one = this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet);
       var two = this_par_parseFinally(inFunction, inLoop, inSwitch, labelSet);
 
-      if (!one && !two) throw 'Try must have at least a catch or finally block or both: '+this_tok_debug();
+      if (!one && !two) throw 'Try must have at least a catch or finally block or both.'+this_tok_syntaxError();
     }
   function this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet){
       // catch ( <idntf> ) { <stmts> }
@@ -1197,10 +1202,10 @@
 
         // catch var
         if (this_tok_isType(13)) {
-          if (this_par_isReservedIdentifier(false)) throw 'Catch scope var name is reserved';
+          if (this_par_isReservedIdentifier(false)) throw 'Catch scope var name is reserved.'+this_tok_syntaxError();
           this_tok_nextPunc();
         } else {
-          throw 'Missing catch scope variable';
+          throw 'Missing catch scope variable.'+this_tok_syntaxError();
         }
 
         this_tok_mustBeNum(0x29, false);
@@ -1238,10 +1243,10 @@
 
       this_tok_nextPunc(); // 'function'
       if (this_tok_isType(13)) { // name
-        if (this_par_isReservedIdentifier(false)) throw 'function name is reserved';
+        if (this_par_isReservedIdentifier(false)) throw 'Function name ['+this_tok_getLastValue()+'] is reserved.'+this_tok_syntaxError();
         this_tok_nextPunc();
       } else if (forFunctionDeclaration) {
-        throw 'function declaration name is required';
+        throw 'Function declaration requires a name.'+this_tok_syntaxError();
       }
       this_par_parseFunctionRemainder(-1, forFunctionDeclaration);
     }
@@ -1254,23 +1259,23 @@
   function this_par_parseParameters(paramCount){
       // [<idntf> [, <idntf>]]
       if (this_tok_isType(13)) {
-        if (paramCount === 0) throw 'Getters have no parameters';
-        if (this_par_isReservedIdentifier(false)) throw 'Function param name is reserved';
+        if (paramCount === 0) throw 'Getters have no parameters.'+this_tok_syntaxError();
+        if (this_par_isReservedIdentifier(false)) throw 'Function param name is reserved.'+this_tok_syntaxError();
         this_tok_nextExpr();
         // there are only two valid next tokens; either a comma or a closing paren
         while (this_tok_nextExprIfNum(0x2c)) {
-          if (paramCount === 1) throw 'Setters have exactly one param';
+          if (paramCount === 1) throw 'Setters have exactly one param.'+this_tok_syntaxError();
 
           // param name
           if (this_tok_isType(13)) {
-            if (this_par_isReservedIdentifier(false)) throw 'Function param name is reserved';
+            if (this_par_isReservedIdentifier(false)) throw 'Function param name is reserved.'+this_tok_syntaxError();
             this_tok_nextPunc();
           } else {
-            throw 'Missing func param name';
+            throw 'Missing func param name.'+this_tok_syntaxError();
           }
         }
       } else if (paramCount === 1) {
-        throw 'Setters have exactly one param';
+        throw 'Setters have exactly one param.'+this_tok_syntaxError();
       }
     }
   function this_par_parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
@@ -1287,7 +1292,7 @@
   function this_par_parseSemi(){
       if (this_tok_nextExprIfNum(0x3b)) return 9;
       if (this_par_parseAsi()) return 15;
-      throw 'Unable to parse semi, unable to apply ASI. '+this_tok_syntaxError();
+      throw 'Unable to parse semi, unable to apply ASI.'+this_tok_syntaxError();
     }
   function this_par_parseAsi(){
       // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
@@ -1325,7 +1330,7 @@
         // note that this is already confirmed to be used as a label so
         // if any of these checks match, an error will be thrown.
         if (this_par_isValueKeyword(labelName)) {
-          throw 'Reserved identifier found in label. '+this_tok_syntaxError();
+          throw 'Reserved identifier found in label.'+this_tok_syntaxError();
         }
 
         if (!labelSet) labelSet = [labelName];
@@ -1369,7 +1374,7 @@
       var nonAssignee = this_par_parseExpressionOptional();
 
       // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
-      if (tokCount === this_tok_tokenCountAll) throw 'Expected to parse an expression, did not find any';
+      if (tokCount === this_tok_tokenCountAll) throw 'Expected to parse an expression, did not find any.'+this_tok_syntaxError();
 
       return nonAssignee;
     }
@@ -1387,7 +1392,7 @@
       // assignment ops are allowed until the first non-assignment binary op
       var nonForIn = 0;
       while (this_par_isAssignmentOperator()) {
-        if (nonAssignee && this_par_options.strictAssignmentCheck) throw 'LHS is invalid assignee';
+        if (nonAssignee && this_par_options.strictAssignmentCheck) throw 'LHS of this assignment is invalid assignee.'+this_tok_syntaxError();
         // any assignment means not a for-in per definition
         this_tok_nextExpr();
         nonAssignee = this_par_parsePrimary(false);
@@ -1475,7 +1480,7 @@
           this_par_parseFunction(false);
           nonAssignee = true;
         } else {
-          if (this_par_isReservedIdentifier(true)) throw 'Reserved identifier found in expression';
+          if (this_par_isReservedIdentifier(true)) throw 'Reserved identifier found in expression.'+this_tok_syntaxError();
           this_tok_nextPunc();
           // any non-keyword identifier can be assigned to
           if (!nonAssignee && this_par_isValueKeyword(identifier)) nonAssignee = true;
@@ -1511,7 +1516,7 @@
         // identifiers (break, return, if) because parseIdentifierStatement
         // will already have ensured a different code path in that case!
         // TOFIX: check how often this is called and whether it's worth investigating...
-        if (this_par_isReservedIdentifier(true)) throw 'Reserved identifier found in expression. '+this_tok_syntaxError();
+        if (this_par_isReservedIdentifier(true)) throw 'Reserved identifier ['+this_tok_getLastValue()+'] found in expression.'+this_tok_syntaxError();
 
         this_tok_nextPunc();
 
@@ -1543,7 +1548,7 @@
         if (this_tok_nextExprIfNum(0x28)) nonAssignee = this_par_parseGroup();
         else if (this_tok_nextExprIfNum(0x7b)) this_par_parseObject();
         else if (this_tok_nextExprIfNum(0x5b)) this_par_parseArray();
-        else if (!optional) throw 'Unable to parse required primary value';
+        else if (!optional) throw 'Unable to parse required primary value.'+this_tok_syntaxError();
       }
 
       return nonAssignee;
@@ -1601,7 +1606,7 @@
             repeat = false;
           }
         } else if (c === 0x2e) {
-          if (!this_tok_isType(9)) throw 'Number (?) after identifier?';
+          if (!this_tok_isType(9)) throw 'Dot/Number (?) after identifier?'+this_tok_syntaxError();
           this_tok_nextPunc();
           this_tok_mustBeIdentifier(false); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = 4; // property name can be assigned to (for-in lhs)
@@ -1769,7 +1774,7 @@
   function this_par_parsePair(){
       if (this_tok_isNum(0x67) && this_tok_nextPuncIfString('get')) {
         if (this_tok_isType(13)) {
-          if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved';
+          if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved.'+this_tok_syntaxError();
           this_tok_nextPunc();
 
           this_par_parseFunctionRemainder(0, true);
@@ -1777,7 +1782,7 @@
         else this_par_parseDataPart();
       } else if (this_tok_isNum(0x73) && this_tok_nextPuncIfString('set')) {
         if (this_tok_isType(13)) {
-          if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved';
+          if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved.'+this_tok_syntaxError();
           this_tok_nextPunc();
 
           this_par_parseFunctionRemainder(1, true);
