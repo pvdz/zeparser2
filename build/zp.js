@@ -106,24 +106,27 @@
   function this_tok_nextWhiteToken(expressionStart){
       this_tok_lastValue = '';
 
+      var start = this_tok_lastStart = this_tok_pos;
+
       // prepare charCodeAt cache...
-      if (this_tok_lastLen === 1) this_tok_nextNum1 = this_tok_nextNum2;
-      else this_tok_nextNum1 = -1;
+      var nextChar;
+      if (this_tok_lastLen !== 1 || this_tok_nextNum2 === -1) {
+        nextChar = this_tok_nextNum1 = this_tok_input.charCodeAt(start);
+      } else {
+        nextChar = this_tok_nextNum1 = this_tok_nextNum2;
+      }
       this_tok_nextNum2 = -1;
 
       ++this_tok_tokenCountAll;
 
-      var start = this_tok_lastStart = this_tok_pos;
       var result = 14;
       // TOFIX: nextToken or nextTokenSwitch?
-      if (start < this_tok_len) result = this_tok_nextTokenSwitch(expressionStart, start);
+      if (start < this_tok_len) result = this_tok_nextTokenSwitch(nextChar, expressionStart);
       this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - start;
 
       return result;
     }
-  function this_tok_nextTokenIfElse(expressionStart, pos){
-      var c = this_tok_getLastNum();
-
+  function this_tok_nextTokenIfElse(c, expressionStart, pos){
       // 58% of tokens is caught here
       // http://qfox.nl/weblog/301
 
@@ -206,9 +209,7 @@
        return this.__parseIdentifier();
        */
     }
-  function this_tok_nextTokenSwitch(expressionStart, pos){
-      var c = this_tok_getLastNum();
-
+  function this_tok_nextTokenSwitch(c, expressionStart){
       switch (c) {
         case 0x20: return this_tok___plusOne(18);
         case 0x2e: return this_tok___parseDot();
@@ -1758,6 +1759,7 @@
       do {
         // object literal keys can be most values, but not regex literal.
         // since that's an error, it's unlikely you'll ever see that triggered.
+        // TOFIX: REGEX is checked by isValue: this_tok_isValue() && !this_tok_isType(REGEX)
         if (this_tok_isValue() && !this_tok_isType(8)) this_par_parsePair();
       } while (this_tok_nextExprIfNum(0x2c)); // elision
 
