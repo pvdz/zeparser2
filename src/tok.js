@@ -352,7 +352,7 @@
       if (this.isNum(num)) {
         this.next(nextIsExpr);
       } else {
-        throw this.syntaxError(num);
+        throw 'Expected char='+String.fromCharCode(num)+' got='+String.fromCharCode(this.getLastNum())+'.'+ this.syntaxError();
       }
     },
     /**
@@ -633,11 +633,10 @@
           if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
             this.pos += 6;
             return this.__parseIdentifier();
-          } else {
-            throw 'error';
           }
+          throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
         default:
-          throw 'fixme ['+c+']';
+          throw 'Unexpected character in token scanner... fixme! ['+c+']'+this.syntaxError();
       }
 
       /*
@@ -793,11 +792,11 @@
       // TODO: rewrite this while
       var c;
       while (c !== ORD_SQUOTE) {
-        if (pos >= len) throw 'Unterminated string found at '+pos;
+        if (pos >= len) throw 'Unterminated string found.'+this.syntaxError();
         c = input.charCodeAt(pos++);
 
         if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings! '+this.syntaxError();
+        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!'+this.syntaxError();
       }
 
       this.pos = pos;
@@ -828,7 +827,7 @@
       // unicode escapes
       if (c === ORD_L_U) {
         if (this.unicode(pos+1)) pos += 4;
-        else throw 'Invalid unicode escape';
+        else throw 'Invalid unicode escape.'+this.syntaxError();
       // line continuation; skip windows newlines as if they're one char
       } else if (c === ORD_CR) {
         // keep in mind, we are already skipping a char. no need to check
@@ -838,7 +837,7 @@
       // hex escapes
       } else if (c === ORD_L_X) {
         if (this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2))) pos += 2;
-        else throw 'Invalid hex escape';
+        else throw 'Invalid hex escape.'+this.syntaxError();
       }
       return pos+1;
     },
@@ -871,7 +870,7 @@
       } else if (d === ORD_DOT) {
         this.__parseAfterDot(this.pos+2);
       } else if (d <= ORD_L_9 && d >= ORD_L_0) {
-        throw 'Invalid octal literal';
+        throw 'Invalid octal literal.'+this.syntaxError();
       } else {
         this.pos = this.__parseExponent(d, this.pos+1, this.input);
       }
@@ -936,7 +935,7 @@
 
         // first digit is mandatory
         if (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
-        else throw 'Missing required digits after exponent. '+this.syntaxError();
+        else throw 'Missing required digits after exponent.'+this.syntaxError();
 
         // rest is optional
         while (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
@@ -976,18 +975,18 @@
         if (c === ORD_BACKSLASH) { // backslash
           var d = input.charCodeAt(this.pos++);
           if (d === ORD_LF || d === ORD_CR || d === ORD_PS || d === ORD_LS) {
-            throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+            throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
           }
         }
         else if (c === ORD_OPEN_PAREN) this.regexBody();
         else if (c === ORD_CLOSE_PAREN || c === ORD_FWDSLASH) return;
         else if (c === ORD_OPEN_SQUARE) this.regexClass();
         else if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) {
-          throw new Error('Newline can not be escaped in regular expression at '+this.pos);
+          throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
         }
       }
 
-      throw new Error('Unterminated regular expression at eof');
+      throw 'Unterminated regular expression at eof.'+this.syntaxError();
     },
     regexClass: function(){
       var input = this.input;
@@ -1001,7 +1000,7 @@
           return;
         }
         if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) {
-          throw 'Illegal newline in regex char class at '+pos;
+          throw 'Illegal newline in regex char class.'+this.syntaxError();
         }
         if (c === ORD_BACKSLASH) { // backslash
           // there's a historical dispute over whether backslashes in regex classes
@@ -1009,13 +1008,13 @@
           if (this.options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
             if (d === ORD_LF || d === ORD_CR || d === ORD_PS || d === ORD_LS) {
-              throw new Error('Newline can not be escaped in regular expression at '+pos);
+              throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
             }
           }
         }
       }
 
-      throw new Error('Unterminated regular expression at eof');
+      throw 'Unterminated regular expression at eof.'+this.syntaxError();
     },
     regexFlags: function(){
       // we cant use the actual identifier parser because that's assuming the identifier
@@ -1083,12 +1082,18 @@
       return this.input.charCodeAt(this.lastStart+3);
     },
 
-    debug: function(){
-      return '`'+this.getLastValue()+'` @ '+this.pos+' ('+Tok[this.lastType]+')';
-    },
     syntaxError: function(value){
-      return 'A syntax error at pos='+this.pos+' expected '+(typeof value == 'number' ? 'type='+Tok[value] : 'value=`'+value+'`')+' is `'+this.getLastValue()+'` '+
-          '('+Tok[this.lastType]+') #### `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`';
+      return (
+        ' A syntax error at pos='+this.pos+' '+
+        (
+          typeof value !== 'undefined' ?
+            'expected '+(typeof value === 'number' ? 'type='+Tok[value] : 'value=`'+value+'`') +
+            ' is '+(typeof value === 'number' ? Tok[this.lastType] : '`'+this.getLastValue()+'`') + ' '
+            :
+            ''
+        ) +
+        'Search for #|#: `'+this.input.substring(this.pos-2000, this.pos)+'#|#'+this.input.substring(this.pos, this.pos+2000)+'`'
+      );
     },
   };
 

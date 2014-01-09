@@ -262,7 +262,7 @@
       var tok = this.tok;
       tok.nextPunc();
       do {
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX); // TOFIX: can never be regex nor div. does that matter?
         if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
           tok.nextExpr();
@@ -276,7 +276,7 @@
       var tok = this.tok;
 
       do {
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
 
         if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
@@ -346,8 +346,8 @@
         else state = this.parseExpressionsNoIn();
 
         if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader();
-        else if (tok.getLastNum() !== ORD_L_I || tok.getLastNum2() !== ORD_L_N || tok.lastLen !== 2) throw 'Expected `in` or `;` here... '+tok.syntaxError();
-        else if (state && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs. '+tok.syntaxError();
+        else if (tok.getLastNum() !== ORD_L_I || tok.getLastNum2() !== ORD_L_N || tok.lastLen !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
+        else if (state && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+tok.syntaxError();
         else this.parseForInHeader();
       }
 
@@ -375,7 +375,7 @@
 
       var tok = this.tok;
 
-      if (!inLoop) throw 'Can only continue in a loop. '+tok.syntaxError();
+      if (!inLoop) throw 'Can only continue in a loop.'+tok.syntaxError();
 
       tok.nextPunc(); // token after continue cannot be a regex, either way.
 
@@ -397,7 +397,7 @@
       if (tok.lastNewline || !tok.isType(IDENTIFIER)) { // no label after break?
         if (!inLoop && !inSwitch) {
           // break without label
-          throw 'Break without value only in loops or switches. '+tok.syntaxError();
+          throw 'Break without value only in loops or switches.'+tok.syntaxError();
         }
       } else {
         this.parseLabel(labelSet);
@@ -412,7 +412,7 @@
       if (labelSet.indexOf(label) >= 0) {
         tok.nextExpr(); // label (already validated)
       } else {
-        throw 'Label ['+label+'] not found in label set. '+tok.syntaxError();
+        throw 'Label ['+label+'] not found in label set.'+tok.syntaxError();
       }
     },
     parseReturn: function(inFunction, inLoop, inSwitch){
@@ -422,7 +422,7 @@
 
       var tok = this.tok;
 
-      if (!inFunction && !this.options.functionMode) throw 'Can only return in a function '+tok.syntaxError('break');
+      if (!inFunction && !this.options.functionMode) throw 'Can only return in a function.'+tok.syntaxError('break');
 
       tok.nextExpr();
       if (tok.lastNewline) this.addAsi();
@@ -437,7 +437,7 @@
       var tok = this.tok;
       tok.nextExpr();
       if (tok.lastNewline) {
-        throw 'No newline allowed directly after a throw, ever. '+tok.syntaxError();
+        throw 'No newline allowed directly after a throw, ever.'+tok.syntaxError();
       } else {
         this.parseExpressions();
         this.parseSemi();
@@ -491,7 +491,7 @@
       var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
       var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
 
-      if (!one && !two) throw 'Try must have at least a catch or finally block or both: '+this.tok.debug();
+      if (!one && !two) throw 'Try must have at least a catch or finally block or both.'+this.tok.syntaxError();
     },
     parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
       // catch ( <idntf> ) { <stmts> }
@@ -502,10 +502,10 @@
 
         // catch var
         if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Catch scope var name is reserved';
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Catch scope var name is reserved.'+tok.syntaxError();
           tok.nextPunc();
         } else {
-          throw 'Missing catch scope variable';
+          throw 'Missing catch scope variable.'+tok.syntaxError();
         }
 
         tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
@@ -544,10 +544,10 @@
       var tok = this.tok;
       tok.nextPunc(); // 'function'
       if (tok.isType(IDENTIFIER)) { // name
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'function name is reserved';
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function name ['+this.tok.getLastValue()+'] is reserved.'+tok.syntaxError();
         tok.nextPunc();
       } else if (forFunctionDeclaration) {
-        throw 'function declaration name is required';
+        throw 'Function declaration requires a name.'+tok.syntaxError();
       }
       this.parseFunctionRemainder(-1, forFunctionDeclaration);
     },
@@ -568,23 +568,23 @@
       // [<idntf> [, <idntf>]]
       var tok = this.tok;
       if (tok.isType(IDENTIFIER)) {
-        if (paramCount === 0) throw 'Getters have no parameters';
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved';
+        if (paramCount === 0) throw 'Getters have no parameters.'+tok.syntaxError();
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
         tok.nextExpr();
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (paramCount === 1) throw 'Setters have exactly one param';
+          if (paramCount === 1) throw 'Setters have exactly one param.'+tok.syntaxError();
 
           // param name
           if (tok.isType(IDENTIFIER)) {
-            if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved';
+            if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
             tok.nextPunc();
           } else {
-            throw 'Missing func param name';
+            throw 'Missing func param name.'+tok.syntaxError();
           }
         }
       } else if (paramCount === 1) {
-        throw 'Setters have exactly one param';
+        throw 'Setters have exactly one param.'+tok.syntaxError();
       }
     },
     // TODO: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
@@ -602,7 +602,7 @@
     parseSemi: function(){
       if (this.tok.nextExprIfNum(ORD_SEMI)) return PUNCTUATOR;
       if (this.parseAsi()) return ASI;
-      throw 'Unable to parse semi, unable to apply ASI. '+this.tok.syntaxError();
+      throw 'Unable to parse semi, unable to apply ASI.'+this.tok.syntaxError();
     },
     parseAsi: function(){
       // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
@@ -642,7 +642,7 @@
         // note that this is already confirmed to be used as a label so
         // if any of these checks match, an error will be thrown.
         if (this.isValueKeyword(labelName)) {
-          throw 'Reserved identifier found in label. '+this.tok.syntaxError();
+          throw 'Reserved identifier found in label.'+this.tok.syntaxError();
         }
 
         if (!labelSet) labelSet = [labelName];
@@ -689,7 +689,7 @@
       var nonAssignee = this.parseExpressionOptional();
 
       // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
-      if (tokCount === tok.tokenCountAll) throw 'Expected to parse an expression, did not find any';
+      if (tokCount === tok.tokenCountAll) throw 'Expected to parse an expression, did not find any.'+tok.syntaxError();
 
       return nonAssignee;
     },
@@ -708,7 +708,7 @@
       var nonForIn = NOPARSE;
       var tok = this.tok;
       while (this.isAssignmentOperator()) {
-        if (nonAssignee && this.options.strictAssignmentCheck) throw 'LHS is invalid assignee';
+        if (nonAssignee && this.options.strictAssignmentCheck) throw 'LHS of this assignment is invalid assignee.'+tok.syntaxError();
         // any assignment means not a for-in per definition
         tok.nextExpr();
         nonAssignee = this.parsePrimary(REQUIRED);
@@ -811,7 +811,7 @@
           this.parseFunction(NOTFORFUNCTIONDECL);
           nonAssignee = true;
         } else {
-          if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression';
+          if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression.'+tok.syntaxError();
           tok.nextPunc();
           // any non-keyword identifier can be assigned to
           if (!nonAssignee && this.isValueKeyword(identifier)) nonAssignee = true;
@@ -849,7 +849,7 @@
         // identifiers (break, return, if) because parseIdentifierStatement
         // will already have ensured a different code path in that case!
         // TOFIX: check how often this is called and whether it's worth investigating...
-        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
+        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
 
         tok.nextPunc();
 
@@ -882,7 +882,7 @@
         if (tok.nextExprIfNum(ORD_OPEN_PAREN)) nonAssignee = this.parseGroup();
         else if (tok.nextExprIfNum(ORD_OPEN_CURLY)) this.parseObject();
         else if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) this.parseArray();
-        else if (!optional) throw 'Unable to parse required primary value';
+        else if (!optional) throw 'Unable to parse required primary value.'+tok.syntaxError();
       }
 
       return nonAssignee;
@@ -943,7 +943,7 @@
             repeat = false;
           }
         } else if (c === ORD_DOT) {
-          if (!tok.isType(PUNCTUATOR)) throw 'Number (?) after identifier?';
+          if (!tok.isType(PUNCTUATOR)) throw 'Dot/Number (?) after identifier?'+tok.syntaxError();
           tok.nextPunc();
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = ASSIGNEE; // property name can be assigned to (for-in lhs)
@@ -1117,7 +1117,7 @@
       var tok = this.tok;
       if (tok.isNum(ORD_L_G) && tok.nextPuncIfString('get')) {
         if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved';
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.nextPunc();
 
           this.parseFunctionRemainder(0, FORFUNCTIONDECL);
@@ -1125,7 +1125,7 @@
         else this.parseDataPart();
       } else if (tok.isNum(ORD_L_S) && tok.nextPuncIfString('set')) {
         if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved';
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.nextPunc();
 
           this.parseFunctionRemainder(1, FORFUNCTIONDECL);
