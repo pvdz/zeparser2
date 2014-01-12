@@ -414,13 +414,16 @@
       return type;
     },
     nextWhiteToken: function(expressionStart){
+      // note: this is one of the most called functions of zeparser...
       this.lastValue = '';
 
       var start = this.lastStart = this.pos;
 
       // prepare charCodeAt cache...
       var nextChar;
-      if (this.lastLen !== 1 || this.nextNum2 === -1) {
+      // `this.nextNum2` === -1` is more often true (83%) than `this.lastLen !== 1` (11%)
+      if (this.nextNum2 === -1 || this.lastLen !== 1) {
+        // this will happen ~ 93% of the time
         nextChar = this.nextNum1 = this.input.charCodeAt(start);
       } else {
         nextChar = this.nextNum1 = this.nextNum2;
@@ -431,7 +434,7 @@
 
       var result = EOF;
       // TOFIX: nextToken or nextTokenSwitch?
-      if (start < this.len) result = this.nextTokenSwitch(nextChar, expressionStart);
+      if (start < this.len) result = this.nextTokenSwitch_reduced(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
@@ -453,25 +456,12 @@
         return WHITE;
       }
       if (c === ORD_OPEN_CURLY || c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
-      // while the
-
-//      // split to another function to prevent too many branches in this function
-//      return this.nextToken_center(c, expressionStart);
-//    },
-//    nextToken_center: function(c, expressionStart){
-      // 25% of tokens is caught here
-
       if (c === ORD_DQUOTE) return this.__parseDoubleString();
       if (
         c === ORD_COLON ||
         c === ORD_OPEN_SQUARE ||
         c === ORD_CLOSE_SQUARE
       ) { ++this.pos; return PUNCTUATOR; }
-//      return this.nextToken_tail(c, expressionStart);
-//    },
-//    nextToken_tail: function(c, expressionStart){
-      // remaining 17% of tokens is caught here
-
       if (c === ORD_LODASH) return this.__parseIdentifier();
       if (c === ORD_PLUS) return this.__parseSameOrCompound(c);
       if (c === ORD_L_0) return this.__parseZero();
@@ -490,17 +480,11 @@
       if (c === ORD_GT) return this.__parseLtgtPunctuator(c);
       if (
         c === ORD_PERCENT ||
-          c === ORD_XOR ||
-          c === ORD_TILDE
-        ) return this.__parseCompound();
-
-//      return this.nextToken_exotic(c);
-//    },
-//    nextToken_exotic: function(c){
-      // the rest is exotic. order is not really important at this point...
-
+        c === ORD_XOR ||
+        c === ORD_TILDE
+      ) return this.__parseCompound();
       // TOFIX: should ORD_LF go with CR? because OSX...
-      if (c === ORD_PS || c === ORD_LS) {
+      if ((c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
         this.lastNewline = true;
         ++this.pos;
         return WHITE;
@@ -645,6 +629,130 @@
        */
     },
 
+
+
+    nextTokenSwitch_reduced: function(c, expressionStart){
+      switch (c) {
+        case ORD_SPACE: return this.__plusOne(WHITE);
+        case ORD_DOT: return this.__parseDot();
+        case ORD_OPEN_PAREN:
+        case ORD_CLOSE_PAREN:
+        case ORD_SEMI:
+        case ORD_COMMA: return this.__plusOne(PUNCTUATOR);
+        case ORD_IS: return this.__parseEqualSigns();
+        case ORD_L_T: return this.__parseIdentifier();
+        case ORD_CR: return this.__parseCR();
+        case ORD_LF:
+          this.lastNewline = true;
+          return this.__plusOne(WHITE);
+        case ORD_OPEN_CURLY:
+        case ORD_CLOSE_CURLY: return this.__plusOne(PUNCTUATOR);
+        case ORD_L_A:
+        case ORD_L_I: return this.__parseIdentifier();
+        case ORD_DQUOTE: return this.__parseDoubleString();
+        case ORD_L_F:
+        case ORD_L_C: return this.__parseIdentifier();
+        case ORD_COLON:
+        case ORD_OPEN_SQUARE:
+        case ORD_CLOSE_SQUARE: return this.__plusOne(PUNCTUATOR);
+        case ORD_L_B:
+        case ORD_L_R:
+        case ORD_L_E:
+        case ORD_L_V:
+        case ORD_L_S:
+        case ORD_L_D:
+        case ORD_L_N:
+        case ORD_LODASH:
+        case ORD_L_P:
+        case ORD_L_G: return this.__parseIdentifier();
+        case ORD_PLUS: return this.__parseSameOrCompound(c);
+        case ORD_L_M:
+        case ORD_L_O: return this.__parseIdentifier();
+        case ORD_L_0: return this.__parseZero();
+        case ORD_L_L:
+        case ORD_L_Z_UC:
+        case ORD_L_H:
+        case ORD_L_E_UC: return this.__parseIdentifier();
+        case ORD_EXCL: return this.__parseEqualSigns();
+        case ORD_L_1: return this.__parseNumber();
+        case ORD_L_D_UC:
+        case ORD_L_U: return this.__parseIdentifier();
+        case ORD_AND: return this.__parseSameOrCompound(c);
+        case ORD_L_A_UC:
+        case ORD_L_W:
+        case ORD_L_F_UC: return this.__parseIdentifier();
+        case ORD_OR: return this.__parseSameOrCompound(c);
+        case ORD_SQUOTE: return this.__parseSingleString();
+        case ORD_L_K: return this.__parseIdentifier();
+        case ORD_MIN: return this.__parseSameOrCompound(c);
+        case ORD_L_X: return this.__parseIdentifier();
+        case ORD_TAB: return this.__plusOne(WHITE);
+        case ORD_L_C_UC:
+        case ORD_L_J: return this.__parseIdentifier();
+        case ORD_QMARK: return this.__plusOne(PUNCTUATOR);
+        case ORD_$:
+        case ORD_L_M_UC:
+        case ORD_L_Y:
+        case ORD_L_S_UC: return this.__parseIdentifier();
+        case ORD_FWDSLASH: return this.__parseFwdSlash(expressionStart);
+        case ORD_LT: return this.__parseLtgtPunctuator(c);
+        case ORD_L_B_UC:
+        case ORD_L_H_UC:
+        case ORD_L_I_UC: return this.__parseIdentifier();
+        case ORD_L_2: return this.__parseNumber();
+        case ORD_L_O_UC: return this.__parseIdentifier();
+        case ORD_STAR: return this.__parseCompound();
+        case ORD_L_Q:
+        case ORD_L_G_UC:
+        case ORD_L_P_UC:
+        case ORD_L_T_UC:
+        case ORD_L_R_UC:
+        case ORD_L_Z:
+        case ORD_L_N_UC:
+        case ORD_L_Y_UC:
+        case ORD_L_J_UC:
+        case ORD_L_L_UC: return this.__parseIdentifier();
+        case ORD_GT: return this.__parseLtgtPunctuator(c);
+        case ORD_L_K_UC:
+        case ORD_L_X_UC: return this.__parseIdentifier();
+        case ORD_L_3: return this.__parseNumber();
+        case ORD_L_Q_UC:
+        case ORD_L_U_UC:
+        case ORD_L_V_UC:
+        case ORD_L_W_UC: return this.__parseIdentifier();
+        case ORD_L_4:
+        case ORD_L_5:
+        case ORD_L_6:
+        case ORD_L_7:
+        case ORD_L_8:
+        case ORD_L_9: return this.__parseNumber();
+        case ORD_PERCENT:
+        case ORD_XOR:
+        case ORD_TILDE: return this.__parseCompound();
+        case ORD_PS:
+        case ORD_LS:
+          this.lastNewline = true;
+        case ORD_FF:
+        case ORD_VTAB:
+        case ORD_NBSP:
+        case ORD_BOM: return this.__plusOne(WHITE);
+        case ORD_BACKSLASH:
+          if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
+            this.pos += 6;
+            return this.__parseIdentifier();
+          }
+          throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
+        default:
+          throw 'Unexpected character in token scanner... fixme! ['+c+']'+this.syntaxError();
+      }
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       return this.__parseIdentifier();
+       */
+    },
+
+
     __plusOne: function(type){
       ++this.pos;
       return type;
@@ -740,7 +848,7 @@
           this.pos = pos + 1;
         }
         parsed = true;
-      } else if (c === ORD_LF || c === ORD_PS || c === ORD_LS) {
+      } else if (c === ORD_LF || (c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
         this.lastNewline = true;
         this.pos = pos + 1;
         parsed = true;
@@ -754,7 +862,7 @@
 
       if (pos < len) {
         do var c = input.charCodeAt(pos);
-        while (c !== ORD_CR && c !== ORD_LF && c !== ORD_PS && c !== ORD_LS && ++pos < len);
+        while (c !== ORD_LF && c !== ORD_CR && (c ^ ORD_PS) > 1 /*c !== ORD_PS && c !== ORD_LS*/ && ++pos < len);
       }
 
       this.pos = pos;
@@ -778,47 +886,35 @@
         // only check one newline
         // TODO: check whether the extra check is worth the overhead for eliminating repetitive checks
         // (hint: if you generally check more characters here than you can skip, it's not worth it)
-        if (hasNewline || c === ORD_CR || c === ORD_LF || c === ORD_PS || c === ORD_LS) hasNewline = this.lastNewline = true;
+        if (hasNewline || c === ORD_CR || c === ORD_LF || (c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) hasNewline = this.lastNewline = true;
       }
       this.pos = pos+1;
 
       return WHITE;
     },
     __parseSingleString: function(){
-      var pos = this.pos + 1;
-      var input = this.input;
-      var len = input.length;
-
-      // TODO: rewrite this while
-      var c;
-      while (c !== ORD_SQUOTE) {
-        if (pos >= len) throw 'Unterminated string found.'+this.syntaxError();
-        c = input.charCodeAt(pos++);
-
-        if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings!'+this.syntaxError();
-      }
-
-      this.pos = pos;
-      return STRING;
+      return this.__parseString(ORD_SQUOTE, STRING);
     },
     __parseDoubleString: function(){
+      return this.__parseString(ORD_DQUOTE, STRING);
+    },
+    __parseString: function(targetChar, returnType){
       var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
 
       // TODO: rewrite this while
       var c;
-      while (c !== ORD_DQUOTE) {
+      while (c !== targetChar) {
         if (pos >= len) throw 'Unterminated string found at '+pos;
         c = input.charCodeAt(pos++);
 
         if (c === ORD_BACKSLASH) pos = this.stringEscape(pos);
-        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || c === ORD_PS || c === ORD_LS) throw 'No newlines in strings! '+this.syntaxError();
+        else if ((c <= ORD_CR && (c === ORD_LF || c === ORD_CR)) || (c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) throw 'No newlines in strings! '+this.syntaxError();
       }
 
       this.pos = pos;
-      return STRING;
+      return returnType;
     },
     stringEscape: function(pos){
       var input = this.input;
@@ -974,15 +1070,15 @@
 
         if (c === ORD_BACKSLASH) { // backslash
           var d = input.charCodeAt(this.pos++);
-          if (d === ORD_LF || d === ORD_CR || d === ORD_PS || d === ORD_LS) {
+          if (d === ORD_LF || d === ORD_CR || (d ^ ORD_PS) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
           }
         }
         else if (c === ORD_OPEN_PAREN) this.regexBody();
         else if (c === ORD_CLOSE_PAREN || c === ORD_FWDSLASH) return;
         else if (c === ORD_OPEN_SQUARE) this.regexClass();
-        else if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) {
-          throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
+        else if (c === ORD_LF || c === ORD_CR || (c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
+          throw 'Newline can not be escaped in regular expression ['+c+'].'+this.syntaxError();
         }
       }
 
@@ -999,7 +1095,7 @@
           this.pos = pos;
           return;
         }
-        if (c === ORD_LF || c === ORD_CR || c === ORD_PS || c === ORD_LS) {
+        if (c === ORD_LF || c === ORD_CR || (c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
           throw 'Illegal newline in regex char class.'+this.syntaxError();
         }
         if (c === ORD_BACKSLASH) { // backslash
@@ -1007,7 +1103,7 @@
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this.options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
-            if (d === ORD_LF || d === ORD_CR || d === ORD_PS || d === ORD_LS) {
+            if (d === ORD_LF || d === ORD_CR || (d ^ ORD_PS) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
               throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
             }
           }
