@@ -738,8 +738,7 @@
         case ORD_BOM: return this.__plusOne(WHITE);
         case ORD_BACKSLASH:
           if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
-            this.pos += 6;
-            return this.__parseIdentifier();
+            return this.__parseEscapedIdentifier();
           }
           throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
         default:
@@ -1117,27 +1116,50 @@
       // starts at the beginning of this token, which is not the case for regular expressions.
       // so we use the remainder parser, which parses the second up to the rest of the identifier
 
-      this.pos = this.__parseIdentifierRest();
+      this.pos = this.__parseIdentifierRest(0);
     },
     __parseIdentifier: function(){
-      this.pos = this.__parseIdentifierRest();
+      // TOFIX: leading unicode chars might still not validate as identifiers
+      this.pos = this.__parseIdentifierRest(1);
       return IDENTIFIER;
     },
-    __parseIdentifierRest: function(){
+    __parseEscapedIdentifier: function(){
+      // only for the case where an identifier starts with \uxxxx
+      this.pos = this.__parseIdentifierRest(6);
+      return IDENTIFIER;
+    },
+    __parseIdentifierRest: function(delta){
       // also used by regex flag parser!
 
       var input = this.input;
       var len = input.length;
-      var pos = this.pos;
+      var start = this.lastStart;
+      var pos = this.pos + delta;
+
+      if (pos - start === 0) {
+        throw 'Internal error; identifier scanner should already have validated first char.'+this.tok.syntaxError();
+      }
 
       while (pos < len) {
-        var c = input.charCodeAt(pos);
+        switch (pos - start) {
+          case 1:
+            var c = this.getLastNum2();
+            break;
+          case 2:
+            var c = this.getLastNum3();
+            break;
+          case 3:
+            var c = this.getLastNum4();
+            break;
+          default:
+            var c = input.charCodeAt(pos);
+        }
 
         // a-z A-Z 0-9 $ _
         // TODO: character occurrence analysis
         if ((c >= ORD_L_A && c <= ORD_L_Z) || (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) || (c >= ORD_L_0 && c <= ORD_L_9) || c === ORD_$ || c === ORD_LODASH) {
           ++pos;
-        // \uxxxx (TOFIX: validate?)
+        // \uxxxx (TOFIX: validate resulting char?)
         } else if (c === ORD_BACKSLASH && input.charCodeAt(pos+1) === ORD_L_U && this.unicode(pos+2)) {
           pos += 6;
         } else if (c > UNICODE_LIMIT_127 && uniRegex.test(String.fromCharCode(c))) {
@@ -1162,19 +1184,21 @@
 //      return val;
     },
     getLastNum: function(){
-      var n = this.nextNum1;
-      if (n === -1) return this.nextNum1 = this.input.charCodeAt(this.lastStart);
-      return n;
+      // always cached in nextToken function
+      return this.nextNum1;
     },
     getLastNum2: function(){
+      // TOFIX: perf check, what happens if i pass on pos if i can? (prevent reading this.lastStart)
       var n = this.nextNum2;
       if (n === -1) return this.nextNum2 = this.input.charCodeAt(this.lastStart+1);
       return n;
     },
     getLastNum3: function(){
+      // TOFIX: refactor this out. it's useless now
       return this.input.charCodeAt(this.lastStart+2);
     },
     getLastNum4: function(){
+      // TOFIX: refactor this out. it's useless now
       return this.input.charCodeAt(this.lastStart+3);
     },
 
