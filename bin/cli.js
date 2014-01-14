@@ -12,7 +12,7 @@ process.stdin.on('data', function (chunk) {
 });
 
 process.stdin.on('end', function () {
-  console.log(data);
+  if (data.length < 2000) console.log(data);
   var par = new Par(data);
   par.run();
   console.log('-- finished ('+par.tok.tokenCountAll+' tokens)');
