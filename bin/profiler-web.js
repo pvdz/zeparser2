@@ -28,8 +28,8 @@ function get(url, callback){
   xhr.send(null);
 }
 
-var file = '../../gonzales/data/sources/jquery.js';
-//var file = '../../gonzales/data/sources/8mb-benchmark.js';
+var file = '../../gonzales/data/sources/jquery-1-10-2.js';
+//var file = '../../gonzales/data/sources/16mb-benchmark.js';
 
 get(file, function(err, txt){
   if (!err) Par.parse(txt);
