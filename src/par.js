@@ -890,8 +890,8 @@
     parseUnary: function(){
       var parsed = PARSEDNOTHING;
       var tok = this.tok;
-      // TOFIX: why was there an EOF check here?
-      while (/*!tok.isType(EOF) && */this.testUnary()) {
+      // EOF check: `++` will run into infinite loop otherwise
+      while (!tok.isType(EOF) && this.testUnary()) {
         tok.nextExpr();
         parsed = PARSEDSOMETHING;
       }
