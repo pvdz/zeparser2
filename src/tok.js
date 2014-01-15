@@ -1037,13 +1037,6 @@
       }
       return pos;
     },
-    hexNumber: function(pos){
-      var input = this.input;
-      var len = input.length;
-      // hex
-      while (pos < len && this.hexicode(input.charCodeAt(pos))) ++pos;
-      this.pos = pos;
-    },
 
     __parseRegex: function(){
       // /foo/
