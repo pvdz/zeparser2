@@ -417,7 +417,13 @@
       // note: this is one of the most called functions of zeparser...
       this.lastValue = '';
 
+      ++this.tokenCountAll;
+
       var start = this.lastStart = this.pos;
+      if (start >= this.len) {
+        this.nextNum1 = -1;
+        return EOF;
+      }
 
       // prepare charCodeAt cache...
       var nextChar;
@@ -430,11 +436,8 @@
       }
       this.nextNum2 = -1;
 
-      ++this.tokenCountAll;
-
-      var result = EOF;
       // TOFIX: nextToken or nextTokenSwitch?
-      if (start < this.len) result = this.nextTokenSwitch_reduced(nextChar, expressionStart);
+      var result = this.nextTokenIfElse(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
