@@ -961,7 +961,7 @@
 
       var d = this.getLastNum2();
       if (d === ORD_L_X || d === ORD_L_X_UC) { // x or X
-        this.__parseHex(2);
+        this.__parseHex();
       } else if (d === ORD_DOT) {
         this.__parseAfterDot(this.pos+2);
       } else if (d <= ORD_L_9 && d >= ORD_L_0) {
@@ -973,13 +973,13 @@
       return NUMBER;
     },
     __parseHex: function(delta){
-      var pos = this.pos + delta;
+      var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
 
       // (could use OR, eliminate casing branch)
-      do var c = input.charCodeAt(pos);
-      while (((c <= ORD_L_9 && c >= ORD_L_0) || (c >= ORD_L_A && c <= ORD_L_F) || (c >= ORD_L_A_UC && c <= ORD_L_F_UC)) && ++pos < input.length);
+      do var c = input.charCodeAt(++pos);
+      while ((c <= ORD_L_9 && c >= ORD_L_0) || (c >= ORD_L_A && c <= ORD_L_F) || (c >= ORD_L_A_UC && c <= ORD_L_F_UC));
 
       this.pos = pos;
       return NUMBER;
@@ -989,8 +989,8 @@
       var input = this.input;
       var len = input.length;
 
-      do var c = input.charCodeAt(pos);
-      while (c >= ORD_L_0 && c <= ORD_L_9 && ++pos < input.length);
+      do var c = input.charCodeAt(++pos);
+      while (c >= ORD_L_0 && c <= ORD_L_9);
 
       this.pos = pos;
       return NUMBER;
@@ -1003,8 +1003,8 @@
       var input = this.input;
       var len = input.length;
 
-      do var c = input.charCodeAt(pos);
-      while (c >= ORD_L_0 && c <= ORD_L_9 && ++pos < input.length);
+      do var c = input.charCodeAt(++pos);
+      while (c >= ORD_L_0 && c <= ORD_L_9);
 
       if (c === ORD_DOT) return this.__parseAfterDot(pos+1);
 
