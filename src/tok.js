@@ -519,7 +519,7 @@
         case ORD_LF:
           this.lastNewline = true;
           return this.__plusOne(WHITE);
-        case ORD_OPEN_CURLY:
+        case ORD_OPEN_CURLY: return this.__plusOne(PUNCTUATOR);
         case ORD_CLOSE_CURLY: return this.__plusOne(PUNCTUATOR);
         case ORD_L_A: return this.__parseIdentifier();
         case ORD_L_I: return this.__parseIdentifier();
