@@ -97,7 +97,7 @@
   var ORD_CLOSE_SQUARE = 0x5d;
   var ORD_TILDE = 0x7e;
   var ORD_PLUS = 0x2b;
-  var ORD_MIN = 0x2d;
+  var ORD_DASH = 0x2d;
   var ORD_EXCL = 0x21;
   var ORD_HASH = 0x23;
   var ORD_$ = 0x24;
@@ -149,6 +149,9 @@
     // v8 "appreciates" it when all instance properties are set explicitly
     this.pos = 0;
 
+    this.steptotal = 0;
+    this.stepcount = 0;
+
     this.lastStart = 0;
     this.lastStop = 0;
     this.lastLen = 0;
@@ -161,6 +164,8 @@
     this.nextNum2 = -1;
 
     this.tokenCountAll = 0;
+
+    this.getSteps = function(){ return this.steptotal / this.stepcount; };
 
     if (options.saveTokens) {
       // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
@@ -225,6 +230,9 @@
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      */
     options: null,
+
+    steptotal: 0,
+    stepcount: 0,
 
     // parser can look at these positions to see where in the input the last token was
     // this way the tokenizer can simply return number-constants-as-types.
@@ -436,69 +444,83 @@
       }
       this.nextNum2 = -1;
 
-      // TOFIX: nextToken or nextTokenSwitch?
-      var result = this.nextTokenSwitch(nextChar, expressionStart);
+      // TOFIX: nextToken or nextTokenSwitch or ...?
+      var result = this.nextTokenSwitch_reduced(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return result;
     },
 
-    nextTokenIfElse: function(c, expressionStart, pos){
+    nextTokenIfElse: function(c, expressionStart, pos) {
       // 58% of tokens is caught here
       // http://qfox.nl/weblog/301
 
-      if (c === ORD_SPACE) return this.__plusOne(WHITE);
-      if (c === ORD_DOT) return this.__parseDot();
-      if (c === ORD_OPEN_PAREN || c === ORD_CLOSE_PAREN || c === ORD_SEMI || c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
-      if (c === ORD_IS) return this.__parseEqualSigns();
-      if (c >= ORD_L_A && c <= ORD_L_Z) return this.__parseIdentifier(); // 25%
-      if (c === ORD_CR) return this.__parseCR();
-      if (c === ORD_LF) {
-        this.lastNewline = true;
-        ++this.pos;
-        return WHITE;
-      }
-      if (c === ORD_OPEN_CURLY || c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
-      if (c === ORD_DQUOTE) return this.__parseDoubleString();
-      if (
-        c === ORD_COLON ||
-        c === ORD_OPEN_SQUARE ||
-        c === ORD_CLOSE_SQUARE
-      ) { ++this.pos; return PUNCTUATOR; }
-      if (c === ORD_LODASH) return this.__parseIdentifier();
-      if (c === ORD_PLUS) return this.__parseSameOrCompound(c);
-      if (c === ORD_L_0) return this.__parseZero();
-      if (c >= ORD_L_A_UC && c <= ORD_L_Z_UC) return this.__parseIdentifier();
-      if (c === ORD_EXCL) return this.__parseEqualSigns();
-      if (c >= ORD_L_1 && c <= ORD_L_9) return this.__parseNumber();
-      if (c === ORD_AND || c === ORD_OR) return this.__parseSameOrCompound(c);
-      if (c === ORD_SQUOTE) return this.__parseSingleString();
-      if (c === ORD_MIN) return this.__parseSameOrCompound(c);
-      if (c === ORD_TAB) return this.__plusOne(WHITE);
-      if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
-      if (c === ORD_$) return this.__parseIdentifier();
-      if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
-      if (c === ORD_LT) return this.__parseLtgtPunctuator(c);
-      if (c === ORD_STAR) return this.__parseCompound();
-      if (c === ORD_GT) return this.__parseLtgtPunctuator(c);
-      if (
-        c === ORD_PERCENT ||
-        c === ORD_XOR ||
-        c === ORD_TILDE
-      ) return this.__parseCompound();
-      // TOFIX: should ORD_LF go with CR? because OSX...
-      if ((c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
-        this.lastNewline = true;
-        ++this.pos;
-        return WHITE;
-      }
+      if (c < ORD_DOT) {
+        if (c === ORD_SPACE) return this.__plusOne(WHITE);
+        if (c < ORD_OPEN_PAREN) {
+          if (c === ORD_CR) return this.__parseCR();
+          if (c === ORD_TAB) return this.__plusOne(WHITE);
+          if (c === ORD_DQUOTE) return this.__parseDoubleString();
+          if (c === ORD_EXCL) return this.__parseEqualSigns();
+          if (c === ORD_AND) return this.__parseSameOrCompound(c);
+          if (c === ORD_SQUOTE) return this.__parseSingleString();
+          if (c === ORD_$) return this.__parseIdentifier();
+          if (c === ORD_PERCENT) return this.__parseCompound();
+          if (c === ORD_LF) return this.__newline();
+          if (c === ORD_VTAB) return this.__plusOne(WHITE);
+          if (c === ORD_FF) return this.__plusOne(WHITE);
+        } else if (c <= ORD_CLOSE_PAREN) {
+          return this.__plusOne(PUNCTUATOR);
+        } else {
+          if (c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_STAR) return this.__parseCompound();
+          // + -
+          return this.__parseSameOrCompound(c);
+        }
+      } else {
+        if (c < ORD_L_A) {
+          if (c <= ORD_L_9) {
+            if (c === ORD_DOT) return this.__parseDot();
+            if (c >= ORD_L_1) return this.__parseNumber();
+            if (c === ORD_L_0) return this.__parseZero();
+            if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
+          } else if (c <= ORD_SEMI) {
+            // : or ;
+            return this.__plusOne(PUNCTUATOR);
+          } else {
+            if (c < ORD_L_A_UC) {
+              if (c === ORD_IS) return this.__parseEqualSigns();
+              if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
+              if (c <= ORD_GT) return this.__parseLtgtPunctuator(c);
+            } else if (c <= ORD_L_Z_UC) {
+              return this.__parseIdentifier();
+            } else {
+              if (c === ORD_CLOSE_SQUARE) return this.__plusOne(PUNCTUATOR);
+              if (c === ORD_OPEN_SQUARE) return this.__plusOne(PUNCTUATOR);
+              if (c === ORD_LODASH) return this.__parseIdentifier();
+              if (c === ORD_XOR) return this.__parseCompound();
+              if (c === ORD_BACKSLASH) return this.__parseBackslash();
+            }
+          }
+        } else if (c <= ORD_L_Z) {
+          return this.__parseIdentifier();
+        } else {
 
-      // space and tab are already checked
-      if (c === ORD_FF || c === ORD_VTAB || c === ORD_NBSP || c === ORD_BOM) return this.__plusOne(WHITE);
+          // TOFIX: check:
+          // { = 123, |=124, }=125, ~=126. 124^1=125, 125^1=124. so if c^1<125 then c={ or c=} (because c>Zz=123)
+          // ORD_CURLY_OPEN ORD_CURLY_CLOSE
+//          if (((c ^ 1) <= 124)) return this.__plusOne(PUNCTUATOR);
 
-      if (c === ORD_BACKSLASH && this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
-        this.pos += 6;
-        return this.__parseIdentifier();
+          if (c === ORD_OPEN_CURLY) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_OR) return this.__parseSameOrCompound(c);
+// TOFIX: check:          if ((c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) return this.__newline();
+          if (c === ORD_LS) return this.__newline();
+          if (c === ORD_PS) return this.__newline();
+          if (c === ORD_NBSP) return this.__plusOne(WHITE);
+          if (c === ORD_BOM) return this.__plusOne(WHITE);
+          if (c === ORD_TILDE) return this.__parseCompound();
+        }
       }
 
       /*
@@ -506,16 +528,192 @@
        throw 'fixme ['+c+']';
        return this.__parseIdentifier();
        */
+      throw 'Unexpected input';
     },
+    nextTokenIfElse_tricks: function(c, expressionStart, pos) {
+      // 58% of tokens is caught here
+      // http://qfox.nl/weblog/301
 
+      if (c < ORD_DOT) {
+        if (c === ORD_SPACE) return this.__plusOne(WHITE);
+        if (c < ORD_OPEN_PAREN) {
+          if (c === ORD_CR) return this.__parseCR();
+          if (c === ORD_TAB) return this.__plusOne(WHITE);
+          if (c === ORD_DQUOTE) return this.__parseDoubleString();
+          if (c === ORD_EXCL) return this.__parseEqualSigns();
+          if (c === ORD_AND) return this.__parseSameOrCompound(c);
+          if (c === ORD_SQUOTE) return this.__parseSingleString();
+          if (c === ORD_$) return this.__parseIdentifier();
+          if (c === ORD_PERCENT) return this.__parseCompound();
+          if (c === ORD_LF) return this.__newline();
+          if (c === ORD_VTAB) return this.__plusOne(WHITE);
+          if (c === ORD_FF) return this.__plusOne(WHITE);
+        } else if (c <= ORD_CLOSE_PAREN) {
+          return this.__plusOne(PUNCTUATOR);
+        } else {
+          if (c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_STAR) return this.__parseCompound();
+          // + -
+          return this.__parseSameOrCompound(c);
+        }
+      } else {
+        if (c < ORD_L_A) {
+          if (c <= ORD_L_9) {
+            if (c === ORD_DOT) return this.__parseDot();
+            if (c >= ORD_L_1) return this.__parseNumber();
+            if (c === ORD_L_0) return this.__parseZero();
+            if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
+          } else if (c <= ORD_SEMI) {
+            // : or ;
+            return this.__plusOne(PUNCTUATOR);
+          } else {
+            if (c < ORD_L_A_UC) {
+              if (c === ORD_IS) return this.__parseEqualSigns();
+              if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
+              if (c <= ORD_GT) return this.__parseLtgtPunctuator(c);
+            } else if (c <= ORD_L_Z_UC) {
+              return this.__parseIdentifier();
+            } else {
+              // cant do ^1 trick here: [=92, /=93, ]=94. 92^1=93 93^1=92 94^1=95
+              if (c === ORD_CLOSE_SQUARE) return this.__plusOne(PUNCTUATOR);
+              if (c === ORD_OPEN_SQUARE) return this.__plusOne(PUNCTUATOR);
+              if (c === ORD_LODASH) return this.__parseIdentifier();
+              if (c === ORD_XOR) return this.__parseCompound();
+              if (c === ORD_BACKSLASH) return this.__parseBackslash();
+            }
+          }
+        } else if (c <= ORD_L_Z) {
+          return this.__parseIdentifier();
+        } else {
+
+          // { = 123, |=124, }=125, ~=126. 123^1=122 124^1=125, 125^1=124. so if c^1<125 then c={ or c=} (because c>Zz=123)
+          // ORD_CURLY_OPEN ORD_CURLY_CLOSE, 124 does _NOT_ signify | in this case (see above)
+          if ((c ^ 1) <= 124) return this.__plusOne(PUNCTUATOR);
+
+          if (c === ORD_OR) return this.__parseSameOrCompound(c);
+          if (c === ORD_TILDE) return this.__parseCompound();
+          if ((c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) return this.__newline();
+          if (c === ORD_NBSP) return this.__plusOne(WHITE);
+          if (c === ORD_BOM) return this.__plusOne(WHITE);
+        }
+      }
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       throw 'fixme ['+c+']';
+       return this.__parseIdentifier();
+       */
+      throw 'Unexpected input';
+    },
+    nextTokenIfElse_switch: function(c, expressionStart, pos) {
+      // 58% of tokens is caught here
+      // http://qfox.nl/weblog/301
+
+      if (c < ORD_DOT) {
+        if (c === ORD_SPACE) return this.__plusOne(WHITE);
+        if (c < ORD_OPEN_PAREN) {
+          switch (c) {
+            case ORD_CR: return this.__parseCR();
+            case ORD_TAB: return this.__plusOne(WHITE);
+            case ORD_DQUOTE: return this.__parseDoubleString();
+            case ORD_EXCL: return this.__parseEqualSigns();
+            case ORD_AND: return this.__parseSameOrCompound(c);
+            case ORD_SQUOTE: return this.__parseSingleString();
+            case ORD_$: return this.__parseIdentifier();
+            case ORD_PERCENT: return this.__parseCompound();
+            case ORD_LF: return this.__newline();
+            case ORD_VTAB: return this.__plusOne(WHITE);
+            case ORD_FF: return this.__plusOne(WHITE);
+          }
+        } else if (c <= ORD_CLOSE_PAREN) {
+          return this.__plusOne(PUNCTUATOR);
+        } else {
+          if (c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_STAR) return this.__parseCompound();
+          // + -
+          return this.__parseSameOrCompound(c);
+        }
+      } else {
+        if (c < ORD_L_A) {
+          if (c <= ORD_L_9) {
+            if (c === ORD_DOT) return this.__parseDot();
+            if (c >= ORD_L_1) return this.__parseNumber();
+            if (c === ORD_L_0) return this.__parseZero();
+            if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
+          } else if (c <= ORD_SEMI) {
+            // : or ;
+            return this.__plusOne(PUNCTUATOR);
+          } else {
+            if (c < ORD_L_A_UC) {
+              if (c === ORD_IS) return this.__parseEqualSigns();
+              if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
+              if (c <= ORD_GT) return this.__parseLtgtPunctuator(c);
+            } else if (c <= ORD_L_Z_UC) {
+              return this.__parseIdentifier();
+            } else {
+              if (c === ORD_CLOSE_SQUARE) return this.__plusOne(PUNCTUATOR);
+              if (c === ORD_OPEN_SQUARE) return this.__plusOne(PUNCTUATOR);
+              if (c === ORD_LODASH) return this.__parseIdentifier();
+              if (c === ORD_XOR) return this.__parseCompound();
+              if (c === ORD_BACKSLASH) return this.__parseBackslash();
+            }
+          }
+        } else if (c <= ORD_L_Z) {
+          return this.__parseIdentifier();
+        } else {
+
+          // TOFIX: check:
+          // { = 123, |=124, }=125, ~=126. 124^1=125, 125^1=124. so if c^1<125 then c={ or c=} (because c>Zz=123)
+          // ORD_CURLY_OPEN ORD_CURLY_CLOSE
+//          if (((c ^ 1) <= 124)) return this.__plusOne(PUNCTUATOR);
+
+          if (c === ORD_OPEN_CURLY) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
+          if (c === ORD_OR) return this.__parseSameOrCompound(c);
+// TOFIX: check:          if ((c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) return this.__newline();
+          if (c === ORD_LS) return this.__newline();
+          if (c === ORD_PS) return this.__newline();
+          if (c === ORD_NBSP) return this.__plusOne(WHITE);
+          if (c === ORD_BOM) return this.__plusOne(WHITE);
+          if (c === ORD_TILDE) return this.__parseCompound();
+        }
+      }
+
+
+      /*
+       // TOFIX: still have to validate this first char as a valid ident start
+       throw 'fixme ['+c+']';
+       return this.__parseIdentifier();
+       */
+      throw 'Unexpected input';
+    },
+    nextTokenIndexof: function(chr, expressionStart){
+      if ([ORD_SPACE, ORD_TAB, ORD_FF, ORD_VTAB, ORD_NBSP, ORD_BOM].indexOf(chr) >= 0) return this.__plusOne(WHITE);
+      if ((chr&223) >= ORD_L_A_UC && (chr&223) <= ORD_L_Z_UC) return this.__parseIdentifier();
+      if ([ORD_OPEN_PAREN, ORD_CLOSE_PAREN, ORD_SEMI, ORD_COMMA, ORD_OPEN_CURLY, ORD_CLOSE_CURLY, ORD_COLON, ORD_OPEN_SQUARE, ORD_CLOSE_SQUARE, ORD_QMARK].indexOf(chr) >= 0) return this.__plusOne(PUNCTUATOR);
+      if ([ORD_PLUS, ORD_AND, ORD_OR, ORD_DASH].indexOf(chr) >= 0) return this.__parseSameOrCompound(chr);
+      if ([ORD_LT, ORD_GT].indexOf(chr) >= 0) return this.__parseLtgtPunctuator(chr);
+      if ([ORD_STAR, ORD_PERCENT, ORD_XOR, ORD_TILDE].indexOf(chr) >= 0) return this.__parseCompound();
+      if ([ORD_LF, ORD_PS, ORD_LS].indexOf(chr) >= 0) return this.__newline();
+      if (chr >= ORD_L_1 && chr <= ORD_L_9) return this.__parseNumber();
+      if ([ORD_LODASH, ORD_$].indexOf(chr) >= 0) return this.__parseIdentifier();
+      if ([ORD_IS, ORD_EXCL].indexOf(chr) >= 0) return this.__parseEqualSigns();
+      if (chr === ORD_DOT) return this.__parseDot();
+      if (chr === ORD_CR) return this.__parseCR();
+      if (chr === ORD_DQUOTE) return this.__parseDoubleString();
+      if (chr === ORD_L_0) return this.__parseZero();
+      if (chr === ORD_SQUOTE) return this.__parseSingleString();
+      if (chr === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
+      if (chr === ORD_BACKSLASH) return this.__parseBackslash();
+
+      throw 'oops ['+chr+','+String.fromCharCode(chr)+']';
+    },
     nextTokenSwitch: function(c, expressionStart){
       switch (c) {
         case ORD_SPACE: return this.__plusOne(WHITE);
         case ORD_DOT: return this.__parseDot();
         case ORD_CR: return this.__parseCR();
-        case ORD_LF:
-          this.lastNewline = true;
-          return this.__plusOne(WHITE);
+        case ORD_LF: return this.__newline();
         case ORD_OPEN_PAREN: return this.__plusOne(PUNCTUATOR);
         case ORD_CLOSE_PAREN: return this.__plusOne(PUNCTUATOR);
         case ORD_SEMI: return this.__plusOne(PUNCTUATOR);
@@ -559,7 +757,7 @@
         case ORD_L_W: return this.__parseIdentifier();
         case ORD_L_D_UC: return this.__parseIdentifier();
         case ORD_OR: return this.__parseSameOrCompound(c);
-        case ORD_MIN: return this.__parseSameOrCompound(c);
+        case ORD_DASH: return this.__parseSameOrCompound(c);
         case ORD_L_X: return this.__parseIdentifier();
         case ORD_SQUOTE: return this.__parseSingleString();
         case ORD_L_A_UC: return this.__parseIdentifier();
@@ -606,26 +804,16 @@
         case ORD_PERCENT: return this.__parseCompound();
         case ORD_XOR: return this.__parseCompound();
         case ORD_TILDE: return this.__parseCompound();
-        case ORD_PS:
-          this.lastNewline = true;
-          return this.__plusOne(WHITE);
-        case ORD_LS:
-          this.lastNewline = true;
-          return this.__plusOne(WHITE);
+        case ORD_PS: return this.__newline();
+        case ORD_LS: return this.__newline();
         case ORD_FF: return this.__plusOne(WHITE);
         case ORD_VTAB: return this.__plusOne(WHITE);
         case ORD_NBSP: return this.__plusOne(WHITE);
         case ORD_BOM: return this.__plusOne(WHITE);
-        case ORD_BACKSLASH:
-          if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
-            this.pos += 6;
-            return this.__parseIdentifier();
-          }
-          throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
+        case ORD_BACKSLASH: return this.__parseBackslash();
         default:
           throw 'Unexpected character in token scanner... fixme! ['+c+']'+this.syntaxError();
       }
-
       /*
        // TOFIX: still have to validate this first char as a valid ident start
        return this.__parseIdentifier();
@@ -642,9 +830,7 @@
         case ORD_IS: return this.__parseEqualSigns();
         case ORD_L_T: return this.__parseIdentifier();
         case ORD_CR: return this.__parseCR();
-        case ORD_LF:
-          this.lastNewline = true;
-          return this.__plusOne(WHITE);
+        case ORD_LF: return this.__newline();
         case ORD_OPEN_CURLY:
         case ORD_CLOSE_CURLY: return this.__plusOne(PUNCTUATOR);
         case ORD_L_A:
@@ -684,7 +870,7 @@
         case ORD_OR: return this.__parseSameOrCompound(c);
         case ORD_SQUOTE: return this.__parseSingleString();
         case ORD_L_K: return this.__parseIdentifier();
-        case ORD_MIN: return this.__parseSameOrCompound(c);
+        case ORD_DASH: return this.__parseSameOrCompound(c);
         case ORD_L_X: return this.__parseIdentifier();
         case ORD_TAB: return this.__plusOne(WHITE);
         case ORD_L_C_UC:
@@ -736,11 +922,7 @@
         case ORD_VTAB:
         case ORD_NBSP:
         case ORD_BOM: return this.__plusOne(WHITE);
-        case ORD_BACKSLASH:
-          if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
-            return this.__parseEscapedIdentifier();
-          }
-          throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
+        case ORD_BACKSLASH: return this.__parseBackslash();
         default:
           throw 'Unexpected character in token scanner... fixme! ['+c+']'+this.syntaxError();
       }
@@ -751,10 +933,21 @@
        */
     },
 
+    __parseBackslash: function(){
+      if (this.getLastNum2() === ORD_L_U && this.unicode(this.pos+2)) {
+        return this.__parseEscapedIdentifier();
+      }
+      throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
+    },
 
     __plusOne: function(type){
       ++this.pos;
       return type;
+    },
+
+    __newline: function() {
+      this.lastNewline = true;
+      return this.__plusOne(WHITE);
     },
 
     __parseFwdSlash: function(expressionStart){
@@ -766,14 +959,15 @@
     },
 
     __parseCR: function(){
-      this.lastNewline = true;
+
       // handle \r\n normalization here
       // (could rewrite into OR, eliminating a branch)
       var d = this.getLastNum2();
       if (d === ORD_LF) {
+        this.lastNewline = true;
         this.pos += 2;
       } else {
-        this.pos += 1;
+        return this.__newline();
       }
 
       return WHITE;
@@ -1026,7 +1220,7 @@
       if (c === ORD_L_E || c === ORD_L_E_UC) {
         c = input.charCodeAt(++pos);
         // sign is optional (especially for plus)
-        if (c === ORD_MIN || c === ORD_PLUS) c = input.charCodeAt(++pos);
+        if (c === ORD_DASH || c === ORD_PLUS) c = input.charCodeAt(++pos);
 
         // first digit is mandatory
         if (c >= ORD_L_0 && c <= ORD_L_9) c = input.charCodeAt(++pos);
@@ -1195,6 +1389,13 @@
       return this.input.charCodeAt(this.lastStart+3);
     },
 
+    getLastLen: function(){
+      return this.lastLen;
+    },
+    getLastNewline: function(){
+      return this.lastNewline;
+    },
+
     syntaxError: function(value){
       return (
         ' A syntax error at pos='+this.pos+' '+
@@ -1209,6 +1410,7 @@
       );
     },
   };
+
 
   (function chromeWorkaround(){
     // workaround for https://code.google.com/p/v8/issues/detail?id=2246
