@@ -255,7 +255,7 @@ if (process.argv[2]) {
     fs.writeFileSync(fullDirname+'/build.js', all);
 
     // update the gonzales config file
-    var gonzalesParsers = ROOT_DIR+'/../gonzales/data/zeparser.js';
+    var gonzalesParsers = ROOT_DIR+'/../gonzales/data/zeparsers.js';
     var templateFile = fs.readFileSync(gonzalesParsers).toString('utf-8');
 
     var TEMPLATE_START = 'TEMPLATE_START';
