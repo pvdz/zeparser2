@@ -149,9 +149,6 @@
     // v8 "appreciates" it when all instance properties are set explicitly
     this.pos = 0;
 
-    this.steptotal = 0;
-    this.stepcount = 0;
-
     this.lastStart = 0;
     this.lastStop = 0;
     this.lastLen = 0;
@@ -164,8 +161,6 @@
     this.nextNum2 = -1;
 
     this.tokenCountAll = 0;
-
-    this.getSteps = function(){ return this.steptotal / this.stepcount; };
 
     if (options.saveTokens) {
       // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
@@ -230,9 +225,6 @@
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      */
     options: null,
-
-    steptotal: 0,
-    stepcount: 0,
 
     // parser can look at these positions to see where in the input the last token was
     // this way the tokenizer can simply return number-constants-as-types.

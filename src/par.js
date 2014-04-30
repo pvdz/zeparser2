@@ -122,23 +122,6 @@
   Par.parse = function(input, options){
     var par = new Par(input, options);
     par.run();
-/*
-    var prev = JSON.parse(localStorage.getItem('zeparser2-steps')) || [];
-//    prev = [
-//      '12.395989185238523 (full switch)',
-//      '7.154902383819284 (orig if-else)',
-//      '6.172345013395119 (if-else, moved identifier)',
-//      '5.7641355801969505 (first attempt)',
-//      '5.742426313329043 (>123)',
-//      '5.7842457450624245 (space not very first)',
-//      '5.742426313329043',
-//      '5.294848391107405',
-//    ];
-    prev.push(par.tok.getSteps());
-    console.log('Step avg:\n', prev.join('\n '));
-    localStorage.setItem('zeparser2-steps', JSON.stringify(prev));
-    */
-//    console.log('Step avg:', par.tok.getSteps());
 
     return par;
   };
