@@ -445,57 +445,57 @@
 
     // current selector
     nextTokenDeterminator: function(c, expressionStart) {
-      if (c === ORD_SPACE_20) return this.__plusOne(WHITE);
+      if (c === ORD_SPACE_20) return this.parseOneChar(WHITE);
 
       var b = c & 0xffdf; // clear 0x20. note that input string must be in range of utf-16, so 0xffdf will suffice.
-      if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) return this.__parseIdentifier();
+      if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) return this.parseIdentifier();
 
       if (c < ORD_L_1_31) return this.nextTokenDeterminator_a(c, expressionStart);
       if (c > ORD_L_9_39) return this.nextTokenDeterminator_b(c, expressionStart);
-      return this.__parseNumber();
+      return this.parseDecimalNumber();
     },
     nextTokenDeterminator_a: function(c, expressionStart) {
       switch (c) {
         case ORD_DOT_2E:
-          return this.__parseDot();
+          return this.parseLeadingDot();
         case ORD_CR_0D:
-          return this.__parseCR();
+          return this.parseCR();
         case ORD_LF_0A:
-          return this.__newline();
+          return this.parseNewline();
         case ORD_OPEN_PAREN_28:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_CLOSE_PAREN_29:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_COMMA_2C:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_TAB_09:
-          return this.__plusOne(WHITE);
+          return this.parseOneChar(WHITE);
         case ORD_DQUOTE_22:
-          return this.__parseDoubleString();
+          return this.parseDoubleString();
         case ORD_PLUS_2B:
-          return this.__parseSameOrCompound(c);
+          return this.parseSameOrCompound(c);
         case ORD_L_0_30:
-          return this.__parseZero();
+          return this.parseLeadingZero();
         case ORD_FWDSLASH_2F:
-          return this.__parseFwdSlash(expressionStart);
+          return this.parseFwdSlash(expressionStart);
         case ORD_EXCL_21:
-          return this.__parseEqualSigns();
+          return this.parseEqualSigns();
         case ORD_AND_26:
-          return this.__parseSameOrCompound(c);
+          return this.parseSameOrCompound(c);
         case ORD_DASH_2D:
-          return this.__parseSameOrCompound(c);
+          return this.parseSameOrCompound(c);
         case ORD_SQUOTE_27:
-          return this.__parseSingleString();
+          return this.parseSingleString();
         case ORD_STAR_2A:
-          return this.__parseCompound();
+          return this.parseCompoundAssignment();
         case ORD_$_24:
-          return this.__parseIdentifier();
+          return this.parseIdentifier();
         case ORD_PERCENT_25:
-          return this.__parseCompound();
+          return this.parseCompoundAssignment();
         case ORD_FF_0C:
-          return this.__plusOne(WHITE);
+          return this.parseOneChar(WHITE);
         case ORD_VTAB_0B:
-          return this.__plusOne(WHITE);
+          return this.parseOneChar(WHITE);
         default:
           // cannot be unicode because it's < ORD_L_A and ORD_L_A_UC
           throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
@@ -504,79 +504,79 @@
     nextTokenDeterminator_b: function(c, expressionStart) {
       switch (c) {
         case ORD_SEMI_3B:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_IS_3D:
-          return this.__parseEqualSigns();
+          return this.parseEqualSigns();
         case ORD_OPEN_CURLY_7B:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_CLOSE_CURLY_7D:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_OPEN_SQUARE_5B:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_CLOSE_SQUARE_5D:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_COLON_3A:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_LODASH_5F:
-          return this.__parseIdentifier();
+          return this.parseIdentifier();
         case ORD_OR_7C:
-          return this.__parseSameOrCompound(c);
+          return this.parseSameOrCompound(c);
         case ORD_QMARK_3F:
-          return this.__plusOne(PUNCTUATOR);
+          return this.parseOneChar(PUNCTUATOR);
         case ORD_LT_3C:
-          return this.__parseLtgtPunctuator(c);
+          return this.parseLtgtPunctuator(c);
         case ORD_GT_3E:
-          return this.__parseLtgtPunctuator(c);
+          return this.parseLtgtPunctuator(c);
         case ORD_XOR_5E:
-          return this.__parseCompound();
+          return this.parseCompoundAssignment();
         case ORD_TILDE_7E:
-          return this.__parseCompound();
+          return this.parseCompoundAssignment();
         case ORD_PS_2028:
-          return this.__newline();
+          return this.parseNewline();
         case ORD_LS_2029:
-          return this.__newline();
+          return this.parseNewline();
         case ORD_NBSP_A0:
-          return this.__plusOne(WHITE);
+          return this.parseOneChar(WHITE);
         case ORD_BOM_FEFF:
-          return this.__plusOne(WHITE);
+          return this.parseOneChar(WHITE);
         case ORD_BACKSLASH_5C:
-          return this.__parseBackslash();
+          return this.parseBackslash();
         default:
           if (c > UNICODE_LIMIT_127 && uniRegex.test(String.fromCharCode(c))) {
             // TOFIX: are unicode "digits" allowed as first char? do/should we guard against that here?
-            return this.__parseIdentifier();
+            return this.parseIdentifier();
           }
 
           throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
       }
     },
 
-    __parseBackslash: function(){
-      if (this.getLastNum2() === ORD_L_U_75 && this.unicode(this.pos+2)) {
-        return this.__parseEscapedIdentifier();
+    parseBackslash: function(){
+      if (this.getLastNum2() === ORD_L_U_75 && this.parseUnicodeEscapeBody(this.pos+2)) {
+        return this.parseEscapedIdentifier();
       }
       throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
     },
 
-    __plusOne: function(type){
+    parseOneChar: function(type){
       ++this.pos;
       return type;
     },
 
-    __newline: function() {
+    parseNewline: function() {
       this.lastNewline = true;
-      return this.__plusOne(WHITE);
+      return this.parseOneChar(WHITE);
     },
 
-    __parseFwdSlash: function(expressionStart){
+    parseFwdSlash: function(expressionStart){
       var d = this.getLastNum2();
-      if (d === ORD_FWDSLASH_2F) return this.__parseSingleComment();
-      if (d === ORD_STAR_2A) return this.__parseMultiComment();
-      if (expressionStart) return this.__parseRegex();
-      return this.__parseDivPunctuator(d);
+      if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
+      if (d === ORD_STAR_2A) return this.parseMultiComment();
+      if (expressionStart) return this.parseRegex();
+      return this.parseDivPunctuator(d);
     },
 
-    __parseCR: function(){
+    parseCR: function(){
 
       // handle \r\n normalization here
       // (could rewrite into OR, eliminating a branch)
@@ -585,19 +585,19 @@
         this.lastNewline = true;
         this.pos += 2;
       } else {
-        return this.__newline();
+        return this.parseNewline();
       }
 
       return WHITE;
     },
 
-    __parseSameOrCompound: function(c){
+    parseSameOrCompound: function(c){
       var d = this.getLastNum2();
       this.pos += (d === ORD_IS_3D || d === c) ? 2 : 1;
 //      this.pos += ((d === ORD_IS) | (d === c)) + 1; // ;)
       return PUNCTUATOR;
     },
-    __parseEqualSigns: function(){
+    parseEqualSigns: function(){
       var len = 1;
       if (this.getLastNum2() === ORD_IS_3D) {
         len = 2;
@@ -606,7 +606,7 @@
       this.pos += len;
       return PUNCTUATOR;
     },
-    __parseLtgtPunctuator: function(c){
+    parseLtgtPunctuator: function(c){
       var len = 1;
       var d = this.getLastNum2();
       if (d === ORD_IS_3D) len = 2;
@@ -622,13 +622,13 @@
       this.pos += len;
       return PUNCTUATOR;
     },
-    __parseCompound: function(){
+    parseCompoundAssignment: function(){
       var len = 1;
       if (this.getLastNum2() === ORD_IS_3D) len = 2;
       this.pos += len;
       return PUNCTUATOR;
     },
-    __parseDivPunctuator: function(d){
+    parseDivPunctuator: function(d){
       // cant really be a //, /* or regex because they should have been checked before calling this function
       // could rewrite this to OR magic and eliminate a branch
       if (d === ORD_IS_3D) this.pos += 2;
@@ -636,7 +636,7 @@
       return PUNCTUATOR;
     },
 
-    __parseSingleComment: function(){
+    parseSingleComment: function(){
       var pos = this.pos + 2;
       var input = this.input;
       var len = input.length;
@@ -650,7 +650,7 @@
 
       return WHITE;
     },
-    __parseMultiComment: function(){
+    parseMultiComment: function(){
       var pos = this.pos + 2;
       var input = this.input;
       var len = input.length;
@@ -673,13 +673,13 @@
 
       return WHITE;
     },
-    __parseSingleString: function(){
-      return this.__parseString(ORD_SQUOTE_27, STRING);
+    parseSingleString: function(){
+      return this.parseString(ORD_SQUOTE_27, STRING);
     },
-    __parseDoubleString: function(){
-      return this.__parseString(ORD_DQUOTE_22, STRING);
+    parseDoubleString: function(){
+      return this.parseString(ORD_DQUOTE_22, STRING);
     },
-    __parseString: function(targetChar, returnType){
+    parseString: function(targetChar, returnType){
       var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
@@ -690,20 +690,20 @@
         if (pos >= len) throw 'Unterminated string found at '+pos;
         c = input.charCodeAt(pos++);
 
-        if (c === ORD_BACKSLASH_5C) pos = this.stringEscape(pos);
+        if (c === ORD_BACKSLASH_5C) pos = this.parseStringEscape(pos);
         else if ((c <= ORD_CR_0D && (c === ORD_LF_0A || c === ORD_CR_0D)) || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) throw 'No newlines in strings! '+this.syntaxError();
       }
 
       this.pos = pos;
       return returnType;
     },
-    stringEscape: function(pos){
+    parseStringEscape: function(pos){
       var input = this.input;
       var c = input.charCodeAt(pos);
 
       // unicode escapes
       if (c === ORD_L_U_75) {
-        if (this.unicode(pos+1)) pos += 4;
+        if (this.parseUnicodeEscapeBody(pos+1)) pos += 4;
         else throw 'Invalid unicode escape.'+this.syntaxError();
       // line continuation; skip windows newlines as if they're one char
       } else if (c === ORD_CR_0D) {
@@ -713,48 +713,48 @@
         if (input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
       // hex escapes
       } else if (c === ORD_L_X_78) {
-        if (this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2))) pos += 2;
+        if (this.parseHexDigit(input.charCodeAt(pos+1)) && this.parseHexDigit(input.charCodeAt(pos+2))) pos += 2;
         else throw 'Invalid hex escape.'+this.syntaxError();
       }
       return pos+1;
     },
-    unicode: function(pos){
+    parseUnicodeEscapeBody: function(pos){
       var input = this.input;
 
-      return this.hexicode(input.charCodeAt(pos)) && this.hexicode(input.charCodeAt(pos+1)) && this.hexicode(input.charCodeAt(pos+2)) && this.hexicode(input.charCodeAt(pos+3));
+      return this.parseHexDigit(input.charCodeAt(pos)) && this.parseHexDigit(input.charCodeAt(pos+1)) && this.parseHexDigit(input.charCodeAt(pos+2)) && this.parseHexDigit(input.charCodeAt(pos+3));
     },
-    hexicode: function(c){
+    parseHexDigit: function(c){
       // 0-9, a-f, A-F
       return ((c <= ORD_L_9_39 && c >= ORD_L_0_30) || (c >= ORD_L_A_61 && c <= ORD_L_F_66) || (c >= ORD_L_A_UC_41 && c <= ORD_L_F_UC_46));
     },
 
-    __parseDot: function(){
+    parseLeadingDot: function(){
       var c = this.getLastNum2();
 
-      if (c >= ORD_L_0_30 && c <= ORD_L_9_39) return this.__parseAfterDot(this.pos+2);
+      if (c >= ORD_L_0_30 && c <= ORD_L_9_39) return this.parseAfterDot(this.pos+2);
 
       ++this.pos;
       return PUNCTUATOR;
     },
 
-    __parseZero: function(){
+    parseLeadingZero: function(){
       // a numeric that starts with zero is is either a decimal or hex
       // 0.1234  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
       var d = this.getLastNum2();
       if (d === ORD_L_X_78 || d === ORD_L_X_UC_58) { // x or X
-        this.__parseHex();
+        this.parseHexNumber();
       } else if (d === ORD_DOT_2E) {
-        this.__parseAfterDot(this.pos+2);
+        this.parseAfterDot(this.pos+2);
       } else if (d <= ORD_L_9_39 && d >= ORD_L_0_30) {
         throw 'Invalid octal literal.'+this.syntaxError();
       } else {
-        this.pos = this.__parseExponent(d, this.pos+1, this.input);
+        this.pos = this.parseExponent(d, this.pos+1, this.input);
       }
 
       return NUMBER;
     },
-    __parseHex: function(delta){
+    parseHexNumber: function(delta){
       var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
@@ -767,7 +767,7 @@
       return NUMBER;
     },
 
-    __parseNumber: function(){
+    parseDecimalNumber: function(){
       // just encountered a 1-9 as the start of a token...
 
       var pos = this.pos;
@@ -777,23 +777,23 @@
       do var c = input.charCodeAt(++pos);
       while (c >= ORD_L_0_30 && c <= ORD_L_9_39);
 
-      if (c === ORD_DOT_2E) return this.__parseAfterDot(pos+1);
+      if (c === ORD_DOT_2E) return this.parseAfterDot(pos+1);
 
-      this.pos = this.__parseExponent(c, pos, input);
+      this.pos = this.parseExponent(c, pos, input);
       return NUMBER;
     },
-    __parseAfterDot: function(pos){
+    parseAfterDot: function(pos){
       var input = this.input;
       var c = input.charCodeAt(pos);
       while (c >= ORD_L_0_30 && c <= ORD_L_9_39) c = input.charCodeAt(++pos);
 
-      pos = this.__parseExponent(c, pos, input);
+      pos = this.parseExponent(c, pos, input);
 
       this.pos = pos;
 
       return NUMBER;
     },
-    __parseExponent: function(c, pos, input){
+    parseExponent: function(c, pos, input){
       if (c === ORD_L_E_65 || c === ORD_L_E_UC_45) {
         c = input.charCodeAt(++pos);
         // sign is optional (especially for plus)
@@ -809,7 +809,7 @@
       return pos;
     },
 
-    __parseRegex: function(){
+    parseRegex: function(){
       // /foo/
       // /foo[xyz]/
       // /foo(xyz)/
@@ -880,19 +880,19 @@
       // starts at the beginning of this token, which is not the case for regular expressions.
       // so we use the remainder parser, which parses the second up to the rest of the identifier
 
-      this.pos = this.__parseIdentifierRest(0);
+      this.pos = this.parseIdentifierRest(0);
     },
-    __parseIdentifier: function(){
+    parseIdentifier: function(){
       // TOFIX: leading unicode chars might still not validate as identifiers
-      this.pos = this.__parseIdentifierRest(1);
+      this.pos = this.parseIdentifierRest(1);
       return IDENTIFIER;
     },
-    __parseEscapedIdentifier: function(){
+    parseEscapedIdentifier: function(){
       // only for the case where an identifier starts with \uxxxx
-      this.pos = this.__parseIdentifierRest(6);
+      this.pos = this.parseIdentifierRest(6);
       return IDENTIFIER;
     },
-    __parseIdentifierRest: function(delta){
+    parseIdentifierRest: function(delta){
       // also used by regex flag parser!
 
       var input = this.input;
@@ -924,7 +924,7 @@
         if ((c >= ORD_L_A_61 && c <= ORD_L_Z_7A) || (c >= ORD_L_A_UC_41 && c <= ORD_L_Z_UC_5A) || (c >= ORD_L_0_30 && c <= ORD_L_9_39) || c === ORD_$_24 || c === ORD_LODASH_5F) {
           ++pos;
         // \uxxxx (TOFIX: validate resulting char?)
-        } else if (c === ORD_BACKSLASH_5C && input.charCodeAt(pos+1) === ORD_L_U_75 && this.unicode(pos+2)) {
+        } else if (c === ORD_BACKSLASH_5C && input.charCodeAt(pos+1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos+2)) {
           pos += 6;
         } else if (c > UNICODE_LIMIT_127 && uniRegex.test(String.fromCharCode(c))) {
           pos += 1;
@@ -1004,289 +1004,289 @@
  // http://qfox.nl/weblog/301
 
  if (c < ORD_DOT_2E) {
- if (c === ORD_SPACE_20) return this.__plusOne(WHITE);
+ if (c === ORD_SPACE_20) return this.parseOneChar(WHITE);
  if (c < ORD_OPEN_PAREN_28) {
- if (c === ORD_CR_0D) return this.__parseCR();
- if (c === ORD_TAB_09) return this.__plusOne(WHITE);
- if (c === ORD_DQUOTE_22) return this.__parseDoubleString();
- if (c === ORD_EXCL_21) return this.__parseEqualSigns();
- if (c === ORD_AND_26) return this.__parseSameOrCompound(c);
- if (c === ORD_SQUOTE_27) return this.__parseSingleString();
- if (c === ORD_$_24) return this.__parseIdentifier();
- if (c === ORD_PERCENT_25) return this.__parseCompound();
- if (c === ORD_LF_0A) return this.__newline();
- if (c === ORD_VTAB_0B) return this.__plusOne(WHITE);
- if (c === ORD_FF_0C) return this.__plusOne(WHITE);
+ if (c === ORD_CR_0D) return this.parseCR();
+ if (c === ORD_TAB_09) return this.parseOneChar(WHITE);
+ if (c === ORD_DQUOTE_22) return this.parseDoubleString();
+ if (c === ORD_EXCL_21) return this.parseEqualSigns();
+ if (c === ORD_AND_26) return this.parseSameOrCompound(c);
+ if (c === ORD_SQUOTE_27) return this.parseSingleString();
+ if (c === ORD_$_24) return this.parseIdentifier();
+ if (c === ORD_PERCENT_25) return this.parseCompoundAssignment();
+ if (c === ORD_LF_0A) return this.parseNewline();
+ if (c === ORD_VTAB_0B) return this.parseOneChar(WHITE);
+ if (c === ORD_FF_0C) return this.parseOneChar(WHITE);
  } else if (c <= ORD_CLOSE_PAREN_29) {
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  } else {
- if (c === ORD_COMMA_2C) return this.__plusOne(PUNCTUATOR);
- if (c === ORD_STAR_2A) return this.__parseCompound();
+ if (c === ORD_COMMA_2C) return this.parseOneChar(PUNCTUATOR);
+ if (c === ORD_STAR_2A) return this.parseCompoundAssignment();
  // + -
- return this.__parseSameOrCompound(c);
+ return this.parseSameOrCompound(c);
  }
  } else {
  if (c < ORD_L_A_61) {
  if (c <= ORD_L_9_39) {
- if (c === ORD_DOT_2E) return this.__parseDot();
- if (c >= ORD_L_1_31) return this.__parseNumber();
- if (c === ORD_L_0_30) return this.__parseZero();
- if (c === ORD_FWDSLASH_2F) return this.__parseFwdSlash(expressionStart);
+ if (c === ORD_DOT_2E) return this.parseLeadingDot();
+ if (c >= ORD_L_1_31) return this.parseDecimalNumber();
+ if (c === ORD_L_0_30) return this.parseLeadingZero();
+ if (c === ORD_FWDSLASH_2F) return this.parseFwdSlash(expressionStart);
  } else if (c <= ORD_SEMI_3B) {
  // : or ;
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  } else {
  if (c < ORD_L_A_UC_41) {
- if (c === ORD_IS_3D) return this.__parseEqualSigns();
- if (c === ORD_QMARK_3F) return this.__plusOne(PUNCTUATOR);
- if (c <= ORD_GT_3E) return this.__parseLtgtPunctuator(c);
+ if (c === ORD_IS_3D) return this.parseEqualSigns();
+ if (c === ORD_QMARK_3F) return this.parseOneChar(PUNCTUATOR);
+ if (c <= ORD_GT_3E) return this.parseLtgtPunctuator(c);
  } else if (c <= ORD_L_Z_UC_5A) {
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  } else {
- if (c === ORD_CLOSE_SQUARE_5D) return this.__plusOne(PUNCTUATOR);
- if (c === ORD_OPEN_SQUARE_5B) return this.__plusOne(PUNCTUATOR);
- if (c === ORD_LODASH_5F) return this.__parseIdentifier();
- if (c === ORD_XOR_5E) return this.__parseCompound();
- if (c === ORD_BACKSLASH_5C) return this.__parseBackslash();
+ if (c === ORD_CLOSE_SQUARE_5D) return this.parseOneChar(PUNCTUATOR);
+ if (c === ORD_OPEN_SQUARE_5B) return this.parseOneChar(PUNCTUATOR);
+ if (c === ORD_LODASH_5F) return this.parseIdentifier();
+ if (c === ORD_XOR_5E) return this.parseCompoundAssignment();
+ if (c === ORD_BACKSLASH_5C) return this.parseBackslash();
  }
  }
  } else if (c <= ORD_L_Z_7A) {
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  } else {
 
  // TOFIX: check:
  // { = 123, |=124, }=125, ~=126. 124^1=125, 125^1=124. so if c^1<125 then c={ or c=} (because c>Zz=123)
  // ORD_CURLY_OPEN ORD_CURLY_CLOSE
- //          if (((c ^ 1) <= 124)) return this.__plusOne(PUNCTUATOR);
+ //          if (((c ^ 1) <= 124)) return this.parseOneChar(PUNCTUATOR);
 
- if (c === ORD_OPEN_CURLY_7B) return this.__plusOne(PUNCTUATOR);
- if (c === ORD_CLOSE_CURLY_7D) return this.__plusOne(PUNCTUATOR);
- if (c === ORD_OR_7C) return this.__parseSameOrCompound(c);
+ if (c === ORD_OPEN_CURLY_7B) return this.parseOneChar(PUNCTUATOR);
+ if (c === ORD_CLOSE_CURLY_7D) return this.parseOneChar(PUNCTUATOR);
+ if (c === ORD_OR_7C) return this.parseSameOrCompound(c);
 
- // TOFIX: check:          if ((c ^ ORD_PS) <= 1) return this.__newline(); // -> c === ORD_PS || c === ORD_LS
- if (c === ORD_LS_2029) return this.__newline();
- if (c === ORD_PS_2028) return this.__newline();
- if (c === ORD_NBSP_A0) return this.__plusOne(WHITE);
- if (c === ORD_BOM_FEFF) return this.__plusOne(WHITE);
- if (c === ORD_TILDE_7E) return this.__parseCompound();
+ // TOFIX: check:          if ((c ^ ORD_PS) <= 1) return this.parseNewline(); // -> c === ORD_PS || c === ORD_LS
+ if (c === ORD_LS_2029) return this.parseNewline();
+ if (c === ORD_PS_2028) return this.parseNewline();
+ if (c === ORD_NBSP_A0) return this.parseOneChar(WHITE);
+ if (c === ORD_BOM_FEFF) return this.parseOneChar(WHITE);
+ if (c === ORD_TILDE_7E) return this.parseCompoundAssignment();
  }
  }
 
 
  // TOFIX: still have to validate this first char as a valid ident start
  // throw 'fixme ['+c+']';
- // return this.__parseIdentifier();
+ // return this.parseIdentifier();
  throw 'Unexpected input [' + c + ']';
  },
  // unused
  nextTokenSwitch: function(c, expressionStart) {
  switch (c) {
  case ORD_SPACE_20:
- return this.__plusOne(WHITE);
+ return this.parseOneChar(WHITE);
  case ORD_DOT_2E:
- return this.__parseDot();
+ return this.parseLeadingDot();
  case ORD_CR_0D:
- return this.__parseCR();
+ return this.parseCR();
  case ORD_LF_0A:
- return this.__newline();
+ return this.parseNewline();
  case ORD_OPEN_PAREN_28:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_CLOSE_PAREN_29:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_SEMI_3B:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_COMMA_2C:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_IS_3D:
- return this.__parseEqualSigns();
+ return this.parseEqualSigns();
  case ORD_L_T_74:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_OPEN_CURLY_7B:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_CLOSE_CURLY_7D:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_TAB_09:
- return this.__plusOne(WHITE);
+ return this.parseOneChar(WHITE);
  case ORD_L_I_69:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_F_66:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_A_61:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_C_63:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_DQUOTE_22:
- return this.__parseDoubleString();
+ return this.parseDoubleString();
  case ORD_L_R_72:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_V_76:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_OPEN_SQUARE_5B:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_CLOSE_SQUARE_5D:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_COLON_3A:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_L_B_62:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_E_65:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_S_73:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_N_6E:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_P_70:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_D_64:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_LODASH_5F:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_M_6D:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_G_67:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_PLUS_2B:
- return this.__parseSameOrCompound(c);
+ return this.parseSameOrCompound(c);
  case ORD_L_0_30:
- return this.__parseZero();
+ return this.parseLeadingZero();
  case ORD_L_L_6C:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_O_6F:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_1_31:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_FWDSLASH_2F:
- return this.__parseFwdSlash(expressionStart);
+ return this.parseFwdSlash(expressionStart);
  case ORD_L_H_68:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_EXCL_21:
- return this.__parseEqualSigns();
+ return this.parseEqualSigns();
  case ORD_L_U_75:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_Z_UC_5A:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_E_UC_45:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_AND_26:
- return this.__parseSameOrCompound(c);
+ return this.parseSameOrCompound(c);
  case ORD_L_W_77:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_D_UC_44:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_OR_7C:
- return this.__parseSameOrCompound(c);
+ return this.parseSameOrCompound(c);
  case ORD_DASH_2D:
- return this.__parseSameOrCompound(c);
+ return this.parseSameOrCompound(c);
  case ORD_L_X_78:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_SQUOTE_27:
- return this.__parseSingleString();
+ return this.parseSingleString();
  case ORD_L_A_UC_41:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_Y_79:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_STAR_2A:
- return this.__parseCompound();
+ return this.parseCompoundAssignment();
  case ORD_L_T_UC_54:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_F_UC_46:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_K_6B:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_C_UC_43:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_J_6A:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_S_UC_53:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_M_UC_4D:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_P_UC_50:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_QMARK_3F:
- return this.__plusOne(PUNCTUATOR);
+ return this.parseOneChar(PUNCTUATOR);
  case ORD_LT_3C:
- return this.__parseLtgtPunctuator(c);
+ return this.parseLtgtPunctuator(c);
  case ORD_L_2_33:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_G_UC_47:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_$_24:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_B_UC_42:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_H_UC_48:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_I_UC_49:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_O_UC_4F:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_Q_71:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_R_UC_52:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_Z_7A:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_GT_3E:
- return this.__parseLtgtPunctuator(c);
+ return this.parseLtgtPunctuator(c);
  case ORD_L_3_34:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_N_UC_4E:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_L_UC_4C:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_Y_UC_59:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_J_UC_4A:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_K_UC_4B:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_X_UC_58:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_Q_UC_51:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_U_UC_55:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_V_UC_56:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_W_UC_57:
- return this.__parseIdentifier();
+ return this.parseIdentifier();
  case ORD_L_4_34:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_5_35:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_6_36:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_7_37:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_8_38:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_L_9_39:
- return this.__parseNumber();
+ return this.parseDecimalNumber();
  case ORD_PERCENT_25:
- return this.__parseCompound();
+ return this.parseCompoundAssignment();
  case ORD_XOR_5E:
- return this.__parseCompound();
+ return this.parseCompoundAssignment();
  case ORD_TILDE_7E:
- return this.__parseCompound();
+ return this.parseCompoundAssignment();
  case ORD_PS_2028:
- return this.__newline();
+ return this.parseNewline();
  case ORD_LS_2029:
- return this.__newline();
+ return this.parseNewline();
  case ORD_FF_0C:
- return this.__plusOne(WHITE);
+ return this.parseOneChar(WHITE);
  case ORD_VTAB_0B:
- return this.__plusOne(WHITE);
+ return this.parseOneChar(WHITE);
  case ORD_NBSP_A0:
- return this.__plusOne(WHITE);
+ return this.parseOneChar(WHITE);
  case ORD_BOM_FEFF:
- return this.__plusOne(WHITE);
+ return this.parseOneChar(WHITE);
  case ORD_BACKSLASH_5C:
- return this.__parseBackslash();
+ return this.parseBackslash();
  default:
  throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
  }
  // TOFIX: still have to validate this first char as a valid ident start
- // return this.__parseIdentifier();
+ // return this.parseIdentifier();
  },
  */
