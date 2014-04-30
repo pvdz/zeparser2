@@ -1,0 +1,712 @@
+<script src="uni.js"></script>
+<script src="tests.js"></script>
+<style>
+  input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
+  #cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
+  div { font-size: 11px; font-family: monospace; }
+  .red { background-color: red; color: white; }
+  .green { background-color: green; color: white; }
+  hr { margin: 0; padding: 0; font-size: 1px; }
+</style>
+
+<div id=current></div>
+<div id=beststeps></div>
+<pre id=nowcode style="float:right; max-width:800px; overflow:hidden;"></pre>
+<pre id=bestcode></pre>
+
+<script>
+  var domCurrent = document.getElementById('current');
+  var domBestSteps = document.getElementById('beststeps');
+  var domNowCode = document.getElementById('nowcode');
+  var domBestCode = document.getElementById('bestcode');
+
+  var ORD_L_A = 0x61;
+  var ORD_L_A_UC = 0x41;
+  var ORD_L_B = 0x62;
+  var ORD_L_B_UC = 0x42;
+  var ORD_L_C = 0x63;
+  var ORD_L_C_UC = 0x43;
+  var ORD_L_D = 0x64;
+  var ORD_L_D_UC = 0x44;
+  var ORD_L_E = 0x65;
+  var ORD_L_E_UC = 0x45;
+  var ORD_L_F = 0x66;
+  var ORD_L_F_UC = 0x46;
+  var ORD_L_G = 0x67;
+  var ORD_L_G_UC = 0x47;
+  var ORD_L_H = 0x68;
+  var ORD_L_H_UC = 0x48;
+  var ORD_L_I = 0x69;
+  var ORD_L_I_UC = 0x49;
+  var ORD_L_J = 0x6A;
+  var ORD_L_J_UC = 0x4A;
+  var ORD_L_K = 0x6B;
+  var ORD_L_K_UC = 0x4B;
+  var ORD_L_L = 0x6C;
+  var ORD_L_L_UC = 0x4C;
+  var ORD_L_M = 0x6D;
+  var ORD_L_M_UC = 0x4D;
+  var ORD_L_N = 0x6E;
+  var ORD_L_N_UC = 0x4E;
+  var ORD_L_O = 0x6F;
+  var ORD_L_O_UC = 0x4F;
+  var ORD_L_P = 0x70;
+  var ORD_L_P_UC = 0x50;
+  var ORD_L_Q = 0x71;
+  var ORD_L_Q_UC = 0x51;
+  var ORD_L_R = 0x72;
+  var ORD_L_R_UC = 0x52;
+  var ORD_L_S = 0x73;
+  var ORD_L_S_UC = 0x53;
+  var ORD_L_T = 0x74;
+  var ORD_L_T_UC = 0x54;
+  var ORD_L_U = 0x75;
+  var ORD_L_U_UC = 0x55;
+  var ORD_L_V = 0x76;
+  var ORD_L_V_UC = 0x56;
+  var ORD_L_W = 0x77;
+  var ORD_L_W_UC = 0x57;
+  var ORD_L_X = 0x78;
+  var ORD_L_X_UC = 0x58;
+  var ORD_L_Y = 0x79;
+  var ORD_L_Y_UC = 0x59;
+  var ORD_L_Z = 0x7a;
+  var ORD_L_Z_UC = 0x5a;
+  var ORD_L_0 = 0x30;
+  var ORD_L_1 = 0x31;
+  var ORD_L_2 = 0x32;
+  var ORD_L_3 = 0x33;
+  var ORD_L_4 = 0x34;
+  var ORD_L_5 = 0x35;
+  var ORD_L_6 = 0x36;
+  var ORD_L_7 = 0x37;
+  var ORD_L_8 = 0x38;
+  var ORD_L_9 = 0x39;
+
+  var ORD_OPEN_CURLY = 0x7b;
+  var ORD_CLOSE_CURLY = 0x7d;
+  var ORD_OPEN_PAREN = 0x28;
+  var ORD_CLOSE_PAREN = 0x29;
+  var ORD_OPEN_SQUARE = 0x5b;
+  var ORD_CLOSE_SQUARE = 0x5d;
+  var ORD_TILDE = 0x7e;
+  var ORD_PLUS = 0x2b;
+  var ORD_DASH = 0x2d;
+  var ORD_EXCL = 0x21;
+  var ORD_HASH = 0x23;
+  var ORD_$ = 0x24;
+  var ORD_QMARK = 0x3f;
+  var ORD_COLON = 0x3a;
+  var ORD_SEMI = 0x3b;
+  var ORD_IS = 0x3d;
+  var ORD_COMMA = 0x2c;
+  var ORD_DOT = 0x2e;
+  var ORD_STAR = 0x2a;
+  var ORD_OR = 0x7c;
+  var ORD_AND = 0x26;
+  var ORD_PERCENT = 0x25;
+  var ORD_XOR = 0x5e;
+  var ORD_FWDSLASH = 0x2f;
+  var ORD_BACKSLASH = 0x5c;
+  var ORD_LT = 0x3c;
+  var ORD_GT = 0x3e;
+  var ORD_SQUOTE = 0x27;
+  var ORD_DQUOTE = 0x22;
+  var ORD_SPACE = 0x20;
+  var ORD_NBSP = 0xA0;
+  var ORD_TAB = 0x09;
+  var ORD_VTAB = 0x0B;
+  var ORD_FF = 0x0C;
+  var ORD_BOM = 0xFEFF;
+  var ORD_LF = 0x0A;
+  var ORD_CR = 0x0D;
+  var ORD_LS = 0x2029;
+  var ORD_PS = 0x2028;
+  var ORD_LODASH = 0x5f;
+
+  var lookup = {
+    0x09: {ord: 0x09, const: 'ORD_TAB', perc: 1.89},
+    0x0A: {ord: 0x0A, const: 'ORD_LF', perc: 0.00},
+    0x0B: {ord: 0x0B, const: 'ORD_VTAB', perc: 0.00},
+    0x0C: {ord: 0x0C, const: 'ORD_FF', perc: 0.00},
+    0x0D: {ord: 0x0D, const: 'ORD_CR', perc: 5.14},
+    0x2028: {ord: 0x2028, const: 'ORD_PS', perc: 0.00},
+    0x2029: {ord: 0x2029, const: 'ORD_LS', perc: 0.00},
+    0x20: {ord: 0x20, const: 'ORD_SPACE', perc: 29.71},
+    0x21: {ord: 0x21, const: 'ORD_EXCL', perc: 0.33},
+    0x22: {ord: 0x22, const: 'ORD_DQUOTE', perc: 1.24},
+    0x24: {ord: 0x24, const: 'ORD_$', perc: 0.14},
+    0x25: {ord: 0x25, const: 'ORD_PERCENT', perc: 0.01},
+    0x26: {ord: 0x26, const: 'ORD_AND', perc: 0.26},
+    0x27: {ord: 0x27, const: 'ORD_SQUOTE', perc: 0.20},
+    0x28: {ord: 0x28, const: 'ORD_OPEN_PAREN', perc: 4.66},
+    0x29: {ord: 0x29, const: 'ORD_CLOSE_PAREN', perc: 4.66},
+    0x2a: {ord: 0x2a, const: 'ORD_STAR', perc: 0.2},
+    0x2b: {ord: 0x2b, const: 'ORD_PLUS', perc: 0.61},
+    0x2c: {ord: 0x2c, const: 'ORD_COMMA', perc: 3.24},
+    0x2d: {ord: 0x2d, const: 'ORD_DASH', perc: 0.22},
+    0x2e: {ord: 0x2e, const: 'ORD_DOT', perc: 6.59},
+    0x2f: {ord: 0x2f, const: 'ORD_FWDSLASH', perc: 0.41},
+    0x30: {ord: 0x30, const: 'ORD_L_0', perc: 0.53},
+    0x31: {ord: 0x31, const: 'ORD_L_1', perc: 0.41},
+    0x32: {ord: 0x32, const: 'ORD_L_2', perc: 0.15},
+    0x33: {ord: 0x33, const: 'ORD_L_3', perc: 0.08},
+    0x34: {ord: 0x34, const: 'ORD_L_4', perc: 0.06},
+    0x35: {ord: 0x35, const: 'ORD_L_5', perc: 0.03},
+    0x36: {ord: 0x36, const: 'ORD_L_6', perc: 0.03},
+    0x37: {ord: 0x37, const: 'ORD_L_7', perc: 0.02},
+    0x38: {ord: 0x38, const: 'ORD_L_8', perc: 0.03},
+    0x39: {ord: 0x39, const: 'ORD_L_9', perc: 0.02},
+    0x3a: {ord: 0x3a, const: 'ORD_COLON', perc: 1.05},
+    0x3b: {ord: 0x3b, const: 'ORD_SEMI', perc: 3.71},
+    0x3c: {ord: 0x3c, const: 'ORD_LT', perc: 0.14},
+    0x3d: {ord: 0x3d, const: 'ORD_IS', perc: 3.13},
+    0x3e: {ord: 0x3e, const: 'ORD_GT', perc: 0.08},
+    0x3f: {ord: 0x3f, const: 'ORD_QMARK', perc: 0.15},
+    0x41: {ord: 0x41, const: 'ORD_L_A_UC', perc: 0.21},
+    0x42: {ord: 0x42, const: 'ORD_L_B_UC', perc: 0.12},
+    0x43: {ord: 0x43, const: 'ORD_L_C_UC', perc: 0.17},
+    0x44: {ord: 0x44, const: 'ORD_L_D_UC', perc: 0.24},
+    0x45: {ord: 0x45, const: 'ORD_L_E_UC', perc: 0.28},
+    0x46: {ord: 0x46, const: 'ORD_L_F_UC', perc: 0.18},
+    0x47: {ord: 0x47, const: 'ORD_L_G_UC', perc: 0.14},
+    0x48: {ord: 0x48, const: 'ORD_L_H_UC', perc: 0.09},
+    0x49: {ord: 0x49, const: 'ORD_L_I_UC', perc: 0.09},
+    0x4A: {ord: 0x4A, const: 'ORD_L_J_UC', perc: 0.06},
+    0x4B: {ord: 0x4B, const: 'ORD_L_K_UC', perc: 0.05},
+    0x4C: {ord: 0x4C, const: 'ORD_L_L_UC', perc: 0.07},
+    0x4D: {ord: 0x4D, const: 'ORD_L_M_UC', perc: 0.16},
+    0x4E: {ord: 0x4E, const: 'ORD_L_N_UC', perc: 0.07},
+    0x4F: {ord: 0x4F, const: 'ORD_L_O_UC', perc: 0.09},
+    0x50: {ord: 0x50, const: 'ORD_L_P_UC', perc: 0.17},
+    0x51: {ord: 0x51, const: 'ORD_L_Q_UC', perc: 0.04},
+    0x52: {ord: 0x52, const: 'ORD_L_R_UC', perc: 0.08},
+    0x53: {ord: 0x53, const: 'ORD_L_S_UC', perc: 0.18},
+    0x54: {ord: 0x54, const: 'ORD_L_T_UC', perc: 0.20},
+    0x55: {ord: 0x55, const: 'ORD_L_U_UC', perc: 0.05},
+    0x56: {ord: 0x56, const: 'ORD_L_V_UC', perc: 0.06},
+    0x57: {ord: 0x57, const: 'ORD_L_W_UC', perc: 0.04},
+    0x58: {ord: 0x58, const: 'ORD_L_X_UC', perc: 0.05},
+    0x59: {ord: 0x59, const: 'ORD_L_Y_UC', perc: 0.06},
+    0x5a: {ord: 0x5a, const: 'ORD_L_Z_UC', perc: 0.28},
+    0x5b: {ord: 0x5b, const: 'ORD_OPEN_SQUARE', perc: 1.06},
+    0x5c: {ord: 0x5c, const: 'ORD_BACKSLASH', perc: 0.00},
+    0x5d: {ord: 0x5d, const: 'ORD_CLOSE_SQUARE', perc: 1.06},
+    0x5e: {ord: 0x5e, const: 'ORD_XOR', perc: 0.00},
+    0x5f: {ord: 0x5f, const: 'ORD_LODASH', perc: 0.70},
+    0x61: {ord: 0x61, const: 'ORD_L_A', perc: 1.37},
+    0x62: {ord: 0x62, const: 'ORD_L_B', perc: 0.97},
+    0x63: {ord: 0x63, const: 'ORD_L_C', perc: 1.34},
+    0x64: {ord: 0x64, const: 'ORD_L_D', perc: 0.81},
+    0x65: {ord: 0x65, const: 'ORD_L_E', perc: 0.93},
+    0x66: {ord: 0x66, const: 'ORD_L_F', perc: 1.50},
+    0x67: {ord: 0x67, const: 'ORD_L_G', perc: 0.63},
+    0x68: {ord: 0x68, const: 'ORD_L_H', perc: 0.35},
+    0x69: {ord: 0x69, const: 'ORD_L_I', perc: 1.66},
+    0x6A: {ord: 0x6A, const: 'ORD_L_J', perc: 0.17},
+    0x6B: {ord: 0x6B, const: 'ORD_L_K', perc: 0.18},
+    0x6c: {ord: 0x6c, const: 'ORD_L_L', perc: 0.5},
+    0x6d: {ord: 0x6d, const: 'ORD_L_M', perc: 0.65},
+    0x6e: {ord: 0x6e, const: 'ORD_L_N', perc: 0.88},
+    0x6f: {ord: 0x6f, const: 'ORD_L_O', perc: 0.46},
+    0x70: {ord: 0x70, const: 'ORD_L_P', perc: 0.87},
+    0x71: {ord: 0x71, const: 'ORD_L_Q', perc: 0.09},
+    0x72: {ord: 0x72, const: 'ORD_L_R', perc: 1.10},
+    0x73: {ord: 0x73, const: 'ORD_L_S', perc: 1.00},
+    0x74: {ord: 0x74, const: 'ORD_L_T', perc: 3.09},
+    0x75: {ord: 0x75, const: 'ORD_L_U', perc: 0.29},
+    0x76: {ord: 0x76, const: 'ORD_L_V', perc: 1.09},
+    0x77: {ord: 0x77, const: 'ORD_L_W', perc: 0.26},
+    0x78: {ord: 0x78, const: 'ORD_L_X', perc: 0.22},
+    0x79: {ord: 0x79, const: 'ORD_L_Y', perc: 0.19},
+    0x7a: {ord: 0x7a, const: 'ORD_L_Z', perc: 0.08},
+    0x7b: {ord: 0x7b, const: 'ORD_OPEN_CURLY', perc: 1.95},
+    0x7c: {ord: 0x7c, const: 'ORD_OR', perc: 0.22},
+    0x7d: {ord: 0x7d, const: 'ORD_CLOSE_CURLY', perc: 1.95},
+    0x7e: {ord: 0x7e, const: 'ORD_TILDE', perc: 0.00},
+    0xA0: {ord: 0xA0, const: 'ORD_NBSP', perc: 0.00},
+    0xFEFF: {ord: 0xFEFF, const: 'ORD_BOM', perc: 0.00},
+  };
+
+  var items = [
+    {
+      when: [ORD_SPACE, ORD_NBSP, ORD_BOM, ORD_TAB, ORD_FF, ORD_VTAB],
+      then: 'return this.__plusOne(WHITE);'
+    }, {
+      when: [ORD_PS, ORD_LS, ORD_LF],
+      then: 'return this.__newline();'
+    }, {
+      from: ORD_L_A,
+      to: ORD_L_Z,
+      then: 'return this.__parseIdentifier();'
+    }, {
+      when: [ORD_TILDE, ORD_PERCENT, ORD_STAR, ORD_XOR],
+      then: 'return this.__parseCompound();'
+    }, {
+      special: true,
+      from: 127,
+      to: 0xffff,
+      then: 'return this.__parseIdentifier(); // TOFIX: unicode validation',
+      except: [ORD_PS, ORD_LS, ORD_NBSP, ORD_BOM]
+    }, {
+      when: ORD_CR,
+      then: 'return this.__parseCR();'
+    }, {
+      when: ORD_DQUOTE,
+      then: 'return this.__parseDoubleString();'
+    }, {
+      when: ORD_EXCL,
+      then: 'return this.__parseEqualSigns();'
+    }, {
+      when: [ORD_OR, ORD_AND, ORD_PLUS, ORD_DASH],
+      then: 'return this.__parseSameOrCompound(c);'
+    }, {
+      when: [ORD_$, ORD_LODASH],
+      then: 'return this.__parseIdentifier();'
+    }, {
+      when: ORD_SQUOTE,
+      then: 'return this.__parseSingleString();'
+    }, {
+      when: ORD_DOT,
+      then: 'return this.__parseDot();'
+    }, {
+      when: [ORD_OPEN_CURLY, ORD_CLOSE_CURLY],
+      then: 'return this.__plusOne(PUNCTUATOR);'
+    }, {
+      from: ORD_OPEN_PAREN,
+      to: ORD_CLOSE_PAREN,
+      then: 'return this.__plusOne(PUNCTUATOR);'
+    }, {
+      when: [ORD_COMMA, ORD_COLON, ORD_SEMI, ORD_QMARK, ORD_OPEN_SQUARE, ORD_CLOSE_SQUARE],
+      then: 'return this.__plusOne(PUNCTUATOR);'
+    }, {
+      when: ORD_L_0,
+      then: 'return this.__parseZero();'
+    }, {
+      when: ORD_FWDSLASH,
+      then: 'return this.__parseFwdSlash(expressionStart);'
+    }, {
+      when: ORD_IS,
+      then: 'return this.__parseEqualSigns();'
+    }, {
+      from: ORD_L_1,
+      to: ORD_L_9,
+      then: 'return this.__parseNumber();'
+    }, {
+      when: [ORD_LT, ORD_GT],
+      then: 'return this.__parseLtgtPunctuator(c);'
+    }, {
+      from: ORD_L_A_UC,
+      to: ORD_L_Z_UC,
+      then: 'return this.__parseIdentifier();'
+    }, {
+      when: ORD_BACKSLASH,
+      then: 'return this.__parseBackslash();'
+    }
+  ];
+
+  var running = true;
+  var min = Infinity;
+  var mincode;
+  var totalFailed = 0;
+  var failedcodes = [];
+  var lasttemp = 0;
+  var counter = 0;
+
+  function gather(){
+    var evenodd = false && Math.random() > 0.5 && Math.ceil(Math.random() * 10);
+
+    var list = buildList(items, evenodd);
+
+    list = randomizeList(list);
+
+    var code = listToSource(list, evenodd);
+
+    list = purge(list);
+
+    return code;
+  }
+  function buildList(items, evenodd) {
+    var list = [];
+    for (var j=0; j<items.length; ++j) {
+      var o = items[j];
+      if (o.special) {
+
+      } else if (o.when) {
+        if (typeof o.when === 'number') {
+          addOne(list, o.when, o.then, evenodd);
+        } else {
+          for (var k=0; k< o.when.length; ++k) {
+            addOne(list, o.when[k], o.then, evenodd);
+          }
+        }
+      } else if (!evenodd && Math.random() > 0.5) {
+        addRange(list, o.from, o.to, o.then);
+      } else {
+        for (var i=o.from; i<=o.to; ++i) {
+          addOne(list, i, o.then, evenodd);
+        }
+      }
+    }
+
+    return list;
+  }
+  function randomizeList(list) {
+    var list2 = [];
+    while (list.length) list2.push(list.splice(Math.floor(list.length * Math.random()), 1)[0]);
+    return list2;
+  }
+  function countPerc(t, o) {
+    return t + o.perc;
+  }
+  function listToSource(list, evenodd) {
+    if (evenodd) {
+      var code = listToSplitSource(list, evenodd);
+    } else {
+      split(list);
+
+      var code = toSource(list).join('\n');
+    }
+    return code;
+  }
+  function listToSplitSource(list, evenodd) {
+    var even = [];
+    var odd = [];
+    list.forEach(function(o){
+      if (o.min & evenodd) odd.push(o);
+      else even.push(o);
+    });
+
+    split(even);
+    even.sort(order);
+    split(odd);
+    odd.sort(order);
+
+    var evenperc = even.reduce(countPerc, 0);
+    var oddperc = odd.reduce(countPerc, 0);
+
+    var code =
+      'if (c & '+evenodd+') { /* ' + oddperc + ' */\n' +
+        ind(toSource(odd)).join('\n') + '\n' +
+        '} else { /* ' + evenperc + ' */\n' +
+        ind(toSource(even)).join('\n') + '\n' +
+        '}';
+
+    even = purge(even);
+    even = purge(odd);
+
+    return code;
+  }
+  function purge(list) {
+    if (list instanceof Array) {
+      for (var i=0; i<list.length; ++i) {
+        if (typeof list[i] === 'object') {
+          purge(list[i]);
+        }
+        delete list[i];
+      }
+    } else if (typeof list === 'object') {
+      for (var key in list) {
+        if (typeof list[key] === 'object') {
+          purge(list[key]);
+        }
+        delete list[key];
+      }
+    } else {
+      throw 'ohnoes';
+    }
+  }
+  function toSource(list) {
+    var newlist = [];
+
+    for (var i=0; i<list.length; ++i) {
+      var o = list[i];
+      if (o.single || (o.range && o.min === o.max)) {
+        newlist.push(o+'');
+      } else if (o.range) {
+        newlist.push(o + ' /* sum: ' + o.perc + ' */');
+      } else {
+        newlist.push.apply(newlist, toSource(o.pre));
+        newlist.push('if (++steps && c < '+ lookup[o.iflt].const+') { /* sum: ' + o.ifperc + ' */');
+        newlist.push.apply(newlist, ind(toSource(o.ifbody)));
+        if (o.eliflteq) {
+          newlist.push('} else if (++steps && c <= '+ lookup[o.eliflteq].const+') { /* sum: '+ o.elifperc+'*/');
+          newlist.push('  '+o.elifbody);
+        }
+        newlist.push('} else { /* sum: '+ o.elseperc+' */');
+        newlist.push.apply(newlist, ind(toSource(o.else)));
+        newlist.push('}');
+      }
+    }
+
+    return newlist;
+  }
+  function ind(arr) {
+    for (var i=0; i<arr.length; ++i) {
+      arr[i] = '  '+arr[i];
+    }
+    return arr;
+  }
+  function addOne(list, when, then, evenodd){
+    // 2.5% (netto) chance to add a condition here
+    if (!evenodd && Math.random() < .05) {
+      return addRange(list, when, when, then);
+    }
+    list.push({
+      single: true,
+      min: when,
+      max: when,
+      perc: lookup[when].perc,
+      then: then,
+      toString: oneToString
+    });
+  }
+  function oneToString() {
+    var when = this.min;
+    var then = this.then;
+    return 'if (++steps && c === '+lookup[when].const+') '+then+' /* '+lookup[when].perc+' */';
+  }
+  function addRange(list, from, to, then) {
+    var perc = 0;
+    for (var i=from; i<=to; ++i) {
+      perc += lookup[i].perc;
+    }
+
+    list.push({
+      range: true,
+      min: from,
+      max: to,
+      then: then,
+      perc: perc,
+      toString: rangeToString
+    });
+  }
+  function rangeToString() {
+    var from = this.min;
+    var to = this.max;
+    var then = this.then;
+
+    if (from === to) return oneToString.call(this);
+    if (from === to-1) {
+      return 'if ((++steps && c === '+lookup[from].const+') || (++steps && c === '+lookup[to].const+')) '+ then;
+    }
+    return 'if (++steps && c >= '+lookup[from].const+' && ++steps && c <= '+lookup[to].const+') '+ then;
+  }
+  function split(list) {
+    if (list.length <= 2) return false;
+
+    var decided = false;
+    for (var index=0; index<list.length && !decided; ++index) {
+      var o = list[index];
+
+      if (o.range && !o.decided) {
+        o.decided = true;
+        if (Math.random() > .5) {
+          list.slice(index, 1);
+          var preceeding = [];
+
+          var before = [];
+          var after = [];
+          listToBeforeAfter(list, before, after, o);
+
+          splitAndShift(before, preceeding);
+          splitAndShift(after, preceeding);
+
+          preceeding.sort(order);
+
+          var preperc = preceeding.reduce(countPerc, 0);
+          var ifperc = before.reduce(countPerc, 0);
+          var elifperc = o.perc;
+          var elseperc = after.reduce(countPerc, 0);
+          var perc = preperc + ifperc + elifperc + elseperc;
+
+          list.push({
+            split:true,
+            perc: perc,
+            pre:preceeding,
+            preperc: preperc,
+            iflt:o.min,
+            ifbody:before,
+            ifperc: ifperc,
+            eliflteq:o.min!==o.max&&o.max,
+            elifbody:o.then,
+            elifperc: elifperc,
+            else: after,
+            elseperc: elseperc
+          });
+
+          decided = true;
+        }
+      }
+    }
+
+    return decided;
+  }
+  function listToBeforeAfter(list, before, after, o) {
+    while (list.length) {
+      var next = list.pop();
+      if (next.min < o.min) before.push(next);
+      else if (next.max > o.max) after.push(next);
+      else if (next.max === next.min) after.push(next);
+      else if (next !== o) console.warn('Unexpected', next, 'should come before or after', o);
+    }
+  }
+  function splitAndShift(items, preceeding) {
+    if (!split(items)) {
+      items.sort(order);
+
+      if (items.length > 2) {
+        var top = items[0];
+        var p = top.perc;
+        if ((top.single || (top.range && top.min === top.max)) && p > 1 && Math.random() < p/100) {
+          items.shift();
+          preceeding.push(top);
+        }
+      }
+    }
+  }
+  function order(a,b){
+    a = a.perc;
+    b = b.perc;
+    if (a > b) return -1;
+    if (a < b) return 1;
+    return 0;
+  }
+
+  function get(url, callback){
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState == 4) {
+        try { xhr.status; // status is a getter, this checks for exception
+        } catch (e) {
+          callback(new Error("Warning: Unknown error with server request (timeout?)."));
+        }
+
+        if (xhr.status == 200) callback(null, xhr.responseText);
+        else callback(new Error("File request problem (code: "+xhr.status+")!"));
+      }
+    };
+    xhr.open("GET", url+'?'+Math.random());
+    xhr.send(null);
+  }
+
+  function doStuff(tokSource, parSource, sources) {
+    ++counter;
+    var code = gather();
+
+    var needle = '//START_REPLACEMENT';
+    var needle2 = '//END_REPLACEMENT';
+    var modTokSource = tokSource.replace(
+      tokSource.slice(tokSource.indexOf(needle), tokSource.indexOf(needle2)+needle2.length),
+      '\n'+code+'\n'
+    );
+
+    var exports = {uni:uni};
+
+    // i think this is where the leak happens
+    // but the only thing it should leak to is `exports`, which is purged
+    eval(modTokSource);
+    eval(parSource);
+
+    bench(tokSource, exports, parSource, code, 'jq', sources, true);
+  }
+
+  function bench(tokSource, exports, parSource, code, targetSource, sources, quick) {
+//    if (tjs.length>2*1000*1000) console.log('Parsing...');
+    var par = exports.Par.parse(sources[targetSource]);
+    var stepstuff = par.tok.getSteps();
+
+    if (min > stepstuff) {
+      if (quick) {
+        return bench(tokSource, exports, parSource, code, 'tjs', sources, false);
+      }
+
+      var failed = runTests(exports);
+      if (failed) throw 'Bad composition ('+failed+'x)';
+
+      console.log('New record!');
+      min = stepstuff;
+      mincode = code;
+
+      domBestSteps.innerHTML = 'Min: '+min;
+      domBestCode.innerHTML = mincode.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    }
+
+    if (Date.now() - lasttemp > 5000) {
+      lasttemp = Date.now();
+      domNowCode.innerHTML = 'Avg:'+stepstuff+'\n\n'+code.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    }
+
+    domCurrent.innerHTML = 'Current ('+counter+'): '+stepstuff;
+
+    purge(exports);
+    code = '';
+    targetSource = '';
+
+    repeat(tokSource, parSource, sources);
+  }
+
+  function repeat(tokSource, parSource, sources) {
+    if (running) setTimeout(function(){
+      doStuff(tokSource, parSource, sources);
+    }, 20);
+  }
+
+  function runTests(exports) {
+    // test....
+    var out = document.createElement('pre');
+    document.body.appendChild(out);
+    var start = Date.now();
+    var ok = 0;
+    var fail = 0;
+    for (var i=0; i<good.length; ++i) {
+      var test = good[i];
+      var input = test[0];
+      var outputLen = test[1].length ? test[1][0] : test[1];
+      var regexHints = test[3] ? test[2] : []; // if flags, then len=4
+      var desc = test[3] || test[2];
+
+      try {
+        var found = 0;
+        var types = [];
+        var tok = new exports.Tok(input, {});
+
+        var protect = 1000;
+        do {
+          var type = tok.nextWhiteToken(regexHints[found]);
+          types.push(type);
+          ++found;
+        } while (--protect && type !== exports.Tok.EOF);
+        --found;
+
+      } catch (e) {
+        var errorThrown = e.toString();
+        console.error('Crash for', input);
+        console.error(e);
+      }
+
+      if (errorThrown) {
+        ++fail;
+      } else if (found == outputLen) {
+        ++ok;
+      } else {
+        ++fail;
+      }
+    }
+
+    return fail;
+  }
+
+  // gather all sources once here
+  get('par.js', function(err, parSource){
+    get('tok.js', function(err, tokSource){
+//    get('../../gonzales/data/sources/16mb-benchmark.js', function(err, source){
+      get('three-r64.js', function(err, tjs){
+        get('jquery-1-6-1.js', function(err, jq){
+          doStuff(tokSource, parSource, {tjs:tjs, jq:jq});
+        });
+      });
+    });
+  });
+
+</script>
