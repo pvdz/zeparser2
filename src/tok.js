@@ -947,36 +947,6 @@
       return PUNCTUATOR;
     },
 
-    whitespace: function(c){
-      // space is already checked in nextToken
-//      if (/*c === ORD_SPACE || */c === ORD_TAB || c === ORD_VTAB || c === ORD_FF || c === ORD_NBSP || c === ORD_BOM) {
-      // note: tab=0x09, ff=0x0c, vtab=0x0b
-      // cr=0x0a but whitespace() should go after lineterminator()! (update this if that changes)
-      if ((c <= ORD_FF && c >= ORD_TAB) || c === ORD_NBSP || c === ORD_BOM) {
-        ++this.pos;
-        return true;
-      }
-      return false;
-    },
-    lineTerminator: function(c, pos){
-      var parsed = false;
-      if (c === ORD_CR){
-        this.lastNewline = true;
-        // handle \r\n normalization here
-        var d = this.getLastNum2();
-        if (d === ORD_LF) {
-          this.pos = pos + 2;
-        } else {
-          this.pos = pos + 1;
-        }
-        parsed = true;
-      } else if (c === ORD_LF || (c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
-        this.lastNewline = true;
-        this.pos = pos + 1;
-        parsed = true;
-      }
-      return parsed;
-    },
     __parseSingleComment: function(){
       var pos = this.pos + 2;
       var input = this.input;
