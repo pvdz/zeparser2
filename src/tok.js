@@ -451,300 +451,6 @@
       return result;
     },
 
-    // unused
-    nextTokenIfElse: function(c, expressionStart, pos) {
-      // 58% of tokens is caught here
-      // http://qfox.nl/weblog/301
-
-      if (c < ORD_DOT) {
-        if (c === ORD_SPACE) return this.__plusOne(WHITE);
-        if (c < ORD_OPEN_PAREN) {
-          if (c === ORD_CR) return this.__parseCR();
-          if (c === ORD_TAB) return this.__plusOne(WHITE);
-          if (c === ORD_DQUOTE) return this.__parseDoubleString();
-          if (c === ORD_EXCL) return this.__parseEqualSigns();
-          if (c === ORD_AND) return this.__parseSameOrCompound(c);
-          if (c === ORD_SQUOTE) return this.__parseSingleString();
-          if (c === ORD_$) return this.__parseIdentifier();
-          if (c === ORD_PERCENT) return this.__parseCompound();
-          if (c === ORD_LF) return this.__newline();
-          if (c === ORD_VTAB) return this.__plusOne(WHITE);
-          if (c === ORD_FF) return this.__plusOne(WHITE);
-        } else if (c <= ORD_CLOSE_PAREN) {
-          return this.__plusOne(PUNCTUATOR);
-        } else {
-          if (c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
-          if (c === ORD_STAR) return this.__parseCompound();
-          // + -
-          return this.__parseSameOrCompound(c);
-        }
-      } else {
-        if (c < ORD_L_A) {
-          if (c <= ORD_L_9) {
-            if (c === ORD_DOT) return this.__parseDot();
-            if (c >= ORD_L_1) return this.__parseNumber();
-            if (c === ORD_L_0) return this.__parseZero();
-            if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
-          } else if (c <= ORD_SEMI) {
-            // : or ;
-            return this.__plusOne(PUNCTUATOR);
-          } else {
-            if (c < ORD_L_A_UC) {
-              if (c === ORD_IS) return this.__parseEqualSigns();
-              if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
-              if (c <= ORD_GT) return this.__parseLtgtPunctuator(c);
-            } else if (c <= ORD_L_Z_UC) {
-              return this.__parseIdentifier();
-            } else {
-              if (c === ORD_CLOSE_SQUARE) return this.__plusOne(PUNCTUATOR);
-              if (c === ORD_OPEN_SQUARE) return this.__plusOne(PUNCTUATOR);
-              if (c === ORD_LODASH) return this.__parseIdentifier();
-              if (c === ORD_XOR) return this.__parseCompound();
-              if (c === ORD_BACKSLASH) return this.__parseBackslash();
-            }
-          }
-        } else if (c <= ORD_L_Z) {
-          return this.__parseIdentifier();
-        } else {
-
-          // TOFIX: check:
-          // { = 123, |=124, }=125, ~=126. 124^1=125, 125^1=124. so if c^1<125 then c={ or c=} (because c>Zz=123)
-          // ORD_CURLY_OPEN ORD_CURLY_CLOSE
-//          if (((c ^ 1) <= 124)) return this.__plusOne(PUNCTUATOR);
-
-          if (c === ORD_OPEN_CURLY) return this.__plusOne(PUNCTUATOR);
-          if (c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
-          if (c === ORD_OR) return this.__parseSameOrCompound(c);
-// TOFIX: check:          if ((c ^ ORD_PS) <= 1 /*c === ORD_PS || c === ORD_LS*/) return this.__newline();
-          if (c === ORD_LS) return this.__newline();
-          if (c === ORD_PS) return this.__newline();
-          if (c === ORD_NBSP) return this.__plusOne(WHITE);
-          if (c === ORD_BOM) return this.__plusOne(WHITE);
-          if (c === ORD_TILDE) return this.__parseCompound();
-        }
-      }
-
-      /*
-       // TOFIX: still have to validate this first char as a valid ident start
-       throw 'fixme ['+c+']';
-       return this.__parseIdentifier();
-       */
-      throw 'Unexpected input [' + c + ']';
-    },
-    // unused
-    nextTokenSwitch: function(c, expressionStart) {
-      switch (c) {
-        case ORD_SPACE:
-          return this.__plusOne(WHITE);
-        case ORD_DOT:
-          return this.__parseDot();
-        case ORD_CR:
-          return this.__parseCR();
-        case ORD_LF:
-          return this.__newline();
-        case ORD_OPEN_PAREN:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_CLOSE_PAREN:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_SEMI:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_COMMA:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_IS:
-          return this.__parseEqualSigns();
-        case ORD_L_T:
-          return this.__parseIdentifier();
-        case ORD_OPEN_CURLY:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_CLOSE_CURLY:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_TAB:
-          return this.__plusOne(WHITE);
-        case ORD_L_I:
-          return this.__parseIdentifier();
-        case ORD_L_F:
-          return this.__parseIdentifier();
-        case ORD_L_A:
-          return this.__parseIdentifier();
-        case ORD_L_C:
-          return this.__parseIdentifier();
-        case ORD_DQUOTE:
-          return this.__parseDoubleString();
-        case ORD_L_R:
-          return this.__parseIdentifier();
-        case ORD_L_V:
-          return this.__parseIdentifier();
-        case ORD_OPEN_SQUARE:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_CLOSE_SQUARE:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_COLON:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_L_B:
-          return this.__parseIdentifier();
-        case ORD_L_E:
-          return this.__parseIdentifier();
-        case ORD_L_S:
-          return this.__parseIdentifier();
-        case ORD_L_N:
-          return this.__parseIdentifier();
-        case ORD_L_P:
-          return this.__parseIdentifier();
-        case ORD_L_D:
-          return this.__parseIdentifier();
-        case ORD_LODASH:
-          return this.__parseIdentifier();
-        case ORD_L_M:
-          return this.__parseIdentifier();
-        case ORD_L_G:
-          return this.__parseIdentifier();
-        case ORD_PLUS:
-          return this.__parseSameOrCompound(c);
-        case ORD_L_0:
-          return this.__parseZero();
-        case ORD_L_L:
-          return this.__parseIdentifier();
-        case ORD_L_O:
-          return this.__parseIdentifier();
-        case ORD_L_1:
-          return this.__parseNumber();
-        case ORD_FWDSLASH:
-          return this.__parseFwdSlash(expressionStart);
-        case ORD_L_H:
-          return this.__parseIdentifier();
-        case ORD_EXCL:
-          return this.__parseEqualSigns();
-        case ORD_L_U:
-          return this.__parseIdentifier();
-        case ORD_L_Z_UC:
-          return this.__parseIdentifier();
-        case ORD_L_E_UC:
-          return this.__parseIdentifier();
-        case ORD_AND:
-          return this.__parseSameOrCompound(c);
-        case ORD_L_W:
-          return this.__parseIdentifier();
-        case ORD_L_D_UC:
-          return this.__parseIdentifier();
-        case ORD_OR:
-          return this.__parseSameOrCompound(c);
-        case ORD_DASH:
-          return this.__parseSameOrCompound(c);
-        case ORD_L_X:
-          return this.__parseIdentifier();
-        case ORD_SQUOTE:
-          return this.__parseSingleString();
-        case ORD_L_A_UC:
-          return this.__parseIdentifier();
-        case ORD_L_Y:
-          return this.__parseIdentifier();
-        case ORD_STAR:
-          return this.__parseCompound();
-        case ORD_L_T_UC:
-          return this.__parseIdentifier();
-        case ORD_L_F_UC:
-          return this.__parseIdentifier();
-        case ORD_L_K:
-          return this.__parseIdentifier();
-        case ORD_L_C_UC:
-          return this.__parseIdentifier();
-        case ORD_L_J:
-          return this.__parseIdentifier();
-        case ORD_L_S_UC:
-          return this.__parseIdentifier();
-        case ORD_L_M_UC:
-          return this.__parseIdentifier();
-        case ORD_L_P_UC:
-          return this.__parseIdentifier();
-        case ORD_QMARK:
-          return this.__plusOne(PUNCTUATOR);
-        case ORD_LT:
-          return this.__parseLtgtPunctuator(c);
-        case ORD_L_2:
-          return this.__parseNumber();
-        case ORD_L_G_UC:
-          return this.__parseIdentifier();
-        case ORD_$:
-          return this.__parseIdentifier();
-        case ORD_L_B_UC:
-          return this.__parseIdentifier();
-        case ORD_L_H_UC:
-          return this.__parseIdentifier();
-        case ORD_L_I_UC:
-          return this.__parseIdentifier();
-        case ORD_L_O_UC:
-          return this.__parseIdentifier();
-        case ORD_L_Q:
-          return this.__parseIdentifier();
-        case ORD_L_R_UC:
-          return this.__parseIdentifier();
-        case ORD_L_Z:
-          return this.__parseIdentifier();
-        case ORD_GT:
-          return this.__parseLtgtPunctuator(c);
-        case ORD_L_3:
-          return this.__parseNumber();
-        case ORD_L_N_UC:
-          return this.__parseIdentifier();
-        case ORD_L_L_UC:
-          return this.__parseIdentifier();
-        case ORD_L_Y_UC:
-          return this.__parseIdentifier();
-        case ORD_L_J_UC:
-          return this.__parseIdentifier();
-        case ORD_L_K_UC:
-          return this.__parseIdentifier();
-        case ORD_L_X_UC:
-          return this.__parseIdentifier();
-        case ORD_L_Q_UC:
-          return this.__parseIdentifier();
-        case ORD_L_U_UC:
-          return this.__parseIdentifier();
-        case ORD_L_V_UC:
-          return this.__parseIdentifier();
-        case ORD_L_W_UC:
-          return this.__parseIdentifier();
-        case ORD_L_4:
-          return this.__parseNumber();
-        case ORD_L_5:
-          return this.__parseNumber();
-        case ORD_L_6:
-          return this.__parseNumber();
-        case ORD_L_7:
-          return this.__parseNumber();
-        case ORD_L_8:
-          return this.__parseNumber();
-        case ORD_L_9:
-          return this.__parseNumber();
-        case ORD_PERCENT:
-          return this.__parseCompound();
-        case ORD_XOR:
-          return this.__parseCompound();
-        case ORD_TILDE:
-          return this.__parseCompound();
-        case ORD_PS:
-          return this.__newline();
-        case ORD_LS:
-          return this.__newline();
-        case ORD_FF:
-          return this.__plusOne(WHITE);
-        case ORD_VTAB:
-          return this.__plusOne(WHITE);
-        case ORD_NBSP:
-          return this.__plusOne(WHITE);
-        case ORD_BOM:
-          return this.__plusOne(WHITE);
-        case ORD_BACKSLASH:
-          return this.__parseBackslash();
-        default:
-          throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
-      }
-      /*
-       // TOFIX: still have to validate this first char as a valid ident start
-       return this.__parseIdentifier();
-       */
-    },
-
     // current selector
     nextTokenDeterminator: function(c, expressionStart) {
       if (c === ORD_SPACE) return this.__plusOne(WHITE);
@@ -1318,3 +1024,300 @@
   })();
 
 })(typeof exports === 'object' ? exports : window);
+
+
+/*
+ // unused
+ nextTokenIfElse: function(c, expressionStart, pos) {
+ // 58% of tokens is caught here
+ // http://qfox.nl/weblog/301
+
+ if (c < ORD_DOT) {
+ if (c === ORD_SPACE) return this.__plusOne(WHITE);
+ if (c < ORD_OPEN_PAREN) {
+ if (c === ORD_CR) return this.__parseCR();
+ if (c === ORD_TAB) return this.__plusOne(WHITE);
+ if (c === ORD_DQUOTE) return this.__parseDoubleString();
+ if (c === ORD_EXCL) return this.__parseEqualSigns();
+ if (c === ORD_AND) return this.__parseSameOrCompound(c);
+ if (c === ORD_SQUOTE) return this.__parseSingleString();
+ if (c === ORD_$) return this.__parseIdentifier();
+ if (c === ORD_PERCENT) return this.__parseCompound();
+ if (c === ORD_LF) return this.__newline();
+ if (c === ORD_VTAB) return this.__plusOne(WHITE);
+ if (c === ORD_FF) return this.__plusOne(WHITE);
+ } else if (c <= ORD_CLOSE_PAREN) {
+ return this.__plusOne(PUNCTUATOR);
+ } else {
+ if (c === ORD_COMMA) return this.__plusOne(PUNCTUATOR);
+ if (c === ORD_STAR) return this.__parseCompound();
+ // + -
+ return this.__parseSameOrCompound(c);
+ }
+ } else {
+ if (c < ORD_L_A) {
+ if (c <= ORD_L_9) {
+ if (c === ORD_DOT) return this.__parseDot();
+ if (c >= ORD_L_1) return this.__parseNumber();
+ if (c === ORD_L_0) return this.__parseZero();
+ if (c === ORD_FWDSLASH) return this.__parseFwdSlash(expressionStart);
+ } else if (c <= ORD_SEMI) {
+ // : or ;
+ return this.__plusOne(PUNCTUATOR);
+ } else {
+ if (c < ORD_L_A_UC) {
+ if (c === ORD_IS) return this.__parseEqualSigns();
+ if (c === ORD_QMARK) return this.__plusOne(PUNCTUATOR);
+ if (c <= ORD_GT) return this.__parseLtgtPunctuator(c);
+ } else if (c <= ORD_L_Z_UC) {
+ return this.__parseIdentifier();
+ } else {
+ if (c === ORD_CLOSE_SQUARE) return this.__plusOne(PUNCTUATOR);
+ if (c === ORD_OPEN_SQUARE) return this.__plusOne(PUNCTUATOR);
+ if (c === ORD_LODASH) return this.__parseIdentifier();
+ if (c === ORD_XOR) return this.__parseCompound();
+ if (c === ORD_BACKSLASH) return this.__parseBackslash();
+ }
+ }
+ } else if (c <= ORD_L_Z) {
+ return this.__parseIdentifier();
+ } else {
+
+ // TOFIX: check:
+ // { = 123, |=124, }=125, ~=126. 124^1=125, 125^1=124. so if c^1<125 then c={ or c=} (because c>Zz=123)
+ // ORD_CURLY_OPEN ORD_CURLY_CLOSE
+ //          if (((c ^ 1) <= 124)) return this.__plusOne(PUNCTUATOR);
+
+ if (c === ORD_OPEN_CURLY) return this.__plusOne(PUNCTUATOR);
+ if (c === ORD_CLOSE_CURLY) return this.__plusOne(PUNCTUATOR);
+ if (c === ORD_OR) return this.__parseSameOrCompound(c);
+
+ // TOFIX: check:          if ((c ^ ORD_PS) <= 1) return this.__newline(); // -> c === ORD_PS || c === ORD_LS
+if (c === ORD_LS) return this.__newline();
+if (c === ORD_PS) return this.__newline();
+if (c === ORD_NBSP) return this.__plusOne(WHITE);
+if (c === ORD_BOM) return this.__plusOne(WHITE);
+if (c === ORD_TILDE) return this.__parseCompound();
+}
+}
+
+
+ // TOFIX: still have to validate this first char as a valid ident start
+// throw 'fixme ['+c+']';
+// return this.__parseIdentifier();
+throw 'Unexpected input [' + c + ']';
+},
+// unused
+nextTokenSwitch: function(c, expressionStart) {
+  switch (c) {
+    case ORD_SPACE:
+      return this.__plusOne(WHITE);
+    case ORD_DOT:
+      return this.__parseDot();
+    case ORD_CR:
+      return this.__parseCR();
+    case ORD_LF:
+      return this.__newline();
+    case ORD_OPEN_PAREN:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_CLOSE_PAREN:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_SEMI:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_COMMA:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_IS:
+      return this.__parseEqualSigns();
+    case ORD_L_T:
+      return this.__parseIdentifier();
+    case ORD_OPEN_CURLY:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_CLOSE_CURLY:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_TAB:
+      return this.__plusOne(WHITE);
+    case ORD_L_I:
+      return this.__parseIdentifier();
+    case ORD_L_F:
+      return this.__parseIdentifier();
+    case ORD_L_A:
+      return this.__parseIdentifier();
+    case ORD_L_C:
+      return this.__parseIdentifier();
+    case ORD_DQUOTE:
+      return this.__parseDoubleString();
+    case ORD_L_R:
+      return this.__parseIdentifier();
+    case ORD_L_V:
+      return this.__parseIdentifier();
+    case ORD_OPEN_SQUARE:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_CLOSE_SQUARE:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_COLON:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_L_B:
+      return this.__parseIdentifier();
+    case ORD_L_E:
+      return this.__parseIdentifier();
+    case ORD_L_S:
+      return this.__parseIdentifier();
+    case ORD_L_N:
+      return this.__parseIdentifier();
+    case ORD_L_P:
+      return this.__parseIdentifier();
+    case ORD_L_D:
+      return this.__parseIdentifier();
+    case ORD_LODASH:
+      return this.__parseIdentifier();
+    case ORD_L_M:
+      return this.__parseIdentifier();
+    case ORD_L_G:
+      return this.__parseIdentifier();
+    case ORD_PLUS:
+      return this.__parseSameOrCompound(c);
+    case ORD_L_0:
+      return this.__parseZero();
+    case ORD_L_L:
+      return this.__parseIdentifier();
+    case ORD_L_O:
+      return this.__parseIdentifier();
+    case ORD_L_1:
+      return this.__parseNumber();
+    case ORD_FWDSLASH:
+      return this.__parseFwdSlash(expressionStart);
+    case ORD_L_H:
+      return this.__parseIdentifier();
+    case ORD_EXCL:
+      return this.__parseEqualSigns();
+    case ORD_L_U:
+      return this.__parseIdentifier();
+    case ORD_L_Z_UC:
+      return this.__parseIdentifier();
+    case ORD_L_E_UC:
+      return this.__parseIdentifier();
+    case ORD_AND:
+      return this.__parseSameOrCompound(c);
+    case ORD_L_W:
+      return this.__parseIdentifier();
+    case ORD_L_D_UC:
+      return this.__parseIdentifier();
+    case ORD_OR:
+      return this.__parseSameOrCompound(c);
+    case ORD_DASH:
+      return this.__parseSameOrCompound(c);
+    case ORD_L_X:
+      return this.__parseIdentifier();
+    case ORD_SQUOTE:
+      return this.__parseSingleString();
+    case ORD_L_A_UC:
+      return this.__parseIdentifier();
+    case ORD_L_Y:
+      return this.__parseIdentifier();
+    case ORD_STAR:
+      return this.__parseCompound();
+    case ORD_L_T_UC:
+      return this.__parseIdentifier();
+    case ORD_L_F_UC:
+      return this.__parseIdentifier();
+    case ORD_L_K:
+      return this.__parseIdentifier();
+    case ORD_L_C_UC:
+      return this.__parseIdentifier();
+    case ORD_L_J:
+      return this.__parseIdentifier();
+    case ORD_L_S_UC:
+      return this.__parseIdentifier();
+    case ORD_L_M_UC:
+      return this.__parseIdentifier();
+    case ORD_L_P_UC:
+      return this.__parseIdentifier();
+    case ORD_QMARK:
+      return this.__plusOne(PUNCTUATOR);
+    case ORD_LT:
+      return this.__parseLtgtPunctuator(c);
+    case ORD_L_2:
+      return this.__parseNumber();
+    case ORD_L_G_UC:
+      return this.__parseIdentifier();
+    case ORD_$:
+      return this.__parseIdentifier();
+    case ORD_L_B_UC:
+      return this.__parseIdentifier();
+    case ORD_L_H_UC:
+      return this.__parseIdentifier();
+    case ORD_L_I_UC:
+      return this.__parseIdentifier();
+    case ORD_L_O_UC:
+      return this.__parseIdentifier();
+    case ORD_L_Q:
+      return this.__parseIdentifier();
+    case ORD_L_R_UC:
+      return this.__parseIdentifier();
+    case ORD_L_Z:
+      return this.__parseIdentifier();
+    case ORD_GT:
+      return this.__parseLtgtPunctuator(c);
+    case ORD_L_3:
+      return this.__parseNumber();
+    case ORD_L_N_UC:
+      return this.__parseIdentifier();
+    case ORD_L_L_UC:
+      return this.__parseIdentifier();
+    case ORD_L_Y_UC:
+      return this.__parseIdentifier();
+    case ORD_L_J_UC:
+      return this.__parseIdentifier();
+    case ORD_L_K_UC:
+      return this.__parseIdentifier();
+    case ORD_L_X_UC:
+      return this.__parseIdentifier();
+    case ORD_L_Q_UC:
+      return this.__parseIdentifier();
+    case ORD_L_U_UC:
+      return this.__parseIdentifier();
+    case ORD_L_V_UC:
+      return this.__parseIdentifier();
+    case ORD_L_W_UC:
+      return this.__parseIdentifier();
+    case ORD_L_4:
+      return this.__parseNumber();
+    case ORD_L_5:
+      return this.__parseNumber();
+    case ORD_L_6:
+      return this.__parseNumber();
+    case ORD_L_7:
+      return this.__parseNumber();
+    case ORD_L_8:
+      return this.__parseNumber();
+    case ORD_L_9:
+      return this.__parseNumber();
+    case ORD_PERCENT:
+      return this.__parseCompound();
+    case ORD_XOR:
+      return this.__parseCompound();
+    case ORD_TILDE:
+      return this.__parseCompound();
+    case ORD_PS:
+      return this.__newline();
+    case ORD_LS:
+      return this.__newline();
+    case ORD_FF:
+      return this.__plusOne(WHITE);
+    case ORD_VTAB:
+      return this.__plusOne(WHITE);
+    case ORD_NBSP:
+      return this.__plusOne(WHITE);
+    case ORD_BOM:
+      return this.__plusOne(WHITE);
+    case ORD_BACKSLASH:
+      return this.__parseBackslash();
+    default:
+      throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
+  }
+   // TOFIX: still have to validate this first char as a valid ident start
+   // return this.__parseIdentifier();
+},
+
+
+*/
