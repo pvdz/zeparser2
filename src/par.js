@@ -431,7 +431,7 @@
       if (!inFunction && !this.options.functionMode) throw 'Can only return in a function.'+tok.syntaxError('break');
 
       tok.nextExpr();
-      if (tok.lastNewline) this.addAsi();
+      if (tok.getLastNewline()) this.addAsi();
       else {
         this.parseOptionalExpressions();
         this.parseSemi();
@@ -442,7 +442,7 @@
 
       var tok = this.tok;
       tok.nextExpr();
-      if (tok.lastNewline) {
+      if (tok.getLastNewline()) {
         throw 'No newline allowed directly after a throw, ever.'+tok.syntaxError();
       } else {
         this.parseExpressions();
