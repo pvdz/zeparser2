@@ -111,6 +111,8 @@ var good = [
   ["\\u00d8bar;", 2, "Identifier With Unicode Escape Sequence begin (`\\uXXXX`), `;`"],
   ["foo\\u00d8;", 2, "Identifier With Unicode Escape Sequence end (`\\uXXXX`), `;`"],
   ["f\u00d8\u00d8bar;", 2, "Identifier With Embedded Unicode Character"],
+  ["\u00d8bar;", 2, "Identifier starting with unicode"],
+  ["\u00d8\u00d8bar;", 2, "Identifier starting consecutive unicode"],
 
   // Numbers.
   ["5;", 2, "Integer, `;`"],
@@ -689,12 +691,9 @@ var good = [
   ["for (new a().b in c);", 16, "new as lhs for-in"],
   ["for (undefined in {});", 11, "undefined could be redefined so this might be valid"],
 
-  ["/*!fooo\n*/", [1,2], "copyright comment"],
+  ["/**/", 1, "sanity test"],
+  ["/*!fooo\n*/", 1, "copyright comment"],
 ];
-
-
-
-
 
 // these are mainly for the parser, of course...
 var bad = [
@@ -806,9 +805,39 @@ var bad = [
   ['({/foo/:5});', "regex as objlit key"],
   ['({x:y, /foo/:5});', "regex as (second) objlit key"],
 
+  // ascii chars that are invalid plain source
   ['`', "backticks do not occur in js syntax"],
   ['#', "hashes do not occur in js syntax"],
   ['@', "at signs do not occur in js syntax"],
+  ['\xff', "del char (127) means bad range check"],
+  ['\x00', "NUL means bad range check"],
+  ['\x01', "\\x01 means bad range check"],
+  ['\x02', "\\x02 means bad range check"],
+  ['\x03', "\\x03 means bad range check"],
+  ['\x04', "\\x04 means bad range check"],
+  ['\x05', "\\x05 means bad range check"],
+  ['\x06', "\\x06 means bad range check"],
+  ['\x07', "\\x07 means bad range check"],
+  ['\x08', "\\x08 means bad range check"],
+  ['\x0e', "\\x0e means bad range check"],
+  ['\x0f', "\\x0f means bad range check"],
+  ['\x10', "\\x10 means bad range check"],
+  ['\x11', "\\x11 means bad range check"],
+  ['\x12', "\\x12 means bad range check"],
+  ['\x13', "\\x13 means bad range check"],
+  ['\x14', "\\x14 means bad range check"],
+  ['\x15', "\\x15 means bad range check"],
+  ['\x16', "\\x16 means bad range check"],
+  ['\x17', "\\x17 means bad range check"],
+  ['\x18', "\\x18 means bad range check"],
+  ['\x19', "\\x19 means bad range check"],
+  ['\x1a', "\\x1a means bad range check"],
+  ['\x1b', "\\x1b means bad range check"],
+  ['\x1c', "\\x1c means bad range check"],
+  ['\x1d', "\\x1d means bad range check"],
+  ['\x1e', "\\x1e means bad range check"],
+  ['\x1f', "\\x1f means bad range check"],
+  ['\u0f7a', "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 
   ['x/**/bar;', "asi not applied"],
   ['x/*      */bar;', "asi not applied"],
