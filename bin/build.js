@@ -236,12 +236,7 @@ if (process.argv[2]) {
     if (found) {
       dirname = found.full;
     } else {
-      var d = new Date();
-
-
-      var ts = parseInt(''+d.getMonth()+d.getDate()+(new Date(1970, 0, 1, d.getHours(), d.getMinutes(), 0).getTime()/60/1000)+Math.floor(d.getSeconds()/10), 10).toString(36);
-
-      dirname = ts+'_'+dirnameBare;
+      dirname = new Date().getTime()+'_'+dirnameBare;
       dirs.unshift({full:dirname, bare:dirnameBare});
     }
 
@@ -281,7 +276,7 @@ if (process.argv[2]) {
         var file = BUILD_DIR+'/'+ o.full;
         if (o.full[0] !== '_' && fs.existsSync(file) && fs.statSync(file).isDirectory()) {
           return template
-            .replace(TEMPLATE_NAME, "'"+o.full+"'")
+            .replace(TEMPLATE_NAME, "'"+o.bare.replace(/_/g, ' ')+"'")
             .replace(TEMPLATE_SOURCE, "['../../zeparser2/build/"+o.full+'/build.js\']');
         }
         return '';
