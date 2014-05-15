@@ -124,8 +124,8 @@
   var ORD_VTAB_0B = 0x0B;
   var ORD_FF_0C = 0x0C;
   var ORD_BOM_FEFF = 0xFEFF;
-  var ORD_LF_0A = 0x0A;
-  var ORD_CR_0D = 0x0D;
+  var ORD_LF_0A = 0x0A; // \n
+  var ORD_CR_0D = 0x0D; // \r
   var ORD_LS_2029 = 0x2029;
   var ORD_PS_2028 = 0x2028;
   var ORD_LODASH_5F = 0x5f;
@@ -152,13 +152,13 @@
     this.lastStart = 0;
     this.lastStop = 0;
     this.lastLen = 0;
-    this.lastType = -1;
+    this.lastType = 0;
     this.lastValue = '';
-    this.lastNewline = -1;
+    this.lastNewline = false;
 
-    // charCodeAt will never return -1, so -1 means "uninitialized". allows us to keep this value a number, always
-    this.nextNum1 = -1;
-    this.nextNum2 = -1;
+    // 0 means uninitialized. if we ever parse a nul it probably results in a syntax error so the overhead is okay for that case.
+    this.nextNum1 = 0;
+    this.nextNum2 = 0;
 
     this.tokenCountAll = 0;
 
@@ -235,15 +235,15 @@
     /** @property {number} lastLen */
     lastLen: 0,
     /** @property {number} lastType Type of the last token */
-    lastType: -1,
+    lastType: 0,
     /** @property {string} lastValue String value of the last token, or empty string if not yet fetched (see this.getLastValue()) */
     lastValue: '',
     /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
     lastNewline: false,
 
     // .charCodeAt(pos+n) cache
-    nextNum1: -1,
-    nextNum2: -1,
+    nextNum1: 0,
+    nextNum2: 0,
 
     /** @property {number} tokenCountAll Add one for any token, including EOF (Par relies on this) */
     tokenCountAll: 0,
@@ -421,22 +421,22 @@
 
       var start = this.lastStart = this.pos;
       if (start >= this.len) {
-        this.nextNum1 = -1;
+        this.nextNum1 = 0;
         return EOF;
       }
 
+      // TOFIX: how about double parsing? how many chars are averagely consumed? does it make sense to parse two and combine them, check them together? XORing?
       // prepare charCodeAt cache...
       var nextChar;
-      // `this.nextNum2` === -1` is more often true (83%) than `this.lastLen !== 1` (11%)
-      if (this.nextNum2 === -1 || this.lastLen !== 1) {
-        // this will happen ~ 93% of the time
+      // `!this.nextNum2`` is more often true than `this.lastLen !== 1` (2:1.5)
+      if (!this.nextNum2 || this.lastLen !== 1) {
+        // this will happen ~ 80% of the time
         nextChar = this.nextNum1 = this.input.charCodeAt(start);
       } else {
         nextChar = this.nextNum1 = this.nextNum2;
       }
-      this.nextNum2 = -1;
+      this.nextNum2 = 0;
 
-      // TOFIX: nextToken or nextTokenSwitch or ...?
       var result = this.nextTokenDeterminator(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
@@ -445,27 +445,28 @@
 
     // current selector
     nextTokenDeterminator: function(c, expressionStart) {
-      if (c === ORD_SPACE_20) return this.parseOneChar(WHITE);
+      if (c < ORD_L_1_31) return this.nextTokenDeterminator_a(c, expressionStart);
 
       var b = c & 0xffdf; // clear 0x20. note that input string must be in range of utf-16, so 0xffdf will suffice.
       if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) return this.parseIdentifier();
 
-      if (c < ORD_L_1_31) return this.nextTokenDeterminator_a(c, expressionStart);
       if (c > ORD_L_9_39) return this.nextTokenDeterminator_b(c, expressionStart);
       return this.parseDecimalNumber();
     },
     nextTokenDeterminator_a: function(c, expressionStart) {
       switch (c) {
+        case ORD_SPACE_20: // note: many spaces are caught by immediate newline checks (see parseCR and parseNewline)
+          return this.parseOneChar(WHITE);
         case ORD_DOT_2E:
           return this.parseLeadingDot();
-        case ORD_CR_0D:
-          return this.parseCR();
-        case ORD_LF_0A:
-          return this.parseNewline();
         case ORD_OPEN_PAREN_28:
           return this.parseOneChar(PUNCTUATOR);
         case ORD_CLOSE_PAREN_29:
           return this.parseOneChar(PUNCTUATOR);
+        case ORD_CR_0D:
+          return this.parseCR();
+        case ORD_LF_0A:
+          return this.parseNewline();
         case ORD_COMMA_2C:
           return this.parseOneChar(PUNCTUATOR);
         case ORD_TAB_09:
@@ -564,8 +565,38 @@
     },
 
     parseNewline: function() {
+      // note: this is _NOT_ for a CR, see parseCR (for the crlf special case)
+      // this might be an exotic newline though (PS or LS), no matter.
+      // this function will only optimize for the LF case here, other newlines
+      // will fall back to the slower token parsing
+
+      // this function consumes one character and then checks for spaces, tabs and
+      // more LF newlines. if encountered, they are consumed immediately for perf.
+      var pos = this.pos;
+
       this.lastNewline = true;
-      return this.parseOneChar(WHITE);
+
+      var input = this.input;
+      var tokens = this.tokens;
+      while (true) { // TOFIX: EOF guard?
+        var c = this.nextNum2 = input.charCodeAt(++pos);
+
+        // TOFIX: maybe eliminate LF check. double newline is true for about 3% of all checks made here
+        if (c !== ORD_SPACE_20 && c !== ORD_TAB_09 && c !== ORD_LF_0A) break;
+
+        ++this.tokenCountAll;
+        if (this.options.saveTokens) {
+          // we just checked another token, stash the _previous_ one.
+          var s = pos-1;
+          tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
+        }
+      }
+
+      this.lastValue = '';
+      this.lastStart = pos-1;
+      this.pos = pos;
+
+      return WHITE;
     },
 
     parseFwdSlash: function(expressionStart){
@@ -577,16 +608,45 @@
     },
 
     parseCR: function(){
+      // this function consumes one character and then checks for spaces, tabs and
+      // more CR/CRLF newlines. if encountered, they are consumed immediately for perf.
+      // for LF (or PS and LS) newlines see parseNewline(). This is CR/CRLF only.
+      var pos = this.pos;
+      var len = 1;
+
+      this.lastNewline = true;
 
       // handle \r\n normalization here
-      // (could rewrite into OR, eliminating a branch)
       var d = this.getLastNum2();
-      if (d === ORD_LF_0A) {
-        this.lastNewline = true;
-        this.pos += 2;
-      } else {
-        return this.parseNewline();
+      // store whether this was crlf. if not, assume we wont encounter it again and we wont have to do extra charCodeAts
+      var crlf = (d === ORD_LF_0A);
+      if (crlf) len = 2;
+
+      var input = this.input;
+      var tokens = this.tokens;
+      while (true) { // TOFIX: EOF guard?
+        var c = this.nextNum2 = input.charCodeAt(pos+=len);
+        var lastlen = len;
+        len = 1;
+
+        if (!(
+          c === ORD_SPACE_20 ||
+          c === ORD_TAB_09 ||
+            // TOFIX: may want to eliminate this part, double CR is only about 0.9% of the time. could then also elminate the `len` var.
+          (c === ORD_CR_0D && !void (crlf && input.charCodeAt(pos+1) === ORD_LF_0A && (len=2)))
+        )) break;
+
+        ++this.tokenCountAll;
+        if (this.options.saveTokens) {
+          // we just checked another token, stash the previous one. it gets a bit ugly now :/
+          var s = pos-lastlen;
+          tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
+        }
       }
+
+      this.lastValue = '';
+      this.lastStart = pos-lastlen;
+      this.pos = pos;
 
       return WHITE;
     },
@@ -637,18 +697,42 @@
     },
 
     parseSingleComment: function(){
-      var pos = this.pos + 2;
+      var start = this.pos;
+      var pos = start + 1; // +2 but the second char is start of loop
       var input = this.input;
       var len = input.length;
 
-      if (pos < len) {
-        do var c = input.charCodeAt(pos);
-        while (c !== ORD_LF_0A && c !== ORD_CR_0D && (c ^ ORD_PS_2028) > 1 /*c !== ORD_PS && c !== ORD_LS*/ && ++pos < len);
+      var foundCr = false;
+      var notEof;
+
+      while (notEof = (++pos < len)) {
+        var c = input.charCodeAt(pos);
+        // TOFIX: should add whitespace AND newline token here because we already know it'll happen...unless eof
+        if (c === ORD_CR_0D) { foundCr  = true; break; }
+        if (c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c !== ORD_PS && c !== ORD_LS*/) break;
       }
 
       this.pos = pos;
+      if (!notEof) return WHITE; // not EOF because we DID already parse two forward slashes
+
+      // we _know_ there'll be a next newline token, so consume the comment now and continue with newline parser
+      ++this.tokenCountAll;
+      if (this.options.saveTokens) {
+        // we just checked another token, stash the previous one. it gets a bit ugly now :/
+        this.tokens.push({type:WHITE, value:input.slice(start, pos), start:start, stop:pos, white:this.tokens.length});
+      }
+
+      this.lastValue = '';
+      this.lastStart = pos;
+      this.nextNum2 = 0;
+
+      if (foundCr) return this.parseCR();
+      return this.parseNewline();
 
       return WHITE;
+//      if (foundEof) return EOF;
+//      if (foundCr) return this.parseCR();
+//      return this.parseNewline();
     },
     parseMultiComment: function(){
       var pos = this.pos + 2;
@@ -837,7 +921,7 @@
             throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
           }
         }
-        else if (c === ORD_OPEN_PAREN_28) this.regexBody();
+        else if (c === ORD_OPEN_PAREN_28) this.regexBody(); // TOFIX: we dont actually validate anything here. should add more regex syntax tests
         else if (c === ORD_CLOSE_PAREN_29 || c === ORD_FWDSLASH_2F) return;
         else if (c === ORD_OPEN_SQUARE_5B) this.regexClass();
         else if (c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
@@ -904,6 +988,7 @@
         throw 'Internal error; identifier scanner should already have validated first char.'+this.tok.syntaxError();
       }
 
+      // note: statements in this loop are the second most executed statements
       while (pos < len) {
         switch (pos - start) {
           case 1:
@@ -921,6 +1006,7 @@
 
         // a-z A-Z 0-9 $ _
         // TODO: character occurrence analysis
+        // TOFIX: two checks can be eliminated
         if ((c >= ORD_L_A_61 && c <= ORD_L_Z_7A) || (c >= ORD_L_A_UC_41 && c <= ORD_L_Z_UC_5A) || (c >= ORD_L_0_30 && c <= ORD_L_9_39) || c === ORD_$_24 || c === ORD_LODASH_5F) {
           ++pos;
         // \uxxxx (TOFIX: validate resulting char?)
@@ -932,6 +1018,8 @@
           break;
         }
       }
+
+      // TOFIX: put c in nextChar2 cache, or at least somehow make it use this value next time.
 
       return pos;
     },
@@ -954,8 +1042,8 @@
     getLastNum2: function(){
       // TOFIX: perf check, what happens if i pass on pos if i can? (prevent reading this.lastStart)
       var n = this.nextNum2;
-      if (n === -1) return this.nextNum2 = this.input.charCodeAt(this.lastStart+1);
-      return n;
+      if (n) return n;
+      return this.nextNum2 = this.input.charCodeAt(this.lastStart+1);
     },
     getLastNum3: function(){
       // TOFIX: refactor this out. it's useless now
