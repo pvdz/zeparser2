@@ -564,6 +564,14 @@
       return type;
     },
 
+    parseFwdSlash: function(expressionStart){
+      var d = this.getLastNum2();
+      if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
+      if (d === ORD_STAR_2A) return this.parseMultiComment();
+      if (expressionStart) return this.parseRegex();
+      return this.parseDivPunctuator(d);
+    },
+
     parseNewline: function() {
       // note: this is _NOT_ for a CR, see parseCR (for the crlf special case)
       // this might be an exotic newline though (PS or LS), no matter.
@@ -597,14 +605,6 @@
       this.pos = pos;
 
       return WHITE;
-    },
-
-    parseFwdSlash: function(expressionStart){
-      var d = this.getLastNum2();
-      if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
-      if (d === ORD_STAR_2A) return this.parseMultiComment();
-      if (expressionStart) return this.parseRegex();
-      return this.parseDivPunctuator(d);
     },
 
     parseCR: function(){
