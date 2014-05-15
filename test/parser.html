@@ -30,15 +30,40 @@
 
         debug("Running test suite on parser...", good.length, "tests");
         debug(' ');
+
+        var TESTINPUT = 0;
+        var TOKENCOUNT = 1;
+        var PARSERCOUNT = 1;
+        var REGEXHINT = 2;
+        var DESCWITHOUTREGEXHINT = 2;
+        var DESCWITHREGEXHINT = 3;
+
+        var NEWLINESTATE_N = 0;
+        var NEWLINESTATE_R = 1;
+        var NEWLINESTATE_RN = 2;
+        var NEWLINESTATE_PS = 3;
+        var NEWLINESTATE_LS = 4;
+        var NEWLINESTATES = ['\\n', '\\r', '\\r\\n', '\\u2028', '\\u2029'];
+        // note: first is `\n`, we dont need to replace anything for that, so it's `false`
+        var NEWLINEFORSTATE = [false, '\r', '\r\n', '\u2028', '\u2029'];
+
         var start = Date.now();
         var ok = 0;
         var fail = 0;
+        var newlineState = NEWLINESTATE_N;
         for (var i = 0; i < good.length; ++i) {
+          var currentNewline = NEWLINEFORSTATE[newlineState];
           var test = good[i];
-          var input = test[0];
-          var outputLen = test[1].length ? test[1][1] : test[1];
-          var regexHints = test[3] ? test[2] : []; // if flags, then len=4
-          var desc = test[3] || test[2];
+          var input = test[TESTINPUT];
+          var outputLen = test[TOKENCOUNT].length ? test[TOKENCOUNT][PARSERCOUNT] : test[TOKENCOUNT];
+          var regexHints = test[DESCWITHREGEXHINT] ? test[DESCWITHOUTREGEXHINT] : []; // if flags, then len=4
+          var desc = test[DESCWITHREGEXHINT] || test[DESCWITHOUTREGEXHINT];
+
+          // test all valid newlines
+          if (currentNewline) {
+            input = input.replace(/\n/g, currentNewline);
+            desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+          }
 
           var crashed = false;
           try {
@@ -50,7 +75,7 @@
             crashed = e;
           }
 
-          var tcount = par.tok.tokenCountAll - 1; // -1 = eof
+          var tcount = par.tok.tokenCountAll -1; // inc asi, ex eof
 
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed.toString() + ')');
@@ -64,15 +89,28 @@
           }
           debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
           debug('<br/>');
+
+          // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
+          if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+          else newlineState = NEWLINESTATE_N;
         }
 
         debug("<h1>These tests should fail:</h1><br/>");
 
+        newlineState = NEWLINESTATE_N;
         for (var i = 0; i < bad.length; ++i) {
+          var currentNewline = NEWLINEFORSTATE[newlineState];
           var test = bad[i];
           if (!test) console.warn("Probably missing a comma...");
           var input = test[0];
           var desc = test[1];
+
+          // test all valid newlines
+          if (currentNewline) {
+            input = input.replace(/\n/g, currentNewline);
+            desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+          }
 
           var crashed = false;
           try {
@@ -92,11 +130,18 @@
           }
           debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
           debug('<br/>');
+
+          // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
+          if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+          else newlineState = NEWLINESTATE_N;
         }
 
         debug("<h1>These tests should optionally fail</h1>");
 
+        newlineState = NEWLINESTATE_N;
         for (var i = 0; i < optional.length; ++i) {
+          var currentNewline = NEWLINEFORSTATE[newlineState];
           var testGroup = optional[i];
           debug("<h2>"+testGroup.optionName+"</h2>");
           var cases = testGroup.cases;
@@ -108,6 +153,12 @@
             var desc = test[1];
 
             var failed = false;
+
+            // test all valid newlines
+            if (currentNewline) {
+              input = input.replace(/\n/g, currentNewline);
+              desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+            }
 
             try {
               var options = {};
@@ -136,6 +187,11 @@
             }
             debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
             debug('<br/>');
+
+            // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+            var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
+            if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+            else newlineState = NEWLINESTATE_N;
           }
         }
 
