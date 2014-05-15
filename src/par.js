@@ -163,6 +163,7 @@
       while (!tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
+      // TOFIX: get frequency stats on statement start
       if (this.tok.isType(IDENTIFIER)) {
         // dont "just" return true. case and default still return false
         return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
@@ -247,6 +248,7 @@
         }
       }
 
+      // TOFIX: if the above would return early, would we still need this tokencount check?
       // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
       if (tok.tokenCountAll === startCount) this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
 
@@ -322,6 +324,7 @@
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
       this.parseExpressions();
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); //no regex following because it's either semi or newline without asi if a forward slash follows it
+      // TOFIX: support browsers that allow semi to be omitted w/o asi?
       this.parseSemi();
     },
     parseWhile: function(inFunction, inLoop, inSwitch, labelSet){
@@ -430,6 +433,7 @@
 
       if (!inFunction && !this.options.functionMode) throw 'Can only return in a function.'+tok.syntaxError('break');
 
+      // TOFIX: I think I can invert this logic structure and just do parseSemi if !last newline.
       tok.nextExpr();
       if (tok.getLastNewline()) this.addAsi();
       else {
@@ -470,6 +474,11 @@
       }
     },
     parseCases: function(inFunction, inLoop, inSwitch, labelSet){
+      // note: since we're inside a switch body and at the start
+      // of a case/default, the only valid tokens would be a
+      // case, default, or the end of the switch. It cannot
+      // validly be anything else. Thus the div flag is void.
+      // The default keyword might no longer be possible either. TOFIX: optimize that.
       var tok = this.tok;
       while (tok.nextPuncIfString('case')) {
         this.parseCase(inFunction, inLoop, inSwitch, labelSet);
@@ -483,6 +492,8 @@
     },
     parseDefault: function(inFunction, inLoop, inSwitch, labelSet){
       // default <value> : <stmts-no-case-default>
+
+      // TOFIX: this can be folded into parseCaseRemainder for <x>: statements
       this.tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
     },
@@ -630,6 +641,8 @@
       this.parseSemi();
     },
     parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet){
+      // TOFIX: we can do away with the labelname now and perhaps save some slicing (??)
+
       // this method is only called at the start of
       // a statement that starts with an identifier.
 
@@ -659,7 +672,10 @@
 
       } else {
 
-        // TOFIX: add test case where this fails; `state & NONASSIGNEE` needs parenthesis
+        // TOFIX: test if we should just merge this...
+
+        // TOFIX: add test case where this fails without parens; `state & NONASSIGNEE` needs parenthesis
+        // TOFIX: cant we just drop the `>0` part? or do we want to force the arg to be bool? what about double bang?
         this.parseAssignments((state & NONASSIGNEE) > 0);
         this.parseNonAssignments();
 
@@ -813,10 +829,12 @@
       var tok = this.tok;
       if (tok.isType(IDENTIFIER)) {
         var identifier = tok.getLastValue();
+        // TOFIX: confirm whether we should do an isnum check before a reserved identifier check (the identifier check subsumes it)
         if (tok.isNum(ORD_L_F) && identifier === 'function') {
           this.parseFunction(NOTFORFUNCTIONDECL);
           nonAssignee = true;
         } else {
+          // TOFIX: maybe we can have isReservedIdentifier return a number indicating a value or not and skip the mandatory value check later
           if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression.'+tok.syntaxError();
           tok.nextPunc();
           // any non-keyword identifier can be assigned to
@@ -844,6 +862,7 @@
       var state = NOPARSE;
 
       // if we parse any unary, we wont have to check for label
+      // TOFIX: if it has a prefix we could make it call parsePrimary but this probably doesn't happen often enough to warrant a perf gain
       var hasPrefix = this.parseUnary();
 
       // simple shortcut: this function is only called if (at
@@ -855,6 +874,7 @@
         // identifiers (break, return, if) because parseIdentifierStatement
         // will already have ensured a different code path in that case!
         // TOFIX: check how often this is called and whether it's worth investigating...
+        // TOFIX: we dont have to check for any of the statement identifiers (break, return, if). can we optimize this case? is it worth it?
         if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
 
         tok.nextPunc();
@@ -886,7 +906,9 @@
         nonAssignee = true;
       } else {
         if (tok.nextExprIfNum(ORD_OPEN_PAREN)) nonAssignee = this.parseGroup();
+        // TOFIX: i think bug, nonAssignee should be set to true
         else if (tok.nextExprIfNum(ORD_OPEN_CURLY)) this.parseObject();
+        // TOFIX: i think bug, nonAssignee should be set to true
         else if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) this.parseArray();
         else if (!optional) throw 'Unable to parse required primary value.'+tok.syntaxError();
       }
@@ -930,6 +952,7 @@
       // [<exprs>]
       // (<exprs>)
 
+      // TOFIX: can we check noparse through token count instead?
       var nonAssignee = NOPARSE;
 
       // TODO: the order of these checks doesn't appear to be optimal (numbers first?)
@@ -987,6 +1010,7 @@
       if (len === 1) return tok.getLastNum() === ORD_IS;
 
       else if (len === 2) {
+        // TOFIX: since this is a valid token, when could the second char ever be `=`? strings? regex? what else?
         if (tok.getLastNum2() !== ORD_IS) return false;
         var c = tok.getLastNum();
         return (
@@ -1002,6 +1026,7 @@
       }
 
       else {
+        // TOFIX: len checks may be optimized away. can they fail at this point?
         // these <<= >>= >>>= cases are very rare
         if (len === 3 && tok.getLastNum() === ORD_LT) {
           return (tok.getLastNum2() === ORD_LT && tok.getLastNum3() === ORD_IS); // <<=
@@ -1059,6 +1084,7 @@
       // | ||
       else if (c === ORD_OR) return (tok.getLastLen() === 1 || tok.getLastNum2() === ORD_OR);
 
+      // TOFIX: can't we just check length? if len=2 i think it must be bin op
       else if (c === ORD_LT) {
         if (tok.getLastLen() === 1) return true;
         var d = tok.getLastNum2();
@@ -1074,6 +1100,7 @@
         if (len === 1) return true;
         var d = tok.getLastNum2();
         // the len checks prevent >>= and >>>= (which are assignments)
+        // TOFIX: can't we just check length? if len=2 i think it must be bin op: len<=2||(len===3&&num3===GT)
         return (d === ORD_IS || (len === 2 && d === ORD_GT) || (len === 3 && tok.getLastNum3() === ORD_GT)); // >= >> >>>
       }
 
@@ -1110,9 +1137,8 @@
     parseObject: function(){
       var tok = this.tok;
       do {
-        // object literal keys can be most values, but not regex literal.
-        // since that's an error, it's unlikely you'll ever see that triggered.
-        // TOFIX: REGEX is checked by isValue: tok.isValue() && !tok.isType(REGEX)
+        // note: __isValue also passes for a REGEX, objlits dont allow this. we need to check extra.
+        // TOFIX: can we perhaps postpone this check till the end? it only fails if there's a syntax error or }
         if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
@@ -1165,6 +1191,7 @@
       // if it returns true, a syntax error will probably be thrown
 
       // TOFIX: skip statement keywords when checking for label
+      // TOFIX: should ignoreValues also skip `function`?
 
       var tok = this.tok;
 
