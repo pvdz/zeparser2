@@ -4,6 +4,8 @@
   // punctuator occurrence stats: http://qfox.nl/weblog/301
   // token start stats: http://qfox.nl/weblog/302
 
+  // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
+
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
   var WHITE_SPACE = 1;
@@ -744,28 +746,37 @@
       return WHITE;
     },
     parseSingleString: function(){
-      return this.parseString(ORD_SQUOTE_27, STRING);
+      return this.parseString(ORD_SQUOTE_27);
     },
     parseDoubleString: function(){
-      return this.parseString(ORD_DQUOTE_22, STRING);
+      return this.parseString(ORD_DQUOTE_22);
     },
-    parseString: function(targetChar, returnType){
+    parseString: function(targetChar){
       var pos = this.pos + 1;
       var input = this.input;
       var len = input.length;
-
-      // TOFIX: rewrite this while
-      var c;
-      while (c !== targetChar) {
-        if (pos >= len) throw 'Unterminated string found at '+pos;
+      var c = 0;
+      while (pos < len) {
         c = input.charCodeAt(pos++);
 
-        if (c === ORD_BACKSLASH_5C) pos = this.parseStringEscape(pos);
-        else if ((c <= ORD_CR_0D && (c === ORD_LF_0A || c === ORD_CR_0D)) || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) throw 'No newlines in strings! '+this.syntaxError();
+        if (c === targetChar) {
+          this.pos = pos;
+          return STRING;
+        }
+
+        // &8: all newlines and backslash have their 4th bit set (prevents additional checks for 63%)
+        if ((c & 8) === 8) {
+          if (c === ORD_BACKSLASH_5C) pos = this.parseStringEscape(pos);
+            // c&83<3: it's a filter :) all newlines have their 5th bit set and 7th bit unset.
+            // none of them have first AND second bit set. this filters about 95%
+            // ftr: c&80 filters 84%, c&3<3 filters 75%. together they filter 95% :)
+          else if ((c & 83) < 3 && (c === ORD_LF_0A || c === ORD_CR_0D || c === ORD_PS_2028 || c === ORD_LS_2029)) {
+            throw 'No newlines in strings! ' + this.syntaxError();
+          }
+        }
       }
 
-      this.pos = pos;
-      return returnType;
+      throw 'Unterminated string found at '+pos;
     },
     parseStringEscape: function(pos){
       var input = this.input;
