@@ -118,11 +118,12 @@
             par.run();
             console.warn("Did not fail:", desc);
           } catch (e) {
+            var msg = e.toString();
             crashed = true;
           }
 
           if (crashed) {
-            debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc);
+            debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc, '<small style="color:#ccc;white-space:nowrap;overflow:hidden;">'+msg+'</small>');
             ++ok;
           } else {
             debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc);

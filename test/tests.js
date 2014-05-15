@@ -1047,7 +1047,21 @@ var bad = [
   ["x ==== y", "making sure weird punctuators are not valid: ===="],
   ["x +== y", "making sure weird punctuators are not valid: +=="],
 
-  ['if x y z']
+  ['if x', "validate opening paren"],
+
+  ["x = '", "unclosed tokens: single quoted string no body"],
+  ["x = 'random", "unclosed tokens: single quoted string with body"],
+  ["x = 'oh\nno", "unclosed tokens: single quoted string with newline"],
+  ["x = \"", "unclosed tokens: double quoted string no body"],
+  ["x = \"random", "unclosed tokens: double quoted string with body"],
+  ["x = \"oh\nno", "unclosed tokens: double quoted string with newline"],
+  ["x = /", "unclosed tokens: regex no body"],
+  ["x = /oopsie", "unclosed tokens: regex with body"],
+  ["x = /oop\nsie", "unclosed tokens: regex with newline"],
+  ["x = 5/*", "unclosed tokens: multi comment no body"],
+  ["x = 5/* body", "unclosed tokens: multi comment with body"],
+  ["x = 5/* body *", "unclosed tokens: multi comment almost closed"],
+
 ];
 
 
