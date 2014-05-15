@@ -334,6 +334,7 @@ if (dirnameBare) {
   var RESULT_END = 'RESULT_END';
   var TEMPLATE_NAME = 'TEMPLATE_NAME';
   var TEMPLATE_SOURCE = 'TEMPLATE_SOURCE';
+  var TEMPLATE_ENABLED = 'TEMPLATE_ENABLED';
 
   var template = templateFile.slice(
     templateFile.indexOf('\n', templateFile.indexOf(TEMPLATE_START))+1,
@@ -347,12 +348,13 @@ if (dirnameBare) {
       if (a.full < b.full) return 1;
       return 0;
     })
-    .map(function(o){
+    .map(function(o, index){
       var file = BUILD_DIR+'/'+ o.full;
-      if (o.full[0] !== '_' && fs.existsSync(file) && fs.statSync(file).isDirectory()) {
+      if (index < showLast && o.full[0] !== '_' && fs.existsSync(file) && fs.statSync(file).isDirectory()) {
         return template
           .replace(TEMPLATE_NAME, "'"+o.bare.replace(/_/g, ' ')+"'")
-          .replace(TEMPLATE_SOURCE, "['../../zeparser2/build/"+o.full+'/build.js\']');
+          .replace(TEMPLATE_SOURCE, "['../../zeparser2/build/"+o.full+'/build.js\']')
+          .replace(TEMPLATE_ENABLED, index<enableLast);
       }
       return '';
     })
