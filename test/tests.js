@@ -1,6 +1,16 @@
-// tests for both the tokenizer and parser. Parser test results could be checked tighter.
-// api: [input, ?[token-output-count, parser-output-count], ?regex-hints, desc]
-// regex-hints are for tokenizer, will tell for each token whether it might parse regex or not (parser's job)
+// Tests for both the tokenizer and parser. Tokenizer may report fewer tokens in case of ASI, tokenizer
+// requires explicit regex flag hints if a regex occurs in the test, see api.
+// TOFIX: Parser test results could be checked more thoroughly. Currently appears sufficient for now.
+// API: [input, ?[token-output-count, parser-output-count], ?regex-hints, desc]
+// Regex-hints are for tokenizer, will tell for each token whether it might parse regex or not (parser's job)
+
+// Note: parser-output-counts do NOT include the EOF token
+
+// Note: newlines: this file contains only \n for most cases, except when explicitly testing the
+//       various different valid newlines. The runner should scan each test for the occurrence of
+//       \n and the lack of \r. In that case it should run the same test for: \n \r \r\n \u2028 \u2029
+//       Simply replace any `\n` in the input with the newline to test and run it.
+
 var good = [
 
   ["var abc;", 4, "Variable Declaration"],
@@ -9,7 +19,6 @@ var good = [
   ["/** **/", 1, "JSDoc-style Comment"],
   ["var f = function(){;};", 13, "Assignment, Function Expression"],
   ["hi; // moo", 4, "Trailing Line Comment"],
-  ["hi; // moo\n;", 6, "Trailing Line Comment, Linefeed, `;`"],
   ["var varwithfunction;", 4, "Variable Declaration, Identifier Containing Reserved Words, `;`"],
   ["a + b;", 6, "Addition/Concatenation"],
 
@@ -81,6 +90,9 @@ var good = [
   ["\r", 1, "CR Line Ending = 1 Linefeed"],
   ["\n", 1, "LF Line Ending = 1 Linefeed"],
   ["\r\n\n\u2028\u2029\r", 5, "Various Line Terminators"],
+  ["a\r\n\r\nb", [4, 6], "double CRLF"],
+  ["a\r\n\r\nba\r\n  \r\nb", [9, 12], "multiple CRLF"],
+  ["a\n\rb", [4, 6], "inverted crlf: two newlines"],
 
   // Whitespace.
   ["throw \t\u000b\u000c\u00a0\ufeffb", [8, 9], "Whitespace"],
@@ -181,7 +193,7 @@ var good = [
 
   // Array Literals.
   ["[];", 3, "Empty Array, `;`"],
-  ["[\n\f\r\t\u0020];", 8, "Array Containing Whitespace, `;`"], // note: \b used to be in here, but it isnt part of whitespace (any more?), so i removed it.
+  ["[\n\f\r\t\u0020];", 8, "Array Containing Whitespace, `;`"],
   ["[1];", 4, "Array Containing 1 Element, `;`"],
   ["[1,2];", 6, "Array Containing 2 Elements, `;`"],
   ["[1,2,,];", 8, "Array Containing 2 Elisions, `;`"],
@@ -407,7 +419,7 @@ var good = [
   ["var x; { 1 \n 2 } 3", [16, 19], "Classic Automatic Semicolon Insertion Case"],
   ["ab \t /* hi */\ncd", [7, 9], "Automatic Semicolon Insertion: Block Comment"],
   ["ab/*\n*/cd", [3, 5], "Automatic Semicolon Insertion Triggered by Multi-Line Block Comment"],
-  ["while(true)continue /* wtf \r busta */ foo;", [10, 11], "Automatic Semicolon Insertion: `continue` Statement Preceding Multi-Line Block Comment"],
+  ["while(true)continue /* wtf \n busta */ foo;", [10, 11], "Automatic Semicolon Insertion: `continue` Statement Preceding Multi-Line Block Comment"],
   ["function f() { s }", [11, 12], "Automatic Semicolon Insertion: Statement Within Function Declaration"],
   ["function f() { return }", [11, 12], "Automatic Semicolon Insertion: `return` Statement Within Function Declaration"],
 
@@ -430,8 +442,10 @@ var good = [
   ["", 0, "Empty Program"],
   ["// test", 1, "Line Comment"],
   ["//test\n", 2, "Line Comment, Linefeed"],
+  ["//\n", 2, "line comment without body, linefeed"],
   ["\n// test", 2, "Linefeed, Line Comment"],
   ["\n// test\n", 3, "Linefeed, Line Comment, Linefeed"],
+  ["\n//\n", 3, "linefeed, line comment without body, linefeed"],
   ["/* */", 1, "Single-Line Block Comment"],
   ["/*\ns,fd\n*/", 1, "Multi-Line Block Comment"],
   ["/*\ns,fd\n*/\n", 2, "Block Comment Containing Linefeeds, Linefeed"],
@@ -549,19 +563,15 @@ var good = [
 
   ["X/R>=0", [5, 6], "/R a punctuator is not"], // regex also found >= and it would take that length instead of the /
 
-  ["a/*\r*/b;", [4, 5], "asi for multiline comment with only a return"],
+  ["a/*\n*/b;", [4, 5], "asi for multiline comment with only a \\n"],
   ["/**/", 1, "just an empty multi-line comment"],
   ["//", 1, "empty single line comment terminated by eof"],
   ["//\n", 2, "empty single line comment terminated by \\n and eof"],
-  ["//\nfoo;", 4, "empty single line comment terminated by newline"],
+  ["//\nfoo;", 4, "empty single line comment terminated by \\n"],
 
   ["foo <!-- bar;", 8, "html comment is okay like this"],
 
-  ["'foo\\\r\nbar';", 2, "string with windows rn newline escape"],
-  ["'foo\\\rbar';", 2, "string with mac newline escape r"],
-  ["'foo\\\nbar';", 2, "string with unix newline escape n"],
-  ["'foo\\\u2028bar';", 2, "string with newline escape 28"],
-  ["'foo\\\u2029bar';", 2, "string with newline escape 29"],
+  ["'foo\\\nbar';", 2, "string with unix newline escape \\n"],
 
   ["(a?b:c);", 8, "ternary expression that's not at the start"],
   ["x=(a?b:c);", 10, "ternary expression that's not at the start, after assignment"],
@@ -693,6 +703,13 @@ var good = [
 
   ["/**/", 1, "sanity test"],
   ["/*!fooo\n*/", 1, "copyright comment"],
+  ["a\nb", [3, 5], "asi fails wtf?"], // TOFIX: why 3/5? missing asi token?
+  ["var x=5\n/foo/g;", 11, "fwd slash after var asi is division (so: 5/foo/g)"],
+
+  ["abc\n  foo", [5, 7], "verify whitespace-after-newline trick: spaces"],
+  ["abc\n\t\tfoo", [5, 7], "verify whitespace-after-newline trick: tabs"],
+  ["abc\n\t\t  foo", [7, 9], "verify whitespace-after-newline trick: tabs+spaces"],
+  ["abc\n\t\t\n\t\tfoo", [8, 10], "verify whitespace-after-newline trick: tabs+cr"],
 ];
 
 // these are mainly for the parser, of course...
@@ -804,6 +821,9 @@ var bad = [
   ["for ((c in y))z;", "parens are invalid here"],
   ['({/foo/:5});', "regex as objlit key"],
   ['({x:y, /foo/:5});', "regex as (second) objlit key"],
+  ["var x\n/foo/", "regex after var asi"],
+  ["var x\n/foo/g", "regex after var asi"],
+  ["var x=5\n/foo/", "regex without flag after var initializer asi doesnt make correct division either"],
 
   // ascii chars that are invalid plain source
   ['`', "backticks do not occur in js syntax"],
@@ -845,9 +865,7 @@ var bad = [
   ['/foo\nbar/', "newline in regex"],
   ['/foo\u2029bar/', "newline in regex 2"],
   ['/foo\\\nbar/', "escaped newline in regex"],
-  ['/foo\\\rbar/', "escaped newline in regex 2"],
   ['/foo[\\\n]bar/', "escaped newline in regex char class"],
-  ['/foo[\\\r]bar/', "escaped newline in regex char class 2"],
   ['(x)\n/foo/;', "no asi when forward slash starts on next line"],
   ["var x\n/a/", "No semi if next statement starts with regex literal (by @garethheyes)"],
 
@@ -952,20 +970,8 @@ var bad = [
   ["'foo\\xfoo'", "invalid hex escape"],
   ["x~=y;",4,"binary negate has no compound sister"],
   ["/x\ny/", "illegal newline"],
-  ["/x\ry/", "illegal newline"],
-  ["/x\r\ny/", "illegal newline"],
-  ["/x\u2028y/", "illegal newline"],
-  ["/x\u2029y/", "illegal newline"],
   ["/x[\n]y/", "illegal newline"],
-  ["/x[\r]y/", "illegal newline"],
-  ["/x[\r\n]y/", "illegal newline"],
-  ["/x[\u2028]y/", "illegal newline"],
-  ["/x[\u2029]y/", "illegal newline"],
   ["/x\\\ny/", "illegal newline"],
-  ["/x\\\ry/", "illegal newline"],
-  ["/x\\\r\ny/", "illegal newline"],
-  ["/x\\\u2028y/", "illegal newline"],
-  ["/x\\\u2029y/", "illegal newline"],
   ["/foo", "unterminated regex"],
   ["/f[oo", "unterminated regex (in char class)"],
   ["for (var debugger in foo);", "no-in var reserved word test"],
@@ -1040,6 +1046,8 @@ var bad = [
   ["x %== y", "making sure weird punctuators are not valid: %=="],
   ["x ==== y", "making sure weird punctuators are not valid: ===="],
   ["x +== y", "making sure weird punctuators are not valid: +=="],
+
+  ['if x y z']
 ];
 
 
