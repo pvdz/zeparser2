@@ -933,6 +933,7 @@
       var tok = this.tok;
       var c = tok.getLastNum();
 
+      // TOFIX: can we improve this? (116 110 100 126 118 45 43 126)
       if (c === ORD_L_T) return tok.getLastValue() === 'typeof';
       else if (c === ORD_L_N) return tok.getLastValue() === 'new';
       else if (c === ORD_L_D) return tok.getLastValue() === 'delete';
