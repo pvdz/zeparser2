@@ -573,48 +573,53 @@
     },
 
     parseNewline: function() {
-      // note: this is _NOT_ for a CR, see parseCR (for the crlf special case)
-      // this might be an exotic newline though (PS or LS), no matter.
-      // note that parsePostNewlineWhitespace consumes one "newline"
+      // next char confirmed to be a non-CR newline.
 
-      return this.parsePostNewlineWhitespace(this.pos);
+      return this.verifiedNewline(this.pos);
     },
 
     parseCR: function(){
-      // this function consumes one character verified to be CR and
-      // checks if the next char is LF for the CRLF case.
-      // note that parsePostNewlineWhitespace consumes one "newline"
+      // next char confirmed to be CR. check the next char for LF to
+      // consume it for the CRLF case. this is completely optional.
 
       var pos = this.pos;
 
       if (this.getLastNum2() === ORD_LF_0A) ++pos;
 
-      return this.parsePostNewlineWhitespace(pos);
+      return this.verifiedNewline(pos);
     },
-    parsePostNewlineWhitespace: function(pos){
-      // this is an optimization that assumes newlines are often succeeded
-      // by some form of whitespace (-> indentation). Only checks spaces
-      // and tabs, newlines are not worth it. If any whitespace is found
-      // it is immediately consumed here, skipping the overhead.
-
+    verifiedNewline: function(pos){
+      // mark for ASI
       this.lastNewline = true;
 
       var input = this.input;
       var tokens = this.tokens;
-      while (true) { // TOFIX: EOF guard?
-        var c = this.nextNum2 = input.charCodeAt(++pos);
+      var saveTokens = this.options.saveTokens;
+      var count = this.tokenCountAll;
 
-        // TOFIX: maybe eliminate LF check. double newline is true for about 3% of all checks made here
+      // in JS source it's common to find spaces or tabs after newlines
+      // due to indentation. we optimize here by eliminating the scanner
+      // overhead by directly checking for spaces and tabs first.
+      // note: first loop consumes the verified newline.
+
+      // no EOF guard, charCodeAt returns NaN beyond string boundary, which is fine.
+      // TOFIX: for repeated perf we could add the check though. because the NaN will DEOPT
+      // (if check, handle consuming the first newline better somehow)
+      while (true) {
+        var c = input.charCodeAt(++pos);
+
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
-        ++this.tokenCountAll;
-        if (this.options.saveTokens) {
+        ++count;
+        if (saveTokens) {
           // we just checked another token, stash the _previous_ one.
           var s = pos-1;
           tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
         }
       }
 
+      this.nextNum2 = c;
+      this.tokenCountAll = count;
       this.lastValue = '';
       this.lastStart = pos-1;
       this.pos = pos;
