@@ -697,6 +697,21 @@
     },
 
     parseSingleComment: function(){
+      var pos = this.pos + 1;
+      var input = this.input;
+      var len = input.length;
+
+      while (++pos < len) {
+        var c = input.charCodeAt(pos);
+        // TOFIX: should add whitespace AND newline token here because we already know it'll happen...unless eof
+        if (c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c !== ORD_PS && c !== ORD_LS*/) break;
+      }
+
+      this.pos = pos;
+
+      return WHITE;
+
+/* // reverted: this is slightly slower
       var start = this.pos;
       var pos = start + 1; // +2 but the second char is start of loop
       var input = this.input;
@@ -709,7 +724,7 @@
         var c = input.charCodeAt(pos);
         // TOFIX: should add whitespace AND newline token here because we already know it'll happen...unless eof
         if (c === ORD_CR_0D) { foundCr  = true; break; }
-        if (c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c !== ORD_PS && c !== ORD_LS*/) break;
+        if (c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
       }
 
       this.pos = pos;
@@ -728,11 +743,7 @@
 
       if (foundCr) return this.parseCR();
       return this.parseNewline();
-
-      return WHITE;
-//      if (foundEof) return EOF;
-//      if (foundCr) return this.parseCR();
-//      return this.parseNewline();
+*/
     },
     parseMultiComment: function(){
       var pos = this.pos + 2;
