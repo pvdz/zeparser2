@@ -575,12 +575,27 @@
     parseNewline: function() {
       // note: this is _NOT_ for a CR, see parseCR (for the crlf special case)
       // this might be an exotic newline though (PS or LS), no matter.
-      // this function will only optimize for the LF case here, other newlines
-      // will fall back to the slower token parsing
+      // note that parsePostNewlineWhitespace consumes one "newline"
 
-      // this function consumes one character and then checks for spaces, tabs and
-      // more LF newlines. if encountered, they are consumed immediately for perf.
+      return this.parsePostNewlineWhitespace(this.pos);
+    },
+
+    parseCR: function(){
+      // this function consumes one character verified to be CR and
+      // checks if the next char is LF for the CRLF case.
+      // note that parsePostNewlineWhitespace consumes one "newline"
+
       var pos = this.pos;
+
+      if (this.getLastNum2() === ORD_LF_0A) ++pos;
+
+      return this.parsePostNewlineWhitespace(pos);
+    },
+    parsePostNewlineWhitespace: function(pos){
+      // this is an optimization that assumes newlines are often succeeded
+      // by some form of whitespace (-> indentation). Only checks spaces
+      // and tabs, newlines are not worth it. If any whitespace is found
+      // it is immediately consumed here, skipping the overhead.
 
       this.lastNewline = true;
 
@@ -590,48 +605,11 @@
         var c = this.nextNum2 = input.charCodeAt(++pos);
 
         // TOFIX: maybe eliminate LF check. double newline is true for about 3% of all checks made here
-        if (c !== ORD_SPACE_20 && c !== ORD_TAB_09 && c !== ORD_LF_0A) break;
-
-        ++this.tokenCountAll;
-        if (this.options.saveTokens) {
-          // we just checked another token, stash the _previous_ one.
-          var s = pos-1;
-          tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
-        }
-      }
-
-      this.lastValue = '';
-      this.lastStart = pos-1;
-      this.pos = pos;
-
-      return WHITE;
-    },
-
-    parseCR: function(){
-      // this function consumes one character and then checks for spaces, tabs and
-      // more CR/CRLF newlines. if encountered, they are consumed immediately for perf.
-      // for LF (or PS and LS) newlines see parseNewline(). This is CR/CRLF only.
-      var pos = this.pos;
-
-      this.lastNewline = true;
-
-      // handle \r\n normalization here
-      var d = this.getLastNum2();
-      // store whether this was crlf. if not, assume we wont encounter it again and we wont have to do extra charCodeAts
-      var crlf = (d === ORD_LF_0A);
-      if (crlf) ++pos;
-
-      var input = this.input;
-      var tokens = this.tokens;
-      while (true) { // TOFIX: EOF guard?
-        var c = this.nextNum2 = input.charCodeAt(++pos);
-
-        // not checking newlines: not worth the extra CRLF complexity
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
         ++this.tokenCountAll;
         if (this.options.saveTokens) {
-          // we just checked another token, stash the previous one. it gets a bit ugly now :/
+          // we just checked another token, stash the _previous_ one.
           var s = pos-1;
           tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
         }
