@@ -749,7 +749,7 @@
         if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) break;
 
         // only check one newline
-        // TODO: check whether the extra check is worth the overhead for eliminating repetitive checks
+        // TOFIX: check whether the extra check is worth the overhead for eliminating repetitive checks
         // (hint: if you generally check more characters here than you can skip, it's not worth it)
         if (hasNewline || c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) hasNewline = this.lastNewline = true;
       }
@@ -768,7 +768,7 @@
       var input = this.input;
       var len = input.length;
 
-      // TODO: rewrite this while
+      // TOFIX: rewrite this while
       var c;
       while (c !== targetChar) {
         if (pos >= len) throw 'Unterminated string found at '+pos;
@@ -1005,7 +1005,7 @@
         }
 
         // a-z A-Z 0-9 $ _
-        // TODO: character occurrence analysis
+        // TOFIX: character occurrence analysis
         // TOFIX: two checks can be eliminated
         if ((c >= ORD_L_A_61 && c <= ORD_L_Z_7A) || (c >= ORD_L_A_UC_41 && c <= ORD_L_Z_UC_5A) || (c >= ORD_L_0_30 && c <= ORD_L_9_39) || c === ORD_$_24 || c === ORD_LODASH_5F) {
           ++pos;

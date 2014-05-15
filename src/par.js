@@ -134,7 +134,7 @@
      * @property {boolean} [options.saveTokens=false] Make the tokenizer put all found tokens in .tokens
      * @property {boolean} [options.createBlackStream=false] Requires saveTokens, put black tokens in .black
      * @property {boolean} [options.functionMode=false] In function mode, `return` is allowed in global space
-//     * @property {boolean} [options.scriptMode=false] (TODO, #12)
+//     * @property {boolean} [options.scriptMode=false] (TOFIX, #12)
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
      * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
@@ -213,7 +213,7 @@
 
       var len = tok.getLastLen();
 
-      // TODO: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
+      // TOFIX: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
 
       // yes, this check makes a *huge* difference
       if (len >= 2 && len <= 8) {
@@ -604,7 +604,7 @@
         throw 'Setters have exactly one param.'+tok.syntaxError();
       }
     },
-    // TODO: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
+    // TOFIX: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
     parseBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
       // note: this parsing method is also used for functions. the only case where
@@ -938,7 +938,7 @@
       else if (c === ORD_L_D) return tok.getLastValue() === 'delete';
       else if (c === ORD_EXCL) return true;
       else if (c === ORD_L_V) return tok.getLastValue() === 'void';
-      // TODO do i actually need to check for lastLen? tok should already be a "clean" token. what other values might start with "-"? - -- -=
+      // TOFIX do i actually need to check for lastLen? tok should already be a "clean" token. what other values might start with "-"? - -- -=
       else if (c === ORD_MIN) return (tok.getLastLen() === 1 || (tok.getLastNum2() === ORD_MIN));
       else if (c === ORD_PLUS) return (tok.getLastLen() === 1 || (tok.getLastNum2() === ORD_PLUS));
       else if (c === ORD_TILDE) return true;
@@ -955,7 +955,7 @@
       // TOFIX: can we check noparse through token count instead?
       var nonAssignee = NOPARSE;
 
-      // TODO: the order of these checks doesn't appear to be optimal (numbers first?)
+      // TOFIX: the order of these checks doesn't appear to be optimal (numbers first?)
       var tok = this.tok;
       var repeat = true;
       while (repeat) {
