@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// TOFIX: drop any line containing `#zp-build drop line`
+
 console.log("Building...");
 
 var fs = require('fs');
@@ -15,8 +17,57 @@ var ParMeta = require('./zeparser2-meta.js').Par;
 var Par = require(ROOT_DIR + '/src/par.js').Par;
 var Tok = require(ROOT_DIR + '/src/tok.js').Tok;
 
+var v8opt = false;
+var noComment = true;
+var enableLast = 5;
+var showLast = 10;
+var dirnameBare = '';
 if (!process.argv[2]) {
-  console.log('(Note: no params found. If you add a param you can name this build and have it auto-added to the gonzales project locally)')
+  console.log('(Note: no params found. If you add a param you can name this build and have it auto-added to the gonzales project locally).');
+//  console.log('--v8-opt for special v8 mode (default=false)');
+  console.log('--comments to include comments (default=false)');
+  console.log('--show n To show last n builds (default:10)');
+  console.log('--enable n To enable last n builds (default:5)');
+} else {
+  var argIndex = 2;
+  var next = process.argv[argIndex];
+  while (next && next[0] === '-' && next[1] === '-') {
+
+    switch (next.slice(2)) {
+      case 'v8-opt':
+        v8opt = true;
+        break;
+      case 'comments':
+        noComment = false;
+        break;
+      case 'enable':
+        var n = parseInt(process.argv[argIndex+1], 10);
+        if (n+'' === process.argv[argIndex+1]) {
+          enableLast = n;
+          ++argIndex;
+        }
+        break;
+      case 'show':
+        var m = parseInt(process.argv[argIndex+1], 10);
+        if (m+'' === process.argv[argIndex+1]) {
+          showLast = m;
+          ++argIndex;
+        }
+        break;
+      default:
+        console.log('Skipping unknown flag: '+next);
+        break;
+    }
+
+    next = process.argv[++argIndex];
+  }
+
+  dirnameBare = process
+    .argv
+    .slice(argIndex)
+    .join('_')
+    .replace(/[^\d\w\.-_]/g, '_')
+    .replace(/__+/g, '_');
 }
 
 var files = [
@@ -138,6 +189,11 @@ var all = files.map(function(f){
   return '\n//######### '+f+' #########\n\n'+source+'\n\n//######### end of '+f+' #########\n\n';
 }).join('');
 
+// my DSL macros
+all = all
+  .replace(/^.*\/\/ #zp-build drop line(?: .*)?$/gm, '')
+  .replace(/^(.*)\.call\(this,\s*(.*)\/\/ #zp-build call(?: .*)?$/gm, '$1($2');
+
 // wrap in nodejs/browser way of exposing an exports object
 all = '(function(exports){'+all+'})(typeof exports === "undefined" ? window : exports);\n';
 
@@ -150,9 +206,15 @@ all = '(function(exports){'+all+'})(typeof exports === "undefined" ? window : ex
 var constants = [];
 var hash = {};
 var tok = Par.parse(all, {saveTokens:true, createBlackStream:true}).tok;
+var wtree = tok.tokens;
 var btree = tok.black;
+
+// first pass: replace constants
 btree.forEach(function(token){
   switch (Tok[token.type]) {
+    case 'asi':
+      console.log('Warning: ASI encountered, might affect build script');
+      break;
     case 'identifier':
       if (token.value.toUpperCase() === token.value && btree[token.black-1] !== '.') { // only leading primary
         if (!hash[token.value]) constants.push(hash[token.value] = {name:token.value, value:undefined, valid:true});
@@ -175,6 +237,17 @@ btree.forEach(function(token){
       break;
   }
 });
+
+// strip comments
+wtree.forEach(function(token){
+  switch (Tok[token.type]) {
+    case 'white':
+      if (noComment && token.value !== '\n') token.value = ' ';
+      break;
+  }
+});
+
+// second pass: drop constants
 btree.forEach(function(token){
   var target = hash[token.value];
   if (target && target.valid) {
@@ -191,106 +264,108 @@ btree.forEach(function(token){
   return token.value;
 });
 
-all = tok
-  .tokens
+// reconstruct (note: macros happen at the top because all comments are stripped at this point)
+all = wtree
   .map(function(t){ return t.value; })
   .join('')
+
+  // remove more than one whitespaces, trim both sides
+  //  .replace(/^[\t ]+|[\t ]+$|([\t ])[\t ]+/g, '$1')
+
+  // normalize newlines
   .replace(/[\r\n]/g, '\n')
-  .replace(/ +[\n\r]+/g, '')
+  .replace(/ +[\n\r]+/g, '') // trim
   .replace(/\n\n\n+/g, '\n\n')
 ;
+
+// to complete...
+//  /function ([\d\w_]+)\(\w*(?:,? ?\w*)*\) ?\{/
+//console.log(all.match(/function this_(?:par|tok)_[\w\d]+/g));
+//return;
 
 console.log('Writing build to build/zp.js');
 fs.writeFileSync(BUILD_DIR+'/zp.js', all);
 console.log('Done!');
 
-if (process.argv[2]) {
-  var dirnameBare = process
-    .argv
-    .slice(2)
-    .join('_')
-    .replace(/[^\d\w\.-_]/g, '_')
-    .replace(/__+/g, '_');
+if (dirnameBare) {
+  console.log('Also exporting to '+BUILD_DIR+'/'+dirnameBare);
 
-  if (dirnameBare) {
-    console.log('Exporting to '+BUILD_DIR+'/'+dirnameBare);
-
-    // find all existing build dirs, ignore _ prefixes
-    var dirs = fs
-      .readdirSync(BUILD_DIR)
-      .filter(function(s){
-        return s && s[0] !== '_' && fs.statSync(BUILD_DIR+'/'+s).isDirectory();
-      })
-      .map(function(s){
-        return {
-          full: s,
-          bare: s.slice(s.indexOf('_') + 1),
-        };
-      });
-
-    // reuse existing dir if same name
-    var found = dirs.filter(function(o){
-      return (dirnameBare === o.bare);
-    })[0];
-
-    if (found) {
-      dirname = found.full;
-    } else {
-      dirname = new Date().getTime()+'_'+dirnameBare;
-      dirs.unshift({full:dirname, bare:dirnameBare});
-    }
-
-    var fullDirname = BUILD_DIR+'/'+dirname;
-    if (!found) fs.mkdirSync(fullDirname);
-
-    // copy all source files and the build to this build dir for posterity
-    files.forEach(function(file){
-      fs.createReadStream(ROOT_DIR+'/src/'+file).pipe(fs.createWriteStream(fullDirname+'/'+file));
+  // find all existing build dirs, ignore _ prefixes
+  var dirs = fs
+    .readdirSync(BUILD_DIR)
+    .filter(function(s){
+      return s && s[0] !== '_' && fs.statSync(BUILD_DIR+'/'+s).isDirectory();
+    })
+    .map(function(s){
+      return {
+        full: s,
+        bare: s.slice(s.indexOf('_') + 1),
+      };
     });
-    fs.writeFileSync(fullDirname+'/build.js', all);
 
-    // update the gonzales config file
-    var gonzalesParsers = ROOT_DIR+'/../gonzales/data/zeparsers.js';
-    var templateFile = fs.readFileSync(gonzalesParsers).toString('utf-8');
+  // reuse existing dir if same name
+  var found = dirs.filter(function(o){
+    return (dirnameBare === o.bare);
+  })[0];
 
-    var TEMPLATE_START = 'TEMPLATE_START';
-    var TEMPLATE_END = 'TEMPLATE_END';
-    var RESULT_START = 'RESULT_START';
-    var RESULT_END = 'RESULT_END';
-    var TEMPLATE_NAME = 'TEMPLATE_NAME';
-    var TEMPLATE_SOURCE = 'TEMPLATE_SOURCE';
-
-    var template = templateFile.slice(
-      templateFile.indexOf('\n', templateFile.indexOf(TEMPLATE_START))+1,
-      templateFile.lastIndexOf('\n', templateFile.indexOf(TEMPLATE_END))
-    );
-
-    // copy all builds as a gonzales source
-    var result = dirs
-      .sort(function(a,b){
-        if (a.full > b.full) return -1;
-        if (a.full < b.full) return 1;
-        return 0;
-      })
-      .map(function(o){
-        var file = BUILD_DIR+'/'+ o.full;
-        if (o.full[0] !== '_' && fs.existsSync(file) && fs.statSync(file).isDirectory()) {
-          return template
-            .replace(TEMPLATE_NAME, "'"+o.bare.replace(/_/g, ' ')+"'")
-            .replace(TEMPLATE_SOURCE, "['../../zeparser2/build/"+o.full+'/build.js\']');
-        }
-        return '';
-      })
-      .join('\n')
-    ;
-
-    // and final gonzales config file looks like:
-    var totalFile =
-      templateFile.slice(0, templateFile.indexOf('\n', templateFile.indexOf(RESULT_START))+1) +
-      result +
-      templateFile.slice(templateFile.lastIndexOf('\n', templateFile.indexOf(RESULT_END)))
-    ;
-
-    fs.writeFileSync(gonzalesParsers, totalFile);
+  if (found) {
+    dirname = found.full;
+  } else {
+    dirname = new Date().getTime()+'_'+dirnameBare;
+    dirs.unshift({full:dirname, bare:dirnameBare});
   }
+
+  var fullDirname = BUILD_DIR+'/'+dirname;
+  if (!found) fs.mkdirSync(fullDirname);
+
+  // copy all source files and the build to this build dir for posterity
+  files.forEach(function(file){
+    fs.createReadStream(ROOT_DIR+'/src/'+file).pipe(fs.createWriteStream(fullDirname+'/'+file));
+  });
+  fs.writeFileSync(fullDirname+'/build.js', all);
+
+  // update the gonzales config file
+  var gonzalesParsers = ROOT_DIR+'/../gonzales/data/zeparsers.js';
+  var templateFile = fs.readFileSync(gonzalesParsers).toString('utf-8');
+
+  var TEMPLATE_START = 'TEMPLATE_START';
+  var TEMPLATE_END = 'TEMPLATE_END';
+  var RESULT_START = 'RESULT_START';
+  var RESULT_END = 'RESULT_END';
+  var TEMPLATE_NAME = 'TEMPLATE_NAME';
+  var TEMPLATE_SOURCE = 'TEMPLATE_SOURCE';
+
+  var template = templateFile.slice(
+    templateFile.indexOf('\n', templateFile.indexOf(TEMPLATE_START))+1,
+    templateFile.lastIndexOf('\n', templateFile.indexOf(TEMPLATE_END))
+  );
+
+  // copy all builds as a gonzales source
+  var result = dirs
+    .sort(function(a,b){
+      if (a.full > b.full) return -1;
+      if (a.full < b.full) return 1;
+      return 0;
+    })
+    .map(function(o){
+      var file = BUILD_DIR+'/'+ o.full;
+      if (o.full[0] !== '_' && fs.existsSync(file) && fs.statSync(file).isDirectory()) {
+        return template
+          .replace(TEMPLATE_NAME, "'"+o.bare.replace(/_/g, ' ')+"'")
+          .replace(TEMPLATE_SOURCE, "['../../zeparser2/build/"+o.full+'/build.js\']');
+      }
+      return '';
+    })
+    .join('\n')
+  ;
+
+  // and final gonzales config file looks like:
+  var totalFile =
+    templateFile.slice(0, templateFile.indexOf('\n', templateFile.indexOf(RESULT_START))+1) +
+    result +
+    templateFile.slice(templateFile.lastIndexOf('\n', templateFile.indexOf(RESULT_END)))
+  ;
+
+  fs.writeFileSync(gonzalesParsers, totalFile);
+  console.log('Export done');
 }
