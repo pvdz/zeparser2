@@ -677,9 +677,10 @@
       var input = this.input;
       var len = input.length;
 
+      // note: although we _know_ a newline will happen next; explicitly checking for it is slower than not.
+
       while (++pos < len) {
         var c = input.charCodeAt(pos);
-        // TOFIX: should add whitespace AND newline token here because we already know it'll happen...unless eof
         if (c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c !== ORD_PS && c !== ORD_LS*/) break;
       }
 
@@ -698,7 +699,6 @@
 
       while (notEof = (++pos < len)) {
         var c = input.charCodeAt(pos);
-        // TOFIX: should add whitespace AND newline token here because we already know it'll happen...unless eof
         if (c === ORD_CR_0D) { foundCr  = true; break; }
         if (c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
       }
@@ -726,21 +726,20 @@
       var input = this.input;
       var len = input.length;
 
-      var hasNewline = false;
+      var noNewline = true;
       var c = 0;
       var d = this.getLastNum3();
-      while (pos < len) {
+      while (pos++ < len) {
         c = d;
-        d = input.charCodeAt(++pos);
+        d = input.charCodeAt(pos);
 
         if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) break;
-
-        // only check one newline
-        // TOFIX: check whether the extra check is worth the overhead for eliminating repetitive checks
-        // (hint: if you generally check more characters here than you can skip, it's not worth it)
-        if (hasNewline || c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) hasNewline = this.lastNewline = true;
+        if (noNewline) noNewline = !(c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1); // c === ORD_PS || c === ORD_LS
       }
+
       this.pos = pos+1;
+      // yes I hate the double negation, but it saves doing ! above
+      if (!noNewline) this.lastNewline = true;
 
       return WHITE;
     },
