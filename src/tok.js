@@ -612,7 +612,6 @@
       // more CR/CRLF newlines. if encountered, they are consumed immediately for perf.
       // for LF (or PS and LS) newlines see parseNewline(). This is CR/CRLF only.
       var pos = this.pos;
-      var len = 1;
 
       this.lastNewline = true;
 
@@ -620,32 +619,26 @@
       var d = this.getLastNum2();
       // store whether this was crlf. if not, assume we wont encounter it again and we wont have to do extra charCodeAts
       var crlf = (d === ORD_LF_0A);
-      if (crlf) len = 2;
+      if (crlf) ++pos;
 
       var input = this.input;
       var tokens = this.tokens;
       while (true) { // TOFIX: EOF guard?
-        var c = this.nextNum2 = input.charCodeAt(pos+=len);
-        var lastlen = len;
-        len = 1;
+        var c = this.nextNum2 = input.charCodeAt(++pos);
 
-        if (!(
-          c === ORD_SPACE_20 ||
-          c === ORD_TAB_09 ||
-            // TOFIX: may want to eliminate this part, double CR is only about 0.9% of the time. could then also elminate the `len` var.
-          (c === ORD_CR_0D && !void (crlf && input.charCodeAt(pos+1) === ORD_LF_0A && (len=2)))
-        )) break;
+        // not checking newlines: not worth the extra CRLF complexity
+        if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
         ++this.tokenCountAll;
         if (this.options.saveTokens) {
           // we just checked another token, stash the previous one. it gets a bit ugly now :/
-          var s = pos-lastlen;
+          var s = pos-1;
           tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
         }
       }
 
       this.lastValue = '';
-      this.lastStart = pos-lastlen;
+      this.lastStart = pos-1;
       this.pos = pos;
 
       return WHITE;
