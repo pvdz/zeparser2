@@ -2,7 +2,7 @@
 // file has been post-processed by a build script. If you want to read
 // this file, see https://github.com/qfox/zeparser2
 
-// TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, etc
+// TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, etc
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
@@ -1010,35 +1010,42 @@
 
       var tok = this.tok;
       var len = tok.getLastLen();
+      var c = tok.getLastNum();
 
-      if (len === 1) return tok.getLastNum() === ORD_IS;
+      if (len === 1) return c === ORD_IS;
 
       else if (len === 2) {
-        // TOFIX: since this is a valid token, when could the second char ever be `=`? strings? regex? what else?
-        if (tok.getLastNum2() !== ORD_IS) return false;
-        var c = tok.getLastNum();
-        return (
-          c === ORD_PLUS ||
-          c === ORD_MIN ||
+        // if a token, which must be valid at this point has the equal sign
+        // as second char and length 2 there is a white list and black list
+        // of possible options;
+        // good: += -= *= |= &= ^= /= ~=
+        // bad: == >= <= !=
+        // the danger here is testing becomes very hard because it doesnt
+        // see the difference between assignment op and nonassign binary op
+        // the gain is minimal since compound ops dont occur very often
+
+        return ((
+            c === ORD_PLUS ||
+            c === ORD_MIN ||
+            c === ORD_OR ||
+            c === ORD_AND ||
+            c === ORD_FWDSLASH
+          ) && (tok.getLastNum2() === ORD_IS)) ||
           c === ORD_STAR ||
-          c === ORD_OR ||
-          c === ORD_AND ||
           c === ORD_PERCENT ||
-          c === ORD_XOR ||
-          c === ORD_FWDSLASH
-        );
+          c === ORD_XOR;
       }
 
       else {
         // TOFIX: len checks may be optimized away. can they fail at this point?
         // these <<= >>= >>>= cases are very rare
-        if (len === 3 && tok.getLastNum() === ORD_LT) {
-          return (tok.getLastNum2() === ORD_LT && tok.getLastNum3() === ORD_IS); // <<=
+        if (len === 3 && c === ORD_LT) {
+          return (tok.getLastNum2() === ORD_LT && tok.getNum(2) === ORD_IS); // <<=
         }
-        else if (tok.getLastNum() === ORD_GT) {
-          return ((tok.getLastNum2() === ORD_GT) && (
-            (len === 4 && tok.getLastNum3() === ORD_GT && tok.getLastNum4() === ORD_IS) || // >>>=
-            (len === 3 && tok.getLastNum3() === ORD_IS) // >>=
+        else if (c === ORD_GT) {
+          return ((tok.getLastNum2(2) === ORD_GT) && (
+            (len === 4 && tok.getNum(2) === ORD_GT && tok.getNum(3) === ORD_IS) || // >>>=
+            (len === 3 && tok.getNum(2) === ORD_IS) // >>=
           ));
         }
       }
@@ -1046,7 +1053,7 @@
       return false;
     },
     isBinaryOperator: function(){
-      // non-assignment binary operator
+      // _non-assignment binary operator
 
       // this method works under the assumption that the current token is
       // part of the set of valid _tokens_ for js. So we don't have to check
@@ -1080,7 +1087,11 @@
       else if (c === ORD_PLUS) return (tok.getLastLen() === 1);
 
       // === !==
-      else if (c === ORD_IS || c === ORD_EXCL) return (tok.getLastNum2() === ORD_IS && (tok.getLastLen() === 2 || tok.getLastNum3() === ORD_IS));
+      else if (c === ORD_IS || c === ORD_EXCL) {
+        // we already know token is valid. all tokens that start with = and ! are:
+        // = ! == != === !==, so we must only make sure length > 1
+        return tok.getLastLen() > 1;
+      }
 
       // & &&
       else if (c === ORD_AND) return (tok.getLastLen() === 1 || tok.getLastNum2() === ORD_AND);
@@ -1088,31 +1099,37 @@
       // | ||
       else if (c === ORD_OR) return (tok.getLastLen() === 1 || tok.getLastNum2() === ORD_OR);
 
-      // TOFIX: can't we just check length? if len=2 i think it must be bin op
       else if (c === ORD_LT) {
-        if (tok.getLastLen() === 1) return true;
-        var d = tok.getLastNum2();
-        // the len check prevents <<= (which is an assignment)
-        return ((d === ORD_LT && tok.getLastLen() === 2) || d === ORD_IS); // << <=
+        // we already know token is valid. all tokens that start with < are:
+        // < <= << <<=, so we must only make sure it's not length=3.
+        return tok.getLastLen() < 3;
       }
 
       // if len is more than 1, it's a compound assignment (*=)
       else if (c === ORD_STAR) return (tok.getLastLen() === 1);
 
       else if (c === ORD_GT) {
+        // >
+        // >>
+        // >>>
+        // >=
+        // >>=
+        // >>>=
+
         var len = tok.getLastLen();
-        if (len === 1) return true;
-        var d = tok.getLastNum2();
-        // the len checks prevent >>= and >>>= (which are assignments)
-        // TOFIX: can't we just check length? if len=2 i think it must be bin op: len<=2||(len===3&&num3===GT)
-        return (d === ORD_IS || (len === 2 && d === ORD_GT) || (len === 3 && tok.getLastNum3() === ORD_GT)); // >= >> >>>
+        // all the len 1 or 2 tokens are fine here. len 3 might be assignment. 4 is always assignment (only one)
+        // note: tokenizer already makes sure each token is valid. we can skip some checks here
+        return (len < 3 || (len === 3 && tok.getNum(2) === ORD_GT)); // >= >> >>>
       }
 
       // if len is more than 1, it's a compound assignment (%=, ^=, /=, -=)
       else if (c === ORD_PERCENT || c === ORD_XOR || c === ORD_FWDSLASH || c === ORD_MIN) return (tok.getLastLen() === 1);
 
       // if not punctuator, it could still be `in` or `instanceof`...
-      else if (c === ORD_L_I) return ((tok.getLastLen() === 2 && tok.getLastNum2() === ORD_L_N) || (tok.getLastLen() === 10 && tok.getLastValue() === 'instanceof'));
+      else if (c === ORD_L_I) {
+        var len = tok.getLastLen();
+        return (len === 2 && tok.getLastNum2() === ORD_L_N) || (len === 10 && tok.getLastValue() === 'instanceof');
+      }
 
       // not a (non-assignment) binary operator
       return false;

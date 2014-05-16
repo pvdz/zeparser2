@@ -649,8 +649,8 @@
     parseEqualSigns: function(){
       var len = 1;
       if (this.getLastNum2() === ORD_IS_3D) {
-        len = 2;
-        if (this.getLastNum3() === ORD_IS_3D) len = 3;
+        if (this.input.charCodeAt(this.lastStart+2) === ORD_IS_3D) len = 3;
+        else len = 2;
       }
       this.pos += len;
       return PUNCTUATOR;
@@ -661,11 +661,11 @@
       if (d === ORD_IS_3D) len = 2;
       else if (d === c) {
         len = 2;
-        var e = this.getLastNum3();
+        var e = this.input.charCodeAt(this.lastStart+2);
         if (e === ORD_IS_3D) len = 3;
         else if (e === c && c !== ORD_LT_3C) {
           len = 3;
-          if (this.getLastNum4() === ORD_IS_3D) len = 4;
+          if (this.input.charCodeAt(this.lastStart+3) === ORD_IS_3D) len = 4;
         }
       }
       this.pos += len;
@@ -741,7 +741,7 @@
 
       var noNewline = true;
       var c = 0;
-      var d = this.getLastNum3();
+      var d = this.input.charCodeAt(pos);
       while (pos++ < len) {
         c = d;
         d = input.charCodeAt(pos);
@@ -1082,13 +1082,8 @@
       if (n) return n;
       return this.nextNum2 = this.input.charCodeAt(this.lastStart+1);
     },
-    getLastNum3: function(){
-      // TOFIX: refactor this out. it's useless now
-      return this.input.charCodeAt(this.lastStart+2);
-    },
-    getLastNum4: function(){
-      // TOFIX: refactor this out. it's useless now
-      return this.input.charCodeAt(this.lastStart+3);
+    getNum: function(offset){
+      return this.input.charCodeAt(this.lastStart+offset)
     },
 
     getLastLen: function(){
