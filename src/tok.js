@@ -908,7 +908,6 @@
     regexBody: function(){
       var input = this.input;
       var len = input.length;
-      // TOFIX: fix loop
       while (this.pos < len) {
         var c = input.charCodeAt(this.pos++);
 
@@ -961,64 +960,79 @@
       // starts at the beginning of this token, which is not the case for regular expressions.
       // so we use the remainder parser, which parses the second up to the rest of the identifier
 
-      this.pos = this.parseIdentifierRest(0);
+      --this.pos; // parseIdentifierRest assumes the current char can be consumed, but that's not the case here, so we compensate
+      this.pos = this.parseIdentifierRest();
     },
     parseIdentifier: function(){
       // TOFIX: leading unicode chars might still not validate as identifiers
-      this.pos = this.parseIdentifierRest(1);
+      this.pos = this.parseIdentifierRest();
       return IDENTIFIER;
     },
     parseEscapedIdentifier: function(){
       // only for the case where an identifier starts with \uxxxx
-      this.pos = this.parseIdentifierRest(6);
+
+      this.pos += 5; // +6 but parseIdentifierRest will consume 1 as well
+      this.pos = this.parseIdentifierRest();
       return IDENTIFIER;
     },
-    parseIdentifierRest: function(delta){
+    parseIdentifierRest: function(){
       // also used by regex flag parser!
 
       var input = this.input;
       var len = input.length;
       var start = this.lastStart;
-      var pos = this.pos + delta;
+      var pos = this.pos + 1;
 
-      if (pos - start === 0) {
-        throw 'Internal error; identifier scanner should already have validated first char.'+this.tok.syntaxError();
-      }
+      if (pos - start === 0) { // #zp-build drop line
+        throw 'Internal error; identifier scanner should already have validated first char.'+this.tok.syntaxError(); // #zp-build drop line
+      } // #zp-build drop line
 
       // note: statements in this loop are the second most executed statements
-      while (pos < len) {
-        switch (pos - start) {
-          case 1:
-            var c = this.getLastNum2();
-            break;
-          case 2:
-            var c = this.getLastNum3();
-            break;
-          case 3:
-            var c = this.getLastNum4();
-            break;
-          default:
-            var c = input.charCodeAt(pos);
+      // note: no EOF check. rationale: EOF is a permanent error, optimization is no longer relevant in such case.
+      while (true) {
+
+        // sequential lower case letters are very common, 5:2
+        // combining lower and upper case letters here to reduce branching later https://twitter.com/mraleph/status/467277652110614528
+        var c = input.charCodeAt(pos);
+        var b = c & 0xffdf;
+        while (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
+          c = input.charCodeAt(++pos);
+          b = c & 0xffdf;
         }
 
-        // a-z A-Z 0-9 $ _
-        // TOFIX: character occurrence analysis
-        // TOFIX: two checks can be eliminated
-        if ((c >= ORD_L_A_61 && c <= ORD_L_Z_7A) || (c >= ORD_L_A_UC_41 && c <= ORD_L_Z_UC_5A) || (c >= ORD_L_0_30 && c <= ORD_L_9_39) || c === ORD_$_24 || c === ORD_LODASH_5F) {
-          ++pos;
-        // \uxxxx (TOFIX: validate resulting char?)
-        } else if (c === ORD_BACKSLASH_5C && input.charCodeAt(pos+1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos+2)) {
-          pos += 6;
-        } else if (c > UNICODE_LIMIT_127 && uniRegex.test(String.fromCharCode(c))) {
-          pos += 1;
-        } else {
-          break;
-        }
+        var delta = this.parseOtherIdentifierParts(c, pos, input);
+        if (!delta) break;
+        pos += delta;
       }
 
       // TOFIX: put c in nextChar2 cache, or at least somehow make it use this value next time.
 
       return pos;
+    },
+
+    parseOtherIdentifierParts: function(c, pos, input){
+      if (c >= ORD_L_0_30 ? c <= ORD_L_9_39 || c === ORD_LODASH_5F : c === ORD_$_24) {
+        return 1;
+      }
+
+      // \uxxxx (TOFIX: validate resulting char?)
+      if (c === ORD_BACKSLASH_5C) {
+        if (input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
+          return 6;
+        }
+
+        this.pos = pos;
+        throw 'Unexpected backslash inside identifier.'+this.syntaxError();
+      }
+
+      if (c > UNICODE_LIMIT_127) {
+        if (uniRegex.test(String.fromCharCode(c))) {
+          return 1;
+        }
+        // dont throw; could be PS/LS...
+      }
+
+      return 0;
     },
 
     getLastValue: function(){
