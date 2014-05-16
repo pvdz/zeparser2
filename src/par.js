@@ -279,46 +279,45 @@
       return PARSEDSOMETHING;
     },
     parseVarPartNoIn: function(){
-      var state = NOPARSE;
       var tok = this.tok;
+      var vars = 0;
 
       do {
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
+        ++vars;
 
         if (tok.isNum(ORD_IS) && tok.getLastLen() === 1) {
           tok.nextExpr();
           this.parseExpressionNoIn();
         }
-      } while(tok.nextExprIfNum(ORD_COMMA) && (state = NONFORIN));
 
-      return state;
+      } while(tok.nextExprIfNum(ORD_COMMA));
+
+      return vars > 1;
     },
     parseIf: function(inFunction, inLoop, inSwitch, labelSet){
       // if (<exprs>) <stmt>
       // if (<exprs>) <stmt> else <stmt>
 
-      this.tok.nextPunc();
+      var tok = this.tok;
+
+      tok.nextPunc();
       this.parseStatementHeader();
       this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
 
-      this.parseElse(inFunction, inLoop, inSwitch, labelSet);
-
-      return PARSEDSOMETHING;
-    },
-    parseElse: function(inFunction, inLoop, inSwitch, labelSet){
-      // else <stmt>;
-
-      var tok = this.tok;
       if (tok.getLastValue() === 'else') {
         tok.nextExpr();
         this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
       }
+
+      return PARSEDSOMETHING;
     },
     parseDo: function(inFunction, inLoop, inSwitch, labelSet){
       // do <stmt> while ( <exprs> ) ;
 
       var tok = this.tok;
+
       tok.nextExpr(); // do
       this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
       tok.mustBeString('while', NEXTTOKENCANBEDIV);
@@ -429,10 +428,10 @@
       var tok = this.tok;
       // next tag must be an identifier
       var label = tok.getLastValue();
-      if (labelSet.indexOf(label) >= 0) {
+      if (labelSet && labelSet.indexOf(label) >= 0) {
         tok.nextExpr(); // label (already validated)
       } else {
-        throw 'Label ['+label+'] not found in label set.'+tok.syntaxError();
+        throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
       }
     },
     parseReturn: function(inFunction, inLoop, inSwitch){
