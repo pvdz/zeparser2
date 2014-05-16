@@ -2,7 +2,7 @@
 // file has been post-processed by a build script. If you want to read
 // this file, see https://github.com/qfox/zeparser2
 
-// TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, etc
+// TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
@@ -102,6 +102,8 @@
   var ORD_LT = 0x3c;
   var ORD_GT = 0x3e;
 
+  var EMPTY_LABELSET = '';
+
   var Par = exports.Par = function(input, options){
     this.options = options = options || {};
 
@@ -154,7 +156,7 @@
       // prepare
       tok.nextExpr();
       // go!
-      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, null);
+      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
       if (tok.pos !== tok.len) throw 'Did not complete parsing... '+tok.syntaxError();
 
       return this;
@@ -602,7 +604,7 @@
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
       this.parseParameters(paramCount);
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
-      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, null);
+      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
     },
     parseParameters: function(paramCount){
       // [<idntf> [, <idntf>]]
@@ -687,16 +689,10 @@
           throw 'Reserved identifier found in label.'+this.tok.syntaxError();
         }
 
-        if (!labelSet) labelSet = [labelName];
-        else labelSet.push(labelName);
-
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
-        labelSet.pop();
-
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
       } else {
 
         // TOFIX: test if we should just merge this...
-
         // TOFIX: add test case where this fails without parens; `state & NONASSIGNEE` needs parenthesis
         // TOFIX: cant we just drop the `>0` part? or do we want to force the arg to be bool? what about double bang?
         this.parseAssignments((state & NONASSIGNEE) > 0);
