@@ -557,10 +557,10 @@
     },
 
     parseBackslash: function(){
-      if (this.getLastNum2() === ORD_L_U_75 && this.parseUnicodeEscapeBody(this.pos+2)) {
-        return this.parseEscapedIdentifier();
-      }
-      throw 'Token scanner saw backslash where it did not expect one.'+this.syntaxError();
+      this.parseAndValidateUnicodeAsIdentifier(this.pos, this.input, true);
+      this.pos += 6;
+      this.pos = this.parseIdentifierRest();
+      return IDENTIFIER;
     },
 
     parseOneChar: function(type){
@@ -631,9 +631,19 @@
     },
 
     parseSameOrCompound: function(c){
+      // |&-+
+
       var d = this.getLastNum2();
-      this.pos += (d === ORD_IS_3D || d === c) ? 2 : 1;
-//      this.pos += ((d === ORD_IS) | (d === c)) + 1; // ;)
+      // pick one, any one :) (this func runs too infrequent to make a significant difference)
+//      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
+//      this.pos += 1 + (!(d - c && d - ORD_IS_3D) |0);
+//      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
+//      this.pos += 1 + ((!(c-d))|0) + ((!(d-ORD_IS_3D))|0);
+//      this.pos += 1 + (d === c | d === ORD_IS_3D);
+//      this.pos += 1 + !(d-c && d-ORD_IS_3D);
+
+      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
+
       return PUNCTUATOR;
     },
     parseEqualSigns: function(){
@@ -969,13 +979,6 @@
       this.pos = this.parseIdentifierRest();
       return IDENTIFIER;
     },
-    parseEscapedIdentifier: function(){
-      // only for the case where an identifier starts with \uxxxx
-
-      this.pos += 5; // +6 but parseIdentifierRest will consume 1 as well
-      this.pos = this.parseIdentifierRest();
-      return IDENTIFIER;
-    },
     parseIdentifierRest: function(){
       // also used by regex flag parser!
 
@@ -1016,14 +1019,10 @@
         return 1;
       }
 
-      // \uxxxx (TOFIX: validate resulting char?)
+      // \uxxxx
       if (c === ORD_BACKSLASH_5C) {
-        if (input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
-          return 6;
-        }
-
-        this.pos = pos;
-        throw 'Unexpected backslash inside identifier.'+this.syntaxError();
+        this.parseAndValidateUnicodeAsIdentifier(pos, input, false);
+        return 6;
       }
 
       if (c > UNICODE_LIMIT_127) {
@@ -1034,6 +1033,32 @@
       }
 
       return 0;
+    },
+
+    parseAndValidateUnicodeAsIdentifier: function(pos, input, atStart){
+      if (input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
+
+        var u = parseInt(input.slice(pos+2, pos+6), 16);
+        var b = u & 0xffdf;
+        if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
+          return true;
+        }
+        if (u >= ORD_L_0_30 && u <= ORD_L_9_39) {
+          if (atStart) throw 'Digit not allowed at start of identifier, not even escaped.'+this.syntaxError();
+          return true;
+        }
+        if (u === ORD_LODASH_5F || u === ORD_$_24) {
+          return true;
+        }
+        if (uniRegex.test(String.fromCharCode(u))) {
+          return true;
+        }
+
+        throw 'Encountered \\u escape ('+u+') but the char is not a valid identifier part.'
+      }
+
+      this.pos = pos;
+      throw 'Unexpected backslash inside identifier.'+this.syntaxError();
     },
 
     getLastValue: function(){
