@@ -33,7 +33,6 @@
   var NONFORIN = 2; // comma, assignment, non-assignee
   var ASSIGNEE = 4;
   var NEITHER = NONASSIGNEE | NONFORIN;
-  var ISLABEL = 8;
 
   // boolean constants
   var OPTIONAL = true;
@@ -666,41 +665,49 @@
       this.parseSemi();
     },
     parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet){
-      // TOFIX: we can do away with the labelname now and perhaps save some slicing (??)
+      // this method is only called at the start of a statement that starts
+      // with an identifier that is neither `function` nor a statement keyword
 
-      // this method is only called at the start of
-      // a statement that starts with an identifier.
+      var tok = this.tok;
+      var isLabel = false;
+      var assignable = ASSIGNEE;
 
-      // ugly but mandatory label check
-      // if this is a label, the parsePrimary parser
-      // will have bailed when seeing the colon.
-      var state = this.parsePrimaryOrLabel(labelName);
-      if (state & ISLABEL) {
+      // if we parse any unary, we wont have to check for label
+      var hasPrefix = this.parseUnary();
 
-        // the label will have been checked for being a reserved keyword
-        // except for the value keywords. so we need to do that here.
-        // no need to check for function, because that cant occur here.
-        // note that it's pretty rare for the parser to reach this
-        // place, so i dont feel it's very important to take the uber
-        // optimized route. simple string comparisons will suffice.
-        // note that this is already confirmed to be used as a label so
-        // if any of these checks match, an error will be thrown.
-        if (this.isValueKeyword(labelName)) {
-          throw 'Reserved identifier found in label.'+this.tok.syntaxError();
+      if (!hasPrefix) {
+        // verify label name and check if it's succeeded by a colon
+
+        // TOFIX: we dont have to check for any of the statement identifiers (break, return, if). can we optimize this case? is it worth it?
+        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
+
+        tok.nextPunc();
+
+        if (tok.nextExprIfNum(ORD_COLON)) {
+          isLabel = true;
+          if (this.isValueKeyword(labelName)) throw 'Label is a reserved keyword.'+this.syntaxError();
+          return this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
+        }
+      } else {
+        if (tok.isType(IDENTIFIER) && this.isReservedIdentifier(IGNOREVALUES)) {
+          throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
         }
 
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
-      } else {
-
-        // TOFIX: test if we should just merge this...
-        // TOFIX: add test case where this fails without parens; `state & NONASSIGNEE` needs parenthesis
-        // TOFIX: cant we just drop the `>0` part? or do we want to force the arg to be bool? what about double bang?
-        this.parseAssignments((state & NONASSIGNEE) > 0);
-        this.parseNonAssignments();
-
-        if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
-        this.parseSemi();
+        var notAssignable = this.parsePrimaryValue(REQUIRED);
+        if (notAssignable || hasPrefix) assignable = NONASSIGNEE;
       }
+
+      var suffixState = this.parsePrimarySuffixes();
+      if (suffixState & ASSIGNEE) assignable = ASSIGNEE;
+      else if (suffixState & NONASSIGNEE) assignable = NONASSIGNEE;
+
+      // TOFIX: add test case where this fails without parens; `state & NONASSIGNEE` needs parenthesis
+      // TOFIX: cant we just drop the `>0` part? or do we want to force the arg to be bool? what about double bang?
+      this.parseAssignments((assignable & NONASSIGNEE) > 0);
+      this.parseNonAssignments();
+
+      if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
+      this.parseSemi();
     },
     parseOptionalExpressions: function(){
       var tok = this.tok;
@@ -869,50 +876,6 @@
       else if (suffixNonAssignee === NOPARSE && parsedUnary) nonAssignee = true;
 
       return nonAssignee;
-    },
-    parsePrimaryOrLabel: function(labelName){
-      // note: this function is only executed for statements that start
-      //       with an identifier . the function keyword will already
-      //       have been filtered out by the main statement start
-      //       parsing method. So we dont have to check for the function
-      //       keyword here; it cant occur.
-      var tok = this.tok;
-
-      var state = NOPARSE;
-
-      // if we parse any unary, we wont have to check for label
-      // TOFIX: if it has a prefix we could make it call parsePrimary but this probably doesn't happen often enough to warrant a perf gain
-      var hasPrefix = this.parseUnary();
-
-      // simple shortcut: this function is only called if (at
-      // the time of calling) the next token was an identifier.
-      // if parseUnary returns true, we wont know what the type
-      // of the next token is. otherwise it must still be identifier!
-      if (!hasPrefix || tok.isType(IDENTIFIER)) {
-        // in fact... we dont have to check for any of the statement
-        // identifiers (break, return, if) because parseIdentifierStatement
-        // will already have ensured a different code path in that case!
-        // TOFIX: check how often this is called and whether it's worth investigating...
-        // TOFIX: we dont have to check for any of the statement identifiers (break, return, if). can we optimize this case? is it worth it?
-        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
-
-        tok.nextPunc();
-
-        // now's the time... you just ticked off an identifier, check the current token for being a colon!
-        // (quick check first: if there was a unary operator, this cant be a label)
-        if (!hasPrefix) {
-          if (tok.nextExprIfNum(ORD_COLON)) return ISLABEL;
-        }
-        if (hasPrefix || this.isValueKeyword(labelName)) state = NONASSIGNEE;
-      } else {
-        if (this.parsePrimaryValue(REQUIRED) || hasPrefix) state = NONASSIGNEE;
-      }
-
-      var suffixState = this.parsePrimarySuffixes();
-      if (suffixState & ASSIGNEE) state = NOPARSE;
-      else if (suffixState & NONASSIGNEE) state = NONASSIGNEE;
-
-      return state;
     },
     parsePrimaryValue: function(optional){
       // at this point in the expression parser we will
