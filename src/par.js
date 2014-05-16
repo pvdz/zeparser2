@@ -166,9 +166,7 @@
       while (!tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
-      // TOFIX: get frequency stats on statement start
       if (this.tok.isType(IDENTIFIER)) {
-        // dont "just" return true. case and default still return false
         return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
       } else {
         return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
