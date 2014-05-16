@@ -5,6 +5,8 @@
   // token start stats: http://qfox.nl/weblog/302
 
   // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
+  // TOFIX: confirm all instance properties are set in the constructor
+  // TOFIX: eliminate various EOF checks when possible
 
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
@@ -604,8 +606,7 @@
       // overhead by directly checking for spaces and tabs first.
       // note: first loop consumes the verified newline.
 
-      // no EOF guard, charCodeAt returns NaN beyond string boundary, which is fine.
-      // TOFIX: for repeated perf we could add the check though. because the NaN will DEOPT
+      // no EOF guard, charCodeAt returns NaN beyond string boundary, which is fine (will deopt, but that's irrelevant at EOF).
       // (if check, handle consuming the first newline better somehow)
       while (true) {
         var c = input.charCodeAt(++pos);

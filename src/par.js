@@ -1,6 +1,9 @@
 // If you see magic numbers and bools all over the place, it means this
 // file has been post-processed by a build script. If you want to read
 // this file, see https://github.com/qfox/zeparser2
+
+// TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, etc
+
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
 
