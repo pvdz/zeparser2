@@ -965,6 +965,18 @@ var bad = [
   ["x=5+y>>=8", ">>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
   ["x=5+y>>>=8", ">>>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
 
+  ["x >>|= y;", "obviously invalid, passes if incorrectly validating op"],
+  ["x >|>= y;", "obviously invalid, passes if incorrectly validating op"],
+  ["x >>>| y;", "obviously invalid, passes if incorrectly validating op"],
+  ["x >|= y;", "obviously invalid, passes if incorrectly validating op"],
+  ["x >>| y;", "obviously invalid, passes if incorrectly validating op"],
+  ["x + b >>= y;", "invalid assignment after non-assignment >>="],
+  ["x + b >>>= y;", "invalid assignment after non-assignment >>>="],
+  ["x + b <<= y;", "invalid assignment after non-assignment <<="],
+  ["x + b >>= y;", "invalid assignment after non-assignment >>="],
+  ["x + b >>>= y;", "invalid assignment after non-assignment >>>="],
+  ["x + b <<= y;", "invalid assignment after non-assignment <<="],
+
   ["var \\uuuuuf;", "start with invalid unicode escape range"],
   ["var f\\uuuuu;", "invalid unicode escape range"],
   ["var \\u0020f;", "start with invalid unicode escape range (\\u must add something to the identifier name, space does not)"],
