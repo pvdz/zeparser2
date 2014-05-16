@@ -209,9 +209,6 @@
       // parseExpressionOrLabel function. So we can just get it now.
       var value = tok.getLastValue();
 
-      // track whether this token was parsed. if not, do parseExpressionOrLabel at the end
-      var startCount = tok.tokenCountAll;
-
       var len = tok.getLastLen();
 
       // TOFIX: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
@@ -222,36 +219,35 @@
         var c = tok.getLastNum();
 
         if (c === ORD_L_T) {
-          if (value === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'throw') this.parseThrow();
+          if (value === 'try') return this.parseTry(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'throw') return this.parseThrow();
         }
-        else if (c === ORD_L_I && len === 2 && tok.getNum(1) === ORD_L_F) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_V && value === 'var') this.parseVar();
-        else if (c === ORD_L_R && value === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
+        else if (c === ORD_L_I && len === 2 && tok.getNum(1) === ORD_L_F) return this.parseIf(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_V && value === 'var') return this.parseVar();
+        else if (c === ORD_L_R && value === 'return') return this.parseReturn(inFunction, inLoop, inSwitch);
         else if (c === ORD_L_F) {
-          if (value === 'function') this.parseFunction(FORFUNCTIONDECL);
-          else if (value === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
+          if (value === 'for') return this.parseFor(inFunction, inLoop, inSwitch, labelSet);
         }
         else if (c === ORD_L_C) {
-          if (value === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
+          if (value === 'continue') return this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
         }
-        else if (c === ORD_L_B && value === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_B && value === 'break') return this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
         else if (c === ORD_L_D) {
           if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
-          else if (len === 2 && tok.getNum(1) === ORD_L_O) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'debugger') this.parseDebugger();
+          if (len === 2 && tok.getNum(1) === ORD_L_O) return this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'debugger') return this.parseDebugger();
         }
-        else if (c === ORD_L_S && value === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_S && value === 'switch') return this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
         else if (c === ORD_L_W) {
-          if (value === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'while') return this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'with') return this.parseWith(inFunction, inLoop, inSwitch, labelSet);
         }
       }
 
-      // TOFIX: if the above would return early, would we still need this tokencount check?
       // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
-      if (tok.tokenCountAll === startCount) this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
+      this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
 
       return PARSEDSOMETHING;
     },
@@ -272,13 +268,15 @@
       tok.nextPunc();
       do {
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
-        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX); // TOFIX: can never be regex nor div. does that matter?
+        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         if (tok.isNum(ORD_IS) && tok.getLastLen() === 1) {
           tok.nextExpr();
           this.parseExpression();
         }
       } while(tok.nextExprIfNum(ORD_COMMA));
       this.parseSemi();
+
+      return PARSEDSOMETHING;
     },
     parseVarPartNoIn: function(){
       var state = NOPARSE;
@@ -305,6 +303,8 @@
       this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
 
       this.parseElse(inFunction, inLoop, inSwitch, labelSet);
+
+      return PARSEDSOMETHING;
     },
     parseElse: function(inFunction, inLoop, inSwitch, labelSet){
       // else <stmt>;
@@ -327,6 +327,8 @@
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); //no regex following because it's either semi or newline without asi if a forward slash follows it
       // TOFIX: support browsers that allow semi to be omitted w/o asi?
       this.parseSemi();
+
+      return PARSEDSOMETHING;
     },
     parseWhile: function(inFunction, inLoop, inSwitch, labelSet){
       // while ( <exprs> ) <stmt>
@@ -334,6 +336,8 @@
       this.tok.nextPunc();
       this.parseStatementHeader();
       this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+
+      return PARSEDSOMETHING;
     },
     parseFor: function(inFunction, inLoop, inSwitch, labelSet){
       // for ( <expr-no-in-=> in <exprs> ) <stmt>
@@ -363,6 +367,8 @@
 
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
       this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+
+      return PARSEDSOMETHING;
     },
     parseForEachHeader: function(){
       // <expr> ; <expr> ) <stmt>
@@ -394,6 +400,8 @@
       }
 
       this.parseSemi();
+
+      return PARSEDSOMETHING;
     },
     parseBreak: function(inFunction, inLoop, inSwitch, labelSet){
       // break ;
@@ -414,6 +422,8 @@
       }
 
       this.parseSemi();
+
+      return PARSEDSOMETHING;
     },
     parseLabel: function(labelSet){
       var tok = this.tok;
@@ -441,6 +451,8 @@
         this.parseOptionalExpressions();
         this.parseSemi();
       }
+
+      return PARSEDSOMETHING;
     },
     parseThrow: function(){
       // throw <exprs> ;
@@ -449,10 +461,12 @@
       tok.nextExpr();
       if (tok.getLastNewline()) {
         throw 'No newline allowed directly after a throw, ever.'+tok.syntaxError();
-      } else {
-        this.parseExpressions();
-        this.parseSemi();
       }
+
+      this.parseExpressions();
+      this.parseSemi();
+
+      return PARSEDSOMETHING;
     },
     parseSwitch: function(inFunction, inLoop, inSwitch, labelSet){
       // switch ( <exprs> ) { <switchbody> }
@@ -463,6 +477,8 @@
       tok.mustBeNum(ORD_OPEN_CURLY, NEXTTOKENCANBEREGEX);
       this.parseSwitchBody(inFunction, inLoop, INSWITCH, labelSet);
       tok.mustBeNum(ORD_CLOSE_CURLY, NEXTTOKENCANBEREGEX);
+
+      return PARSEDSOMETHING;
     },
     parseSwitchBody: function(inFunction, inLoop, inSwitch, labelSet){
       // [<cases>] [<default>] [<cases>]
@@ -510,6 +526,7 @@
       var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
 
       if (!one && !two) throw 'Try must have at least a catch or finally block or both.'+this.tok.syntaxError();
+      return PARSEDSOMETHING;
     },
     parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
       // catch ( <idntf> ) { <stmts> }
@@ -548,6 +565,8 @@
 
       this.tok.nextPunc();
       this.parseSemi();
+
+      return PARSEDSOMETHING;
     },
     parseWith: function(inFunction, inLoop, inSwitch, labelSet){
       // with ( <exprs> ) <stmts>
@@ -555,6 +574,8 @@
       this.tok.nextPunc();
       this.parseStatementHeader();
       this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
+
+      return PARSEDSOMETHING;
     },
     parseFunction: function(forFunctionDeclaration){
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
@@ -568,6 +589,8 @@
         throw 'Function declaration requires a name.'+tok.syntaxError();
       }
       this.parseFunctionRemainder(-1, forFunctionDeclaration);
+
+      return PARSEDSOMETHING;
     },
     /**
      * Parse the function param list and body
