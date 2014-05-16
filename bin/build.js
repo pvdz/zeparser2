@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-// TOFIX: drop any line containing `#zp-build drop line`
-
 console.log("Building...");
 
 var fs = require('fs');
