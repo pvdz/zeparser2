@@ -227,7 +227,7 @@
           if (value === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
           else if (value === 'throw') this.parseThrow();
         }
-        else if (c === ORD_L_I && len === 2 && tok.getLastNum2() === ORD_L_F) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_I && len === 2 && tok.getNum(1) === ORD_L_F) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
         else if (c === ORD_L_V && value === 'var') this.parseVar();
         else if (c === ORD_L_R && value === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
         else if (c === ORD_L_F) {
@@ -241,7 +241,7 @@
         else if (c === ORD_L_B && value === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
         else if (c === ORD_L_D) {
           if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
-          else if (len === 2 && tok.getLastNum2() === ORD_L_O) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+          else if (len === 2 && tok.getNum(1) === ORD_L_O) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
           else if (value === 'debugger') this.parseDebugger();
         }
         else if (c === ORD_L_S && value === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
@@ -358,7 +358,7 @@
         else state = this.parseExpressionsNoIn();
 
         if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader();
-        else if (tok.getLastNum() !== ORD_L_I || tok.getLastNum2() !== ORD_L_N || tok.getLastLen() !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
+        else if (tok.getLastNum() !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.getLastLen() !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
         else if (state && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+tok.syntaxError();
         else this.parseForInHeader();
       }
@@ -798,7 +798,7 @@
           // will check for a primary. it's therefore more likely that an getLastNum will
           // save time because it would cache the charCodeAt for the other token if
           // it failed the check
-          if (tok.getLastNum() === ORD_L_I && tok.getLastNum2() === ORD_L_N && tok.getLastLen() === 2) { // in
+          if (tok.getLastNum() === ORD_L_I && tok.getNum(1) === ORD_L_N && tok.getLastLen() === 2) { // in
             repeat = false;
           } else {
             tok.nextExpr();
@@ -943,8 +943,8 @@
       else if (c === ORD_EXCL) return true;
       else if (c === ORD_L_V) return tok.getLastValue() === 'void';
       // TOFIX do i actually need to check for lastLen? tok should already be a "clean" token. what other values might start with "-"? - -- -=
-      else if (c === ORD_MIN) return (tok.getLastLen() === 1 || (tok.getLastNum2() === ORD_MIN));
-      else if (c === ORD_PLUS) return (tok.getLastLen() === 1 || (tok.getLastNum2() === ORD_PLUS));
+      else if (c === ORD_MIN) return (tok.getLastLen() === 1 || (tok.getNum(1) === ORD_MIN));
+      else if (c === ORD_PLUS) return (tok.getLastLen() === 1 || (tok.getNum(1) === ORD_PLUS));
       else if (c === ORD_TILDE) return true;
 
       return false;
@@ -985,12 +985,12 @@
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = NONASSIGNEE; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
-        } else if (c === ORD_PLUS && tok.getLastNum2() === ORD_PLUS) {
+        } else if (c === ORD_PLUS && tok.getNum(1) === ORD_PLUS) {
           tok.nextPunc();
           // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
           nonAssignee = NONASSIGNEE; // cannot assign to foo++
           repeat = false;
-        } else if (c === ORD_MIN &&  tok.getLastNum2() === ORD_MIN) {
+        } else if (c === ORD_MIN &&  tok.getNum(1) === ORD_MIN) {
           tok.nextPunc();
           // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
           nonAssignee = NONASSIGNEE; // cannot assign to foo--
@@ -1030,7 +1030,7 @@
             c === ORD_OR ||
             c === ORD_AND ||
             c === ORD_FWDSLASH
-          ) && (tok.getLastNum2() === ORD_IS)) ||
+          ) && (tok.getNum(1) === ORD_IS)) ||
           c === ORD_STAR ||
           c === ORD_PERCENT ||
           c === ORD_XOR;
@@ -1040,10 +1040,10 @@
         // TOFIX: len checks may be optimized away. can they fail at this point?
         // these <<= >>= >>>= cases are very rare
         if (len === 3 && c === ORD_LT) {
-          return (tok.getLastNum2() === ORD_LT && tok.getNum(2) === ORD_IS); // <<=
+          return (tok.getNum(1) === ORD_LT && tok.getNum(2) === ORD_IS); // <<=
         }
         else if (c === ORD_GT) {
-          return ((tok.getLastNum2(2) === ORD_GT) && (
+          return ((tok.getNum(1) === ORD_GT) && (
             (len === 4 && tok.getNum(2) === ORD_GT && tok.getNum(3) === ORD_IS) || // >>>=
             (len === 3 && tok.getNum(2) === ORD_IS) // >>=
           ));
@@ -1094,10 +1094,10 @@
       }
 
       // & &&
-      else if (c === ORD_AND) return (tok.getLastLen() === 1 || tok.getLastNum2() === ORD_AND);
+      else if (c === ORD_AND) return (tok.getLastLen() === 1 || tok.getNum(1) === ORD_AND);
 
       // | ||
-      else if (c === ORD_OR) return (tok.getLastLen() === 1 || tok.getLastNum2() === ORD_OR);
+      else if (c === ORD_OR) return (tok.getLastLen() === 1 || tok.getNum(1) === ORD_OR);
 
       else if (c === ORD_LT) {
         // we already know token is valid. all tokens that start with < are:
@@ -1128,7 +1128,7 @@
       // if not punctuator, it could still be `in` or `instanceof`...
       else if (c === ORD_L_I) {
         var len = tok.getLastLen();
-        return (len === 2 && tok.getLastNum2() === ORD_L_N) || (len === 10 && tok.getLastValue() === 'instanceof');
+        return (len === 2 && tok.getNum(1) === ORD_L_N) || (len === 10 && tok.getLastValue() === 'instanceof');
       }
 
       // not a (non-assignment) binary operator
@@ -1221,7 +1221,7 @@
         if (c >= ORD_L_A && c <= ORD_L_W) {
           if (c < ORD_L_G || c > ORD_L_Q) {
             if (c === ORD_L_T) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_H) {
                 var id = tok.getLastValue();
                 if (id === 'this') return !ignoreValues;
@@ -1234,7 +1234,7 @@
                 return tok.getLastValue() === 'typeof';
               }
             } else if (c === ORD_L_S) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_W) {
                 return tok.getLastValue() === 'switch';
               } else if (d === ORD_L_U) {
@@ -1243,7 +1243,7 @@
                 return false;
               }
             } else if (c === ORD_L_F) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_A) {
                 if (ignoreValues) return false;
                 return tok.getLastValue() === 'false';
@@ -1260,7 +1260,7 @@
                 return tok.getLastValue() === 'finally';
               }
             } else if (c === ORD_L_D) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_O) {
                 return tok.getLastLen() === 2; // do
               } else if (d === ORD_L_E) {
@@ -1268,7 +1268,7 @@
                 return id === 'debugger' || id === 'default' || id === 'delete';
               }
             } else if (c === ORD_L_E) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_L) {
                 return tok.getLastValue() === 'else';
               } else if (d === ORD_L_N) {
@@ -1278,9 +1278,9 @@
                 return id === 'export' || id === 'extends';
               }
             } else if (c === ORD_L_B) {
-              return tok.getLastNum2() === ORD_L_R && tok.getLastValue() === 'break';
+              return tok.getNum(1) === ORD_L_R && tok.getLastValue() === 'break';
             } else if (c === ORD_L_C) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_A) {
                 var id = tok.getLastValue();
                 return id === 'case' || id === 'catch';
@@ -1291,18 +1291,18 @@
                 return tok.getLastValue() === 'class';
               }
             } else if (c === ORD_L_R) {
-              if (tok.getLastNum2() === ORD_L_E) {
+              if (tok.getNum(1) === ORD_L_E) {
                 return tok.getLastValue() === 'return';
               }
             } else if (c === ORD_L_V) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_A) {
                 return tok.getLastValue() === 'var';
               } else if (d === ORD_L_O) {
                 return tok.getLastValue() === 'void';
               }
             } else if (c === ORD_L_W) {
-              var d = tok.getLastNum2();
+              var d = tok.getNum(1);
               if (d === ORD_L_H) {
                 return tok.getLastValue() === 'while';
               } else if (d === ORD_L_I) {
@@ -1312,7 +1312,7 @@
           // we checked for b-f and r-w, but must not forget
           // to check n and i:
           } else if (c === ORD_L_N) {
-            var d = tok.getLastNum2();
+            var d = tok.getNum(1);
             if (d === ORD_L_U) {
               if (ignoreValues) return false;
               return tok.getLastValue() === 'null';
@@ -1320,7 +1320,7 @@
               return tok.getLastValue() === 'new';
             }
           } else if (c === ORD_L_I) {
-            var d = tok.getLastNum2();
+            var d = tok.getNum(1);
             if (d === ORD_L_N) {
               return tok.getLastLen() === 2 || tok.getLastValue() === 'instanceof'; // 'in'
             } else if (d === ORD_L_F) {

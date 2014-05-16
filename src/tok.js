@@ -7,6 +7,7 @@
   // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
   // TOFIX: confirm all instance properties are set in the constructor
   // TOFIX: eliminate various EOF checks when possible
+  // TOFIX: various charcodeat occurrences can do some caching
 
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
@@ -569,7 +570,7 @@
     },
 
     parseFwdSlash: function(expressionStart){
-      var d = this.getLastNum2();
+      var d = this.input.charCodeAt(this.pos+1);
       if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
       if (d === ORD_STAR_2A) return this.parseMultiComment();
       if (expressionStart) return this.parseRegex();
@@ -588,7 +589,7 @@
 
       var pos = this.pos;
 
-      if (this.getLastNum2() === ORD_LF_0A) ++pos;
+      if (this.input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
 
       return this.verifiedNewline(pos);
     },
@@ -633,7 +634,8 @@
     parseSameOrCompound: function(c){
       // |&-+
 
-      var d = this.getLastNum2();
+      var pos = this.pos+1;
+      var d = this.input.charCodeAt(pos);
       // pick one, any one :) (this func runs too infrequent to make a significant difference)
 //      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
 //      this.pos += 1 + (!(d - c && d - ORD_IS_3D) |0);
@@ -642,13 +644,13 @@
 //      this.pos += 1 + (d === c | d === ORD_IS_3D);
 //      this.pos += 1 + !(d-c && d-ORD_IS_3D);
 
-      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
+      this.pos = pos + ((d === c || d === ORD_IS_3D) ? 1 : 0);
 
       return PUNCTUATOR;
     },
     parseEqualSigns: function(){
       var len = 1;
-      if (this.getLastNum2() === ORD_IS_3D) {
+      if (this.input.charCodeAt(this.lastStart+1) === ORD_IS_3D) {
         if (this.input.charCodeAt(this.lastStart+2) === ORD_IS_3D) len = 3;
         else len = 2;
       }
@@ -657,7 +659,7 @@
     },
     parseLtgtPunctuator: function(c){
       var len = 1;
-      var d = this.getLastNum2();
+      var d = this.input.charCodeAt(this.lastStart+1);
       if (d === ORD_IS_3D) len = 2;
       else if (d === c) {
         len = 2;
@@ -673,7 +675,7 @@
     },
     parseCompoundAssignment: function(){
       var len = 1;
-      if (this.getLastNum2() === ORD_IS_3D) len = 2;
+      if (this.input.charCodeAt(this.pos+1) === ORD_IS_3D) len = 2;
       this.pos += len;
       return PUNCTUATOR;
     },
@@ -821,7 +823,7 @@
     },
 
     parseLeadingDot: function(){
-      var c = this.getLastNum2();
+      var c = this.input.charCodeAt(this.pos+1);
 
       if (c >= ORD_L_0_30 && c <= ORD_L_9_39) return this.parseAfterDot(this.pos+2);
 
@@ -833,7 +835,7 @@
       // a numeric that starts with zero is is either a decimal or hex
       // 0.1234  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
-      var d = this.getLastNum2();
+      var d = this.input.charCodeAt(this.pos+1);
       if (d === ORD_L_X_78 || d === ORD_L_X_UC_58) { // x or X
         this.parseHexNumber();
       } else if (d === ORD_DOT_2E) {
@@ -1075,12 +1077,6 @@
     getLastNum: function(){
       // always cached in nextToken function
       return this.nextNum1;
-    },
-    getLastNum2: function(){
-      // TOFIX: perf check, what happens if i pass on pos if i can? (prevent reading this.lastStart)
-      var n = this.nextNum2;
-      if (n) return n;
-      return this.nextNum2 = this.input.charCodeAt(this.lastStart+1);
     },
     getNum: function(offset){
       return this.input.charCodeAt(this.lastStart+offset)
