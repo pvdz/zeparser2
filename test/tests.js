@@ -119,12 +119,33 @@ var good = [
   ["x+5;", 4, "Identifier, Binary `+` Operator, Identifier, `;`"],
   ["xyz123;", 2, "Alphanumeric Identifier, `;`"],
   ["x1y1z1;", 2, "Alternating Alphanumeric Identifier, `;`"],
-  ["foo\\u00d8bar;", 2, "Identifier With Unicode Escape Sequence middle (`\\uXXXX`), `;`"],
-  ["\\u00d8bar;", 2, "Identifier With Unicode Escape Sequence begin (`\\uXXXX`), `;`"],
-  ["foo\\u00d8;", 2, "Identifier With Unicode Escape Sequence end (`\\uXXXX`), `;`"],
+
+  // Unicode characters in identifiers
   ["f\u00d8\u00d8bar;", 2, "Identifier With Embedded Unicode Character"],
   ["\u00d8bar;", 2, "Identifier starting with unicode"],
   ["\u00d8\u00d8bar;", 2, "Identifier starting consecutive unicode"],
+
+  // Escaped \u characters in identifier names
+  ["\\u0061bar;", 2, "\\u a at identifier start"],
+  ["\\u0041bar;", 2, "\\u A at identifier start"],
+  ["\\u0024bar;", 2, "\\u $ at identifier start"],
+  ["\\u005fbar;", 2, "\\u _ at identifier start"],
+  ["\\u00d8bar;", 2, "\\u unicode at identifier start"],
+  ["foo\\u0061bar;", 2, "\\u a at identifier mid"],
+  ["foo\\u0041bar;", 2, "\\u A at identifier mid"],
+  ["foo\\u0024bar;", 2, "\\u $ at identifier mid"],
+  ["foo\\u0024bar;", 2, "\\u $ at identifier mid"],
+  ["foo\\u0030bar;", 2, "\\u 0 at identifier mid"],
+  ["foo\\u0035bar;", 2, "\\u 5 at identifier mid"],
+  ["foo\\u005fbar;", 2, "\\u _ at identifier mid"],
+  ["foo\\u00d8bar;", 2, "\\u unicode at identifier mid"],
+  ["foo\\u0061;", 2, "\\u a at identifier end"],
+  ["foo\\u0041;", 2, "\\u A at identifier end"],
+  ["foo\\u0024;", 2, "\\u $ at identifier end"],
+  ["foo\\u0030;", 2, "\\u 0 at identifier end"],
+  ["foo\\u0035;", 2, "\\u 5 at identifier end"],
+  ["foo\\u005f;", 2, "\\u _ at identifier end"],
+  ["foo\\u00d8;", 2, "\\u unicode at identifier end"],
 
   // Numbers.
   ["5;", 2, "Integer, `;`"],
@@ -944,7 +965,12 @@ var bad = [
   ["x=5+y>>=8", ">>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
   ["x=5+y>>>=8", ">>>= is a compound assignment and assignments are not allowed to follow non-assignment operators in an expression"],
 
+  ["var \\uuuuuf;", "start with invalid unicode escape range"],
   ["var f\\uuuuu;", "invalid unicode escape range"],
+  ["var \\u0020f;", "start with invalid unicode escape range (\\u must add something to the identifier name, space does not)"],
+  ["var f\\u0020;", "invalid unicode escape range (\\u must add something to the identifier name, space does not)"],
+  ["var \\u0030foo;", "number 0 not valid identifier start, even when escaped"],
+  ["var \\u0035foo;", "number 5 not valid identifier start, even when escaped"],
 
   ["5e", "e must have suffix"],
   ["5e+", "e+ must have suffix"],
@@ -1061,7 +1087,6 @@ var bad = [
   ["x = 5/*", "unclosed tokens: multi comment no body"],
   ["x = 5/* body", "unclosed tokens: multi comment with body"],
   ["x = 5/* body *", "unclosed tokens: multi comment almost closed"],
-
 ];
 
 
