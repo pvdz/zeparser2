@@ -693,7 +693,6 @@
       if (suffixState & ASSIGNEE) assignable = ASSIGNEE;
       else if (suffixState & NONASSIGNEE) assignable = NONASSIGNEE;
 
-      // TOFIX: add test case where this fails without parens; `state & NONASSIGNEE` needs parenthesis
       // TOFIX: cant we just drop the `>0` part? or do we want to force the arg to be bool? what about double bang?
       this.parseAssignments((assignable & NONASSIGNEE) > 0);
       this.parseNonAssignments();
