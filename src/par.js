@@ -27,13 +27,6 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
-  // extra assignment and for-in checks
-  var NOPARSE = 0;
-  var NONASSIGNEE = 1; // invalid lhs for assignments
-  var NONFORIN = 2; // comma, assignment, non-assignee
-  var ASSIGNEE = 4;
-  var NEITHER = NONASSIGNEE | NONFORIN;
-
   // boolean constants
   var OPTIONAL = true;
   var REQUIRED = false;
@@ -168,6 +161,8 @@
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
       if (this.tok.isType(IDENTIFIER)) {
+        // this might be `false` when encountering `case` or `default` (or `else`?), which are handled elsewhere
+        // TOFIX: would it be terrible if `case` and `default` went recursive here?
         return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
       } else {
         return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
@@ -295,7 +290,7 @@
 
       } while(tok.nextExprIfNum(ORD_COMMA));
 
-      return vars > 1;
+      return vars === 1;
     },
     parseIf: function(inFunction, inLoop, inSwitch, labelSet){
       // if (<exprs>) <stmt>
@@ -345,23 +340,22 @@
       // for ( var <idntf> = <expr-no-in> in <exprs> ) <stmt>
       // for ( <expr-no-in> ; <expr> ; <expr> ) <stmt>
 
-      var state = NOPARSE;
-
       var tok = this.tok;
       tok.nextPunc(); // for
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
 
       if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader(); // empty first expression in for-each
       else {
+        var validForInLhs;
 
-        if (tok.isNum(ORD_L_V) && tok.nextPuncIfString('var')) state = this.parseVarPartNoIn();
+        if (tok.isNum(ORD_L_V) && tok.nextPuncIfString('var')) validForInLhs = this.parseVarPartNoIn();
         // expression_s_ because it might be regular for-loop...
         // (though if it isn't, it can't have more than one expr)
-        else state = this.parseExpressionsNoIn();
+        else validForInLhs = this.parseExpressionsNoIn();
 
         if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader();
         else if (tok.getLastNum() !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.getLastLen() !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
-        else if (state && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+tok.syntaxError();
+        else if (!validForInLhs && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+tok.syntaxError();
         else this.parseForInHeader();
       }
 
@@ -669,10 +663,11 @@
       // with an identifier that is neither `function` nor a statement keyword
 
       var tok = this.tok;
-      var notAssignable = false;
+      var assignable = true;
+      var parsedUnary = this.parseUnary();
 
-      if (this.parseUnary()) {
-        notAssignable = true;
+      if (parsedUnary) {
+        assignable = false;
         this.parsePrimary(REQUIRED);
       } else {
         // verify label name and check if it's succeeded by a colon
@@ -681,17 +676,19 @@
         if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
         tok.nextPunc();
 
+        var isValueKeyword = this.isValueKeyword(labelName);
+
         if (tok.nextExprIfNum(ORD_COLON)) {
-          if (this.isValueKeyword(labelName)) throw 'Label is a reserved keyword.'+this.syntaxError();
+          if (isValueKeyword) throw 'Label is a reserved keyword.'+this.syntaxError();
           return this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
         }
+
+        assignable = !isValueKeyword;
       }
 
-      var suffixState = this.parsePrimarySuffixes();
-      if (suffixState & ASSIGNEE) notAssignable = false;
-      else if (suffixState & NONASSIGNEE) notAssignable = true;
+      assignable = this.parsePrimarySuffixes(assignable) && !parsedUnary;
 
-      this.parseAssignments(notAssignable);
+      this.parseAssignments(assignable);
       this.parseNonAssignments();
 
       if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
@@ -708,53 +705,51 @@
       }
     },
     parseExpressions: function(){
-      var nonAssignee = this.parseExpression();
+      // track for parseGroup, if this expression is wrapped, is it still assignable?
+      var groupAssignable = this.parseExpression();
       var tok = this.tok;
       while (tok.nextExprIfNum(ORD_COMMA)) {
         this.parseExpression();
-        // not sure, but if the expression was not an assignment, it's probably irrelevant
-        // except in the case of a group, in which case it becomes an invalid assignee, so:
-        nonAssignee = true;
+        groupAssignable = false;
       }
-      return nonAssignee;
+      return groupAssignable;
     },
     parseExpression: function(){
       var tok = this.tok;
       var tokCount = tok.tokenCountAll;
 
-      var nonAssignee = this.parseExpressionOptional();
+      // track for parseGroup whether this expression still assignable when
+      var groupAssignable = this.parseExpressionOptional();
 
       // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
       if (tokCount === tok.tokenCountAll) throw 'Expected to parse an expression, did not find any.'+tok.syntaxError();
 
-      return nonAssignee;
+      return groupAssignable;
     },
     parseExpressionOptional: function(){
-      var nonAssignee = this.parsePrimary(OPTIONAL);
-      // if there was no assignment, state will be the same.
-      nonAssignee = this.parseAssignments(nonAssignee) !== 0;
+      // any kind of operator in a group makes it unassignable (except new with trailing prop...)
+      var assignable = this.parsePrimary(OPTIONAL);
 
-      // any binary operator is illegal as assignee and illegal as for-in lhs
-      if (this.parseNonAssignments()) nonAssignee = true;
+      // TOFIX: we havent validated actually having a primary yet. this might pass `f(=a)` kinds of crap
+      var count = this.tok.tokenCountAll;
+      this.parseAssignments(assignable);
+      this.parseNonAssignments();
 
-      return nonAssignee;
+      // return state for parseGroup, to determine whether the group as a whole can be assignment lhs
+      // the group needs to know about the prim expr AND any binary ops (inc assignments).
+      return (assignable && count === this.tok.tokenCountAll);
     },
-    parseAssignments: function(nonAssignee){
+    parseAssignments: function(assignable){
       // assignment ops are allowed until the first non-assignment binary op
-      var nonForIn = NOPARSE;
       var tok = this.tok;
       while (this.isAssignmentOperator()) {
-        if (nonAssignee && this.options.strictAssignmentCheck) throw 'LHS of this assignment is invalid assignee.'+tok.syntaxError();
+        if (!assignable && this.options.strictAssignmentCheck) throw 'LHS of this assignment is invalid assignee.'+tok.syntaxError();
         // any assignment means not a for-in per definition
         tok.nextExpr();
-        nonAssignee = this.parsePrimary(REQUIRED);
-        nonForIn = NONFORIN; // always
+        assignable = this.parsePrimary(REQUIRED);
       }
-
-      return (nonAssignee ? NONASSIGNEE : NOPARSE) | nonForIn;
     },
     parseNonAssignments: function(){
-      var parsed = PARSEDNOTHING;
       var tok = this.tok;
       // keep parsing non-assignment binary/ternary ops
       while (true) {
@@ -764,10 +759,7 @@
         }
         else if (tok.isNum(ORD_QMARK)) this.parseTernary();
         else break;
-        // any binary is a non-for-in
-        parsed = PARSEDSOMETHING;
       }
-      return parsed;
     },
     parseTernary: function(){
       var tok = this.tok;
@@ -786,20 +778,22 @@
     parseExpressionsNoIn: function(){
       var tok = this.tok;
 
-      var state = this.parseExpressionNoIn();
+      var validForInLhs = this.parseExpressionNoIn();
       while (tok.nextExprIfNum(ORD_COMMA)) {
         // lhs of for-in cant be multiple expressions
-        state = this.parseExpressionNoIn() | NONFORIN;
+        this.parseExpressionNoIn();
+        validForInLhs = false;
       }
 
-      return state;
+      return validForInLhs;
     },
     parseExpressionNoIn: function(){
-      var nonAssignee = this.parsePrimary(REQUIRED);
-
-      var state = this.parseAssignments(nonAssignee);
-
+      var assignable = this.parsePrimary(REQUIRED);
       var tok = this.tok;
+
+      var count = tok.tokenCountAll;
+      this.parseAssignments(assignable);
+
       // keep parsing non-assignment binary/ternary ops unless `in`
       var repeat = true;
       while (repeat) {
@@ -813,19 +807,16 @@
             repeat = false;
           } else {
             tok.nextExpr();
-            // (seems this should be a required part...)
             this.parsePrimary(REQUIRED);
-            state = NEITHER;
           }
         } else if (tok.isNum(ORD_QMARK)) {
           this.parseTernaryNoIn();
-          state = NEITHER; // the lhs of a for-in cannot contain a ternary operator
         } else {
           repeat = false;
         }
       }
 
-      return state; // example:`for (x+b++ in y);`
+      return (assignable && count === tok.tokenCountAll);
     },
     /**
      * Parse the "primary" expression value. This is like the root
@@ -837,8 +828,9 @@
      */
     parsePrimary: function(optional){
       // parses parts of an expression without any binary operators
-      var nonAssignee = false;
+      // TOFIX: unary ++ -- should also report error for literals and keywords (without suffix)
       var parsedUnary = this.parseUnary(); // no unary can be valid in the lhs of an assignment
+      var assignable;
 
       var tok = this.tok;
       if (tok.isType(IDENTIFIER)) {
@@ -846,44 +838,58 @@
         // TOFIX: confirm whether we should do an isnum check before a reserved identifier check (the identifier check subsumes it)
         if (tok.isNum(ORD_L_F) && identifier === 'function') {
           this.parseFunction(NOTFORFUNCTIONDECL);
-          nonAssignee = true;
+
+          // can never assign to function directly
+          assignable = false;
         } else {
           // TOFIX: maybe we can have isReservedIdentifier return a number indicating a value or not and skip the mandatory value check later
           if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression.'+tok.syntaxError();
           tok.nextPunc();
+
           // any non-keyword identifier can be assigned to
-          if (!nonAssignee && this.isValueKeyword(identifier)) nonAssignee = true;
+          assignable = !this.isValueKeyword(identifier);
         }
+
       } else {
-        nonAssignee = this.parsePrimaryValue(optional && !parsedUnary);
+        assignable = this.parsePrimaryValue(optional, parsedUnary);
       }
 
-      var suffixNonAssignee = this.parsePrimarySuffixes();
-      if (suffixNonAssignee === ASSIGNEE) nonAssignee = true;
-      else if (suffixNonAssignee === NONASSIGNEE) nonAssignee = true;
-      else if (suffixNonAssignee === NOPARSE && parsedUnary) nonAssignee = true;
+      assignable = this.parsePrimarySuffixes(assignable);
 
-      return nonAssignee;
+      // TOFIX: exception for `new` and a trailing property
+      return parsedUnary ? false : assignable;
     },
-    parsePrimaryValue: function(optional){
-      // at this point in the expression parser we will
-      // have ruled out anything else. the next token(s) must
-      // be some kind of expression value...
+    parsePrimaryValue: function(optional, parsedUnary){
+      // at this point in the expression parser we will have ruled out anything else.
+      // the next token(s) must be some kind of non-identifier expression value...
+      // returns whether the entire thing is assignable
 
-      var nonAssignee = false;
       var tok = this.tok;
+
       if (tok.nextPuncIfValue()) {
-        nonAssignee = true;
-      } else {
-        if (tok.nextExprIfNum(ORD_OPEN_PAREN)) nonAssignee = this.parseGroup();
-        // TOFIX: i think bug, nonAssignee should be set to true
-        else if (tok.nextExprIfNum(ORD_OPEN_CURLY)) this.parseObject();
-        // TOFIX: i think bug, nonAssignee should be set to true
-        else if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) this.parseArray();
-        else if (!optional) throw 'Unable to parse required primary value.'+tok.syntaxError();
+        return false;
       }
 
-      return nonAssignee;
+      if (tok.nextExprIfNum(ORD_OPEN_PAREN)) {
+        return this.parseGroup();
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_CURLY)) {
+        // TOFIX: make test for this being non-assignable
+        this.parseObject();
+        return false;
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) {
+        // TOFIX: make test for this being non-assignable
+        this.parseArray();
+        return false;
+      }
+
+      if (!optional || parsedUnary) throw 'Unable to parse required primary value.'+tok.syntaxError();
+
+      // if the primary was optional but not found, the return value here is irrelevant
+      return true;
     },
     parseUnary: function(){
       var parsed = PARSEDNOTHING;
@@ -893,7 +899,7 @@
         tok.nextExpr();
         parsed = PARSEDSOMETHING;
       }
-      return parsed; // return bool to determine possibility of label
+      return parsed; // influences possibility of label, assignability of primary
     },
     testUnary: function(){
       // this method works under the assumption that the current token is
@@ -909,22 +915,19 @@
       else if (c === ORD_L_D) return tok.getLastValue() === 'delete';
       else if (c === ORD_EXCL) return true;
       else if (c === ORD_L_V) return tok.getLastValue() === 'void';
-      // TOFIX do i actually need to check for lastLen? tok should already be a "clean" token. what other values might start with "-"? - -- -=
+      // TOFIX do i actually need to check for lastLen? can't i just check if second char is not `=`?
       else if (c === ORD_MIN) return (tok.getLastLen() === 1 || (tok.getNum(1) === ORD_MIN));
       else if (c === ORD_PLUS) return (tok.getLastLen() === 1 || (tok.getNum(1) === ORD_PLUS));
       else if (c === ORD_TILDE) return true;
 
       return false;
     },
-    parsePrimarySuffixes: function(){
+    parsePrimarySuffixes: function(assignable){
       // --
       // ++
       // .<idntf>
       // [<exprs>]
       // (<exprs>)
-
-      // TOFIX: can we check noparse through token count instead?
-      var nonAssignee = NOPARSE;
 
       // TOFIX: the order of these checks doesn't appear to be optimal (numbers first?)
       var tok = this.tok;
@@ -938,7 +941,7 @@
             tok.nextExpr();
             this.parseExpressions(); // required
             tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-            nonAssignee = ASSIGNEE; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
+            assignable = true; // trailing property
           } else {
             repeat = false;
           }
@@ -946,29 +949,29 @@
           if (!tok.isType(PUNCTUATOR)) throw 'Dot/Number (?) after identifier?'+tok.syntaxError();
           tok.nextPunc();
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = ASSIGNEE; // property name can be assigned to (for-in lhs)
+          assignable = true; // trailing property
         } else if (c === ORD_OPEN_PAREN) {
           // TOFIX: if expression was non-assignable up to here, this is an error under the assignment flag
           tok.nextExpr();
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = NONASSIGNEE; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
+          assignable = false; // call, only assignable in IE (case ignored)
         } else if (c === ORD_PLUS && tok.getNum(1) === ORD_PLUS) {
+          if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.'+this.tok.syntaxError();
           // TOFIX: if expression was non-assignable up to here, this is an error under the assignment flag
           tok.nextPunc();
-          // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
-          nonAssignee = NONASSIGNEE; // cannot assign to foo++
+          assignable = false; // ++
           repeat = false;
         } else if (c === ORD_MIN &&  tok.getNum(1) === ORD_MIN) {
+          if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix decrement not allowed here.'+this.tok.syntaxError();
           tok.nextPunc();
-          // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
-          nonAssignee = NONASSIGNEE; // cannot assign to foo--
+          assignable = false; // --
           repeat = false;
         } else {
           repeat = false;
         }
       }
-      return nonAssignee;
+      return assignable;
     },
     isAssignmentOperator: function(){
       // includes any "compound" operators
@@ -1105,15 +1108,16 @@
     },
 
     parseGroup: function(){
-      // the expressions are required. nonassignable if:
+      // the expressions is required, the group is nonassignable if:
       // - wraps multiple expressions
       // - if the single expression is nonassignable
       // - if it wraps an assignment
-      var nonAssignee = this.parseExpressions();
+      var groupAssignable = this.parseExpressions();
+
       // groups cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       this.tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
 
-      return nonAssignee;
+      return groupAssignable;
     },
     parseArray: function(){
       var tok = this.tok;
