@@ -150,11 +150,11 @@
 
         newlineState = NEWLINESTATE_N;
         for (var i = 0; i < optional.length; ++i) {
-          var currentNewline = NEWLINEFORSTATE[newlineState];
           var testGroup = optional[i];
           debug("<h2>"+testGroup.optionName+"</h2>");
           var cases = testGroup.cases;
           for (var j=0; j < cases.length; ++j) {
+            var currentNewline = NEWLINEFORSTATE[newlineState];
             var test = cases[j];
             if (!test) console.warn("Probably missing a comma...");
 
@@ -169,31 +169,46 @@
               desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
             }
 
-            try {
-              var options = {};
-              options[testGroup.optionName] = false;
-              Par.parse(input, options);
-              failed = !testGroup.expectedWhenOff;
-            } catch (e) {
-              failed = testGroup.expectedWhenOff;
-            }
+            var passedWhenFalse = false;
+            var passedWhenTrue = false;
+            var trueFailMessage = '';
+            var falseFailMessage = '';
 
             try {
               var options = {};
               options[testGroup.optionName] = true;
               Par.parse(input, options);
-              failed = failed || !testGroup.expectedWhenOn;
+              failed = !testGroup.expectedWhenOn;
+              passedWhenTrue = true;
             } catch (e) {
-              failed = failed || testGroup.expectedWhenOn;
+              failed = testGroup.expectedWhenOn;
+              passedWhenTrue = false;
+              trueFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
             }
 
-            if (failed) {
-              debug('<b class="red">Test ' + i + ' did not properly pass/fail:</span>', desc);
+            try {
+              var options = {};
+              options[testGroup.optionName] = false;
+              Par.parse(input, options);
+              failed = !testGroup.expectedWhenOff;
+              passedWhenFalse = true;
+            } catch (e) {
+              failed = testGroup.expectedWhenOff;
+              passedWhenFalse = false;
+              falseFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+            }
+
+            if (passedWhenTrue !== testGroup.expectedWhenOn || passedWhenFalse !== testGroup.expectedWhenOff) {
+              debug('<b class="red">Test ' + j + ' did not properly pass/fail:</span>', desc);
+              debug('flag=true:  expect:'+(testGroup.expectedWhenOn?'pass':'fail')+' was:'+(passedWhenTrue?'pass':'fail')+trueFailMessage);
+              debug('flag=false: expect:'+(testGroup.expectedWhenOff?'pass':'fail')+' was:'+(passedWhenFalse?'pass':'fail')+falseFailMessage);
               debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
               debug('<br/>');
               ++fail;
             } else {
               if (!hidePasses) debug('<span class="green">Test ' + i + ' properly passed and failed:</span>', desc);
+              if (!hidePasses) debug('flag=true:  expect:'+(testGroup.expectedWhenOn?'pass':'fail')+' was:'+(passedWhenTrue?'pass':'fail')+trueFailMessage);
+              if (!hidePasses) debug('flag=false: expect:'+(testGroup.expectedWhenOff?'pass':'fail')+' was:'+(passedWhenFalse?'pass':'fail')+falseFailMessage);
               if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
               if (!hidePasses) debug('<br/>');
               ++ok;
@@ -204,11 +219,131 @@
             if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
             else newlineState = NEWLINESTATE_N;
           }
+
+          // also check if all good tests still pass with this flag set, because they should
+          for (var ogi = 0; ogi < good.length; ++ogi) {
+            var currentNewline = NEWLINEFORSTATE[newlineState];
+            var test = good[ogi];
+            if (!test) console.warn("Probably missing a comma...");
+
+            var input = test[0];
+            var desc = test[2];
+
+            var failed = false;
+
+            // test all valid newlines
+            if (currentNewline) {
+              input = input.replace(/\n/g, currentNewline);
+              desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+            }
+
+            var passedWhenFalse = false;
+            var passedWhenTrue = false;
+            var trueFailMessage = '';
+            var falseFailMessage = '';
+
+            try {
+              var options = {};
+              options[testGroup.optionName] = true;
+              Par.parse(input, options);
+              passedWhenTrue = true;
+            } catch (e) {
+              passedWhenTrue = false;
+              trueFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+            }
+
+            try {
+              var options = {};
+              options[testGroup.optionName] = false;
+              Par.parse(input, options);
+              passedWhenFalse = true;
+            } catch (e) {
+              passedWhenFalse = false;
+              falseFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+            }
+
+            if (!passedWhenTrue || !passedWhenFalse) {
+              debug('<b class="red">Always good test ' + ogi + ' failed under either flag value:</span>', desc);
+              debug('flag=true:  expect:pass, was:'+(passedWhenTrue?'pass':'fail')+trueFailMessage);
+              debug('flag=false: expect:pass, was:'+(passedWhenFalse?'pass':'fail')+falseFailMessage);
+              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              debug('<br/>');
+              ++fail;
+            } else {
+              // dont report good ones, they're just dupes at this point
+              // also dont count them towards total tests...
+              // ++ok;
+            }
+
+            // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+            var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
+            if (testNewlines && NEWLINEFORSTATE[++newlineState]) --ogi; // repeat with different newline
+            else newlineState = NEWLINESTATE_N;
+          }
+
+          // also check if all bad tests still fail with this flag set, because they should
+          for (var obi = 0; obi < bad.length; ++obi) {
+            var currentNewline = NEWLINEFORSTATE[newlineState];
+            var test = good[obi];
+            if (!test) console.warn("Probably missing a comma...");
+
+            var input = test[0];
+            var desc = test[2];
+
+            var failed = false;
+
+            // test all valid newlines
+            if (currentNewline) {
+              input = input.replace(/\n/g, currentNewline);
+              desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+            }
+
+            var passedWhenFalse = false;
+            var passedWhenTrue = false;
+            var trueFailMessage = '';
+            var falseFailMessage = '';
+
+            try {
+              var options = {};
+              options[testGroup.optionName] = true;
+              Par.parse(input, options);
+              passedWhenTrue = true;
+            } catch (e) {
+              passedWhenTrue = false;
+            }
+
+            try {
+              var options = {};
+              options[testGroup.optionName] = false;
+              Par.parse(input, options);
+              passedWhenFalse = true;
+            } catch (e) {
+              passedWhenFalse = false;
+            }
+
+            if (!passedWhenTrue || !passedWhenFalse) {
+              debug('<b class="red">Always bad test ' + ogi + ' passed under either flag value:</span>', desc);
+              debug('flag=true:  expect:fail, was:'+(passedWhenTrue?'pass':'fail'));
+              debug('flag=false: expect:fail, was:'+(passedWhenFalse?'pass':'fail'));
+              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              debug('<br/>');
+              ++fail;
+            } else {
+              // dont report good ones, they're just dupes at this point
+              // also dont count them towards total tests...
+              // ++ok;
+            }
+
+            // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+            var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
+            if (testNewlines && NEWLINEFORSTATE[++newlineState]) --ogi; // repeat with different newline
+            else newlineState = NEWLINESTATE_N;
+          }
+
         }
 
         debug("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
         console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
-        console.log('(atm 8 tests are known to fail, any more is a problem)');
       };
     </script>
   </body>

@@ -18,13 +18,15 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script>
-      var s = "new\nif(x);";
+      var s = "this.x = a;";
       console.warn("Parsing:", [s]);
 
       var p = new Par(s, {
         functionMode: false,
         regexNoClassEscape: false,
         saveTokens: true,
+        strictAssignmentCheck: true,
+        strictForInCheck: true,
       });
 
       try {
@@ -39,5 +41,6 @@
           return Tok[t.type]+'['+ t.value+'].'+ t.value.length;
         }));
         console.log('tokenCountAll:', p.tok.tokenCountAll);
+//        console.log('tost:',tost());
       }
     </script>
