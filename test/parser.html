@@ -20,6 +20,8 @@
     <script src="tests.js"></script>
     <script>
       new function(){
+        var hidePasses = true;
+
         var out = document.createElement('pre');
         document.body.appendChild(out);
         var debug = function () {
@@ -79,16 +81,20 @@
 
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed.toString() + ')');
+            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            debug('<br/>');
             ++fail;
           } else if (tcount == outputLen) {
-            debug('<span class="green">Test ' + i + ' ok:</span>', desc);
+            if (!hidePasses) debug('<span class="green">Test ' + i + ' ok:</span>', desc);
+            if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            if (!hidePasses) debug('<br/>');
             ++ok;
           } else {
             debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
+            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            debug('<br/>');
             ++fail;
           }
-          debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
-          debug('<br/>');
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
           var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
@@ -123,14 +129,16 @@
           }
 
           if (crashed) {
-            debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc, '<small style="color:#ccc;white-space:nowrap;overflow:hidden;">'+msg+'</small>');
+            if (!hidePasses) debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc, '<small style="color:#ccc;white-space:nowrap;overflow:hidden;">'+msg+'</small>');
+            if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            if (!hidePasses) debug('<br/>');
             ++ok;
           } else {
             debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc);
+            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            debug('<br/>');
             ++fail;
           }
-          debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
-          debug('<br/>');
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
           var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
@@ -181,13 +189,15 @@
 
             if (failed) {
               debug('<b class="red">Test ' + i + ' did not properly pass/fail:</span>', desc);
+              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              debug('<br/>');
               ++fail;
             } else {
-              debug('<span class="green">Test ' + i + ' properly passed and failed:</span>', desc);
+              if (!hidePasses) debug('<span class="green">Test ' + i + ' properly passed and failed:</span>', desc);
+              if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              if (!hidePasses) debug('<br/>');
               ++ok;
             }
-            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
-            debug('<br/>');
 
             // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
             var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
@@ -198,7 +208,7 @@
 
         debug("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
         console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
-        console.log('(atm 4 tests are known to fail, any more is a problem)');
+        console.log('(atm 8 tests are known to fail, any more is a problem)');
       };
     </script>
   </body>

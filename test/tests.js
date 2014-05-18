@@ -912,6 +912,7 @@ var bad = [
   ['new: ;', 'new as label'],
   ['void: ;', "void as label"],
   ['if: ;', 'if as label'],
+  ["foo;\nbar:", "program ending with a label without a statement"],
 
   ['return foo;', "return outside of function"],
 
@@ -1099,6 +1100,10 @@ var bad = [
   ["x = 5/*", "unclosed tokens: multi comment no body"],
   ["x = 5/* body", "unclosed tokens: multi comment with body"],
   ["x = 5/* body *", "unclosed tokens: multi comment almost closed"],
+
+  ["!== foo;", "validation check (! op doesnt seem to validate whole ! token)"],
+  ["!= foo;", "validation check (! op doesnt seem to validate whole ! token)"],
+  ["~= foo;", "validation check (~ op doesnt seem to validate whole ~ token)"],
 ];
 
 

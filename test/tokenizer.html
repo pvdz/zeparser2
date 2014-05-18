@@ -19,6 +19,8 @@
 		<script src="tests.js"></script>
 		<script>
       new function(){
+        var hidePasses = true;
+
         var out = document.createElement('pre');
         document.body.appendChild(out);
         var debug = function(){
@@ -83,20 +85,22 @@
 
           var found = tok.tokenCountAll - 1; // -eof
 
+          var passed = false;
           if (errorThrown) {
             debug('<b class="red">Test failed:</b>',desc,'<span class="red">('+errorThrown+')</span>'),console.log(desc, tok);
             ++fail;
           } else if (found == outputLen) {
-            debug('<span class="green">Test '+i+' ok:</span>',desc);
+            if (!hidePasses) debug('<span class="green">Test '+i+' ok:</span>',desc);
             ++ok;
+            passed = true;
           } else {
             debug('<b class="red">Test failed:</b>',desc,'<span class="red">(found',found,'expected',outputLen+')</span>'),console.log(desc, tok);
             ++fail;
           }
-          if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
-          debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
-          debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
-          debug('<br/>');
+          if (!passed || !hidePasses) if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
+          if (!passed || !hidePasses) debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
+          if (!passed || !hidePasses)           debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
+          if (!passed || !hidePasses) debug('<br/>');
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
           var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
