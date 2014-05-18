@@ -672,15 +672,14 @@
       var isLabel = false;
       var assignable = ASSIGNEE;
 
-      // if we parse any unary, we wont have to check for label
-      var hasPrefix = this.parseUnary();
-
-      if (!hasPrefix) {
+      if (this.parseUnary()) {
+        assignable = NONASSIGNEE;
+        this.parsePrimary(REQUIRED);
+      } else {
         // verify label name and check if it's succeeded by a colon
 
         // TOFIX: we dont have to check for any of the statement identifiers (break, return, if). can we optimize this case? is it worth it?
         if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
-
         tok.nextPunc();
 
         if (tok.nextExprIfNum(ORD_COLON)) {
@@ -688,13 +687,6 @@
           if (this.isValueKeyword(labelName)) throw 'Label is a reserved keyword.'+this.syntaxError();
           return this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
         }
-      } else {
-        if (tok.isType(IDENTIFIER) && this.isReservedIdentifier(IGNOREVALUES)) {
-          throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
-        }
-
-        var notAssignable = this.parsePrimaryValue(REQUIRED);
-        if (notAssignable || hasPrefix) assignable = NONASSIGNEE;
       }
 
       var suffixState = this.parsePrimarySuffixes();
