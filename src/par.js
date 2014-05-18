@@ -669,11 +669,10 @@
       // with an identifier that is neither `function` nor a statement keyword
 
       var tok = this.tok;
-      var isLabel = false;
-      var assignable = ASSIGNEE;
+      var notAssignable = false;
 
       if (this.parseUnary()) {
-        assignable = NONASSIGNEE;
+        notAssignable = true;
         this.parsePrimary(REQUIRED);
       } else {
         // verify label name and check if it's succeeded by a colon
@@ -683,18 +682,16 @@
         tok.nextPunc();
 
         if (tok.nextExprIfNum(ORD_COLON)) {
-          isLabel = true;
           if (this.isValueKeyword(labelName)) throw 'Label is a reserved keyword.'+this.syntaxError();
           return this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
         }
       }
 
       var suffixState = this.parsePrimarySuffixes();
-      if (suffixState & ASSIGNEE) assignable = ASSIGNEE;
-      else if (suffixState & NONASSIGNEE) assignable = NONASSIGNEE;
+      if (suffixState & ASSIGNEE) notAssignable = false;
+      else if (suffixState & NONASSIGNEE) notAssignable = true;
 
-      // TOFIX: cant we just drop the `>0` part? or do we want to force the arg to be bool? what about double bang?
-      this.parseAssignments((assignable & NONASSIGNEE) > 0);
+      this.parseAssignments(notAssignable);
       this.parseNonAssignments();
 
       if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
@@ -951,11 +948,13 @@
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = ASSIGNEE; // property name can be assigned to (for-in lhs)
         } else if (c === ORD_OPEN_PAREN) {
+          // TOFIX: if expression was non-assignable up to here, this is an error under the assignment flag
           tok.nextExpr();
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           nonAssignee = NONASSIGNEE; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
         } else if (c === ORD_PLUS && tok.getNum(1) === ORD_PLUS) {
+          // TOFIX: if expression was non-assignable up to here, this is an error under the assignment flag
           tok.nextPunc();
           // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
           nonAssignee = NONASSIGNEE; // cannot assign to foo++
