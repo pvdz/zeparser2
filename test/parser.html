@@ -56,6 +56,7 @@
         for (var i = 0; i < good.length; ++i) {
           var currentNewline = NEWLINEFORSTATE[newlineState];
           var test = good[i];
+
           var input = test[TESTINPUT];
           var outputLen = test[TOKENCOUNT].length ? test[TOKENCOUNT][PARSERCOUNT] : test[TOKENCOUNT];
           var regexHints = test[DESCWITHREGEXHINT] ? test[DESCWITHOUTREGEXHINT] : []; // if flags, then len=4
@@ -66,7 +67,6 @@
             input = input.replace(/\n/g, currentNewline);
             desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
           }
-
           var crashed = false;
           try {
             var par = new Par(input);
@@ -216,7 +216,7 @@
 
             // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
             var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
-            if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+            if (testNewlines && NEWLINEFORSTATE[++newlineState]) --j; // repeat with different newline
             else newlineState = NEWLINESTATE_N;
           }
 
