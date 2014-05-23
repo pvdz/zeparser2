@@ -284,7 +284,6 @@ var good = [
   ["x, y;", 5, "Comma Operator"],
 
   // ...
-  ["new Date++;", 5, "`new` Operator, Identifier, Postfix Increment, `;`"],
   ["new\nX;", 4, "new and (no) asi"],
   ["+x++;", 4, "Unary `+`, Identifier, Postfix Increment, `;`"],
 
@@ -735,6 +734,7 @@ var good = [
   ["--(X)", [4, 5], "pre decrement paren with assignable inside"],
   ["(X)++", [4, 5], "post increment paren with assignable inside"],
   ["(X)--", [4, 5], "post decrement paren with assignable inside"],
+  ["(X)=10", [5, 6], "assignment to single wrapped identifier is ok"],
 
   ["a=b?c=d:e=f;", 12, "assignments are fine in ternary"],
 
@@ -750,10 +750,21 @@ var good = [
 
   ["new [function(){}][0]()", [14, 15], "never do this"],
   ["new {a:function(){}}.a()", [15, 16], "never do this either"],
-  ["new (A).foo = bar", [11, 12], "nor this"],
   ["new (function(){}).foo = doh", [15, 16], "why would you"],
 
   ["for (;;!x++);", 10, "weird construct"],
+
+  ["delete new foo;", 6, "fine but weird 1"],
+  ["void new foo;", 6, "fine but weird 2"],
+  ["delete typeof foo;", 6, "fine but weird 3"],
+  ["new new foo;", 6, "fine but weird 4"],
+  ["delete ++x;", 5, "fine but weird 5"],
+
+  ["a?b.c:d;", 8, "just making sure i didnt screw up ternaries and labels"],
+  ["a?b[c]:d;", 9, "just making sure i didnt screw up ternaries and labels"],
+  ["a?b():d;", 8, "just making sure i didnt screw up ternaries and labels"],
+
+  ["new function(){}().b = 5;", 16, "good either way"],
 ];
 
 // these are mainly for the parser, of course...
@@ -1124,9 +1135,11 @@ var bad = [
   ["x = 5/* body", "unclosed tokens: multi comment with body"],
   ["x = 5/* body *", "unclosed tokens: multi comment almost closed"],
 
-  ["!== foo;", "validation check (! op doesnt seem to validate whole ! token)"],
-  ["!= foo;", "validation check (! op doesnt seem to validate whole ! token)"],
-  ["~= foo;", "validation check (~ op doesnt seem to validate whole ~ token)"],
+  ["!== foo;", "validation check (in case ! op doesnt validate whole !== token)"],
+  ["!= foo;", "validation check (in case ! op doesnt validate whole != token)"],
+  ["~= foo;", "validation check (in case ~ op doesnt validate whole ~= token)"],
+  ["+= foo;", "validation check (in case + op doesnt validate whole += token)"],
+  ["-= foo;", "validation check (in case - op doesnt validate whole -= token)"],
 
   ["a&b=c", "no assignment after non-assignment 1"],
   ["a&&b=c", "no assignment after non-assignment 2"],
@@ -1134,6 +1147,53 @@ var bad = [
   ["x(a&b=c)", "no assignment after non-assignment (optional expression version) 1"],
   ["x(a&&b=c)", "no assignment after non-assignment (optional expression version) 2"],
   ["x(a+b=c)", "no assignment after non-assignment (optional expression version) 3"],
+
+  ["switch(x){", "optional statements not coming switch"],
+  ["switch(x){case x:", "optional statements not coming case"],
+  ["switch(x){case x:y;", "optional statements not coming case body"],
+  ["switch(x){default:", "optional statements not coming default"],
+  ["{if(x)}", "optional if statement not coming"],
+
+  ["new void foo", "new + illegal op 1"],
+  ["new delete foo", "new + illegal op 2"],
+  ["new typeof foo", "new + illegal op 3"],
+  ["new ++x", "new + illegal op 4"],
+  ["new +x", "new + illegal op 5"],
+  ["new --x", "new + illegal op 6"],
+  ["new -x", "new + illegal op 7"],
+  ["new ~x", "new + illegal op 8"],
+  ["new !x", "new + illegal op 9"],
+  ["new ++delete x", "new + illegal op 10"],
+
+  ["f(=5);", "unvalidated primary"],
+
+  ["delete foo: bar;", "current parser approach for labels might allow this but shouldnt 1"],
+  ["foo++: bar;", "current parser approach for labels might allow this but shouldnt 2"],
+  ["foo.x: bar;", "current parser approach for labels might allow this but shouldnt 3"],
+  ["foo[x]: bar;", "current parser approach for labels might allow this but shouldnt 4"],
+  ["foo(): bar;", "current parser approach for labels might allow this but shouldnt 5"],
+  ["function(){}: bar;", "current parser approach for labels might allow this but shouldnt 5"],
+  ["function f(){}: bar;", "current parser approach for labels might allow this but shouldnt 6"],
+  ["!: bar;", "current parser approach for labels might allow this but shouldnt 7"],
+  ["~: bar;", "current parser approach for labels might allow this but shouldnt 8"],
+  ["+: bar;", "current parser approach for labels might allow this but shouldnt 9"],
+  ["-: bar;", "current parser approach for labels might allow this but shouldnt 10"],
+  ["++: bar;", "current parser approach for labels might allow this but shouldnt 11"],
+  ["--: bar;", "current parser approach for labels might allow this but shouldnt 12"],
+  ["?: bar;", "current parser approach for labels might allow this but shouldnt 13"],
+  ["!a: bar;", "current parser approach for labels might allow this but shouldnt 14"],
+  ["new: bar;", "current parser approach for labels might allow this but shouldnt 15"],
+  ["new x: bar;", "current parser approach for labels might allow this but shouldnt 16"],
+  ["delete: bar;", "current parser approach for labels might allow this but shouldnt 17"],
+  ["delete x: bar;", "current parser approach for labels might allow this but shouldnt 18"],
+  ["typeof: bar;", "current parser approach for labels might allow this but shouldnt 19"],
+  ["typeof x: bar;", "current parser approach for labels might allow this but shouldnt 20"],
+  ["void: bar;", "current parser approach for labels might allow this but shouldnt 21"],
+  ["void x: bar;", "current parser approach for labels might allow this but shouldnt 22"],
+  ["++x: bar;", "current parser approach for labels might allow this but shouldnt 23"],
+  ["--x: bar;", "current parser approach for labels might allow this but shouldnt 24"],
+  ["x--: bar;", "current parser approach for labels might allow this but shouldnt 25"],
+  ["x--: bar;", "current parser approach for labels might allow this but shouldnt 26"],
 ];
 
 // test options
@@ -1171,11 +1231,11 @@ var optional = [ // for expected: true = pass, false = throw
       ["for (x+b++ in y);", "binary expression with unary postfix (make sure `in` error detection works outside expression parser)"],
       ["for (key instanceof bar in foo);", "instanceof is still a binary expression"],
       ["for ((x in b) in u) {};", "`in` wrapped in parens as first part of for-in is still an illegal binary lhs"],
-      ["for ((x=5)in y);", "for-in, wrapped assignment is illegal assignee"],
+      ["for ((x=5)in y);", "for-in, wrapped assignment is illegal assignable"],
       ["for ((a?b:c) in y)z;", "ternary expression as left but not start for-in"],
       ["for ((x=a?b:c) in y)z;", "ternary expression as left after assignment for-in"],
-      ["for ((x = [x in y]) in z);", "odd in construct, array invalid assignee"],
-      ["for ((x = {x:x in y}) in z);", "odd in construct, array still invalid assignee"],
+      ["for ((x = [x in y]) in z);", "odd in construct, grouped assignment not assignable"],
+      ["for ((x = {x:x in y}) in z);", "odd in construct, grouped assignment not assignable"],
       ["for (new a.b in c);", "new a.b is not a valid assignee"],
       ["for (5 in {});", "for-in number is nonassignee"],
       ["for ('x' in {});", "for-in string is nonassignee"],
@@ -1293,6 +1353,9 @@ var optional = [ // for expected: true = pass, false = throw
       ["--(x)++", "--x is not a valid assignee for postfix ++ with valid assignee inside parens"],
       ["++(x)--", "++x is not a valid assignee for postfix -- with valid assignee inside parens"],
 
+      ["new (function(){}).b = 5;", "syntactical good"],
+      ["new function(){}.b = 5", "good either way"],
+
       ["(++x)=b", "assigning to group with non-assignable expression 1"],
       ["(--x)=b", "assigning to group with non-assignable expression 2"],
       ["(x++)=b", "assigning to group with non-assignable expression 3"],
@@ -1300,6 +1363,9 @@ var optional = [ // for expected: true = pass, false = throw
       ["(x())=b", "assigning to group with non-assignable expression 5"],
 
       ["({a:b}[ohi].iets()++);", "Object Literal With 1 Member, Square Bracket Member Accessor, Dot Member Accessor, Function Call, Postfix Increment"],
+      ["new Date++;", "`new` operator with postfix increment"],
+
+      ["new (A).foo = bar", "invalid assignment because the parens aren't a call"],
     ]
   }
 ];
