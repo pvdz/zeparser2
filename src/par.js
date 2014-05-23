@@ -168,33 +168,69 @@
         return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
       }
     },
-    parseNonIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
+    parseNonIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, optional) {
       var tok = this.tok;
       var c = tok.getLastNum();
 
-      if (c === ORD_OPEN_CURLY) {
+      if (c === ORD_CLOSE_CURLY) { // 65.6%
+        if (!optional) throw 'Expected more input...'; // {if(x)}
+        return PARSEDNOTHING;
+      }
+
+      if (c === ORD_OPEN_CURLY) { // 33.2%
         tok.nextExpr();
         this.parseBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
         return PARSEDSOMETHING;
       }
 
-      if (c === ORD_OPEN_PAREN || c === ORD_OPEN_SQUARE || c === ORD_TILDE || c === ORD_PLUS || c === ORD_MIN || c === ORD_EXCL) {
+      return this.parseNonIdentifierStatementNonCurly(c, optional);
+    },
+    parseNonIdentifierStatementNonCurly: function(c, optional){
+      var tok = this.tok;
+
+      if (c === ORD_OPEN_PAREN) { // 0.67%
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
 
-      if (c === ORD_SEMI) { // empty statement
+      if (c === ORD_SEMI) { // 0.31% empty statement
         // this shouldnt occur very often, but they still do.
         tok.nextExpr();
         return PARSEDSOMETHING;
       }
 
-      if (tok.isValue()) {
+      if (c === ORD_PLUS || c === ORD_MIN) { // 0.06% 0.04%
+        if (tok.getNum(1) === c || tok.getLastLen() === 1) {
+          this.parseExpressionStatement();
+          return PARSEDSOMETHING;
+        }
+        throw 'Statement cannot start with binary op.'+tok.syntaxError();
+      }
+
+      // rare
+      if (tok.isValue() || c === ORD_OPEN_SQUARE) {
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
 
+      // almost never
+      if (c === ORD_EXCL) { // 0.03% 0.03%
+        if (tok.getLastLen() === 1) {
+          this.parseExpressionStatement();
+          return PARSEDSOMETHING;
+        }
+        throw 'Statement cannot start with binary op.'+tok.syntaxError();
+      }
+
+      // almost never
+      if (c === ORD_TILDE) {
+        this.parseExpressionStatement();
+        return PARSEDSOMETHING;
+      }
+
+      // TOFIX: is there any case where empty optional does not end with curly close? otherwise we can drop this check.
       if (!optional) throw 'Expected more input...';
+      // EOF? i'm not sure happens for any other reason.
       return PARSEDNOTHING;
     },
     parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet){
@@ -680,7 +716,8 @@
 
         if (tok.nextExprIfNum(ORD_COLON)) {
           if (isValueKeyword) throw 'Label is a reserved keyword.'+this.syntaxError();
-          return this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
+          this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
+          return; // return undefined, not boolean
         }
 
         assignable = !isValueKeyword;
@@ -828,7 +865,11 @@
      */
     parsePrimary: function(optional){
       // parses parts of an expression without any binary operators
-      // TOFIX: unary ++ -- should also report error for literals and keywords (without suffix)
+      // TOFIX: unary ++ -- should also report error if rest of primary before suffix is unassignable
+
+      // should make unary parse remainder of primary if it exists, check if its assignable, reject if not with ++--
+      // should add special suffix-is-assignable args for new
+
       var parsedUnary = this.parseUnary(); // no unary can be valid in the lhs of an assignment
       var assignable;
 
@@ -902,23 +943,41 @@
       return parsed; // influences possibility of label, assignability of primary
     },
     testUnary: function(){
+
       // this method works under the assumption that the current token is
       // part of the set of valid tokens for js. So we don't have to check
       // for string lengths unless we need to disambiguate optional chars
 
       var tok = this.tok;
-      var c = tok.getLastNum();
+      var len = tok.getLastLen();
 
-      // TOFIX: can we improve this? (116 110 100 126 118 45 43 126)
-      if (c === ORD_L_T) return tok.getLastValue() === 'typeof';
-      else if (c === ORD_L_N) return tok.getLastValue() === 'new';
-      else if (c === ORD_L_D) return tok.getLastValue() === 'delete';
-      else if (c === ORD_EXCL) return true;
-      else if (c === ORD_L_V) return tok.getLastValue() === 'void';
-      // TOFIX do i actually need to check for lastLen? can't i just check if second char is not `=`?
-      else if (c === ORD_MIN) return (tok.getLastLen() === 1 || (tok.getNum(1) === ORD_MIN));
-      else if (c === ORD_PLUS) return (tok.getLastLen() === 1 || (tok.getNum(1) === ORD_PLUS));
-      else if (c === ORD_TILDE) return true;
+      // TOFIX: we can probably improve on this ... my initial attempt failed though.
+//      len:
+//      1=387k
+//      4=196k (this=126k)
+//      3=68k
+//      8=67k
+//      2=60k
+//
+//      type:
+//      13=741k
+//      9=102k
+//      10:81k
+//      7=80k
+
+      if (len > 2) {
+        var c = tok.getLastNum();
+        if (c === ORD_L_T) return (len === 6 && tok.getLastValue() === 'typeof');
+        if (c === ORD_L_N) return (tok.getLastValue() === 'new');
+        if (c === ORD_L_D) return (len === 6 && tok.getLastValue() === 'delete');
+        if (c === ORD_L_V) return (tok.getLastValue() === 'void');
+      } else if (len === 1) {
+        var c = tok.getLastNum();
+        return c === ORD_EXCL || c === ORD_MIN || c === ORD_PLUS || c === ORD_TILDE;
+      } else {
+        var c = tok.getLastNum();
+        return (c === ORD_MIN || c === ORD_PLUS) && tok.getNum(1) === c;
+      }
 
       return false;
     },
