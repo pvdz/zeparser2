@@ -45,6 +45,14 @@
   var NOTINFUNCTION = false;
   var IGNOREVALUES = true;
   var DONTIGNOREVALUES = false;
+  var HASPREFIX = true;
+  var HASNOPREFIX = false;
+  var HASNEW = true;
+  var HASNONEW = false;
+  var NOTASSIGNABLE = false;
+  var ASSIGNABLE = true;
+  var MAYBELABEL = true;
+  var NOTLABEL = false;
 
   var ORD_L_A = 0x61;
   var ORD_L_B = 0x62;
@@ -698,38 +706,23 @@
       // this method is only called at the start of a statement that starts
       // with an identifier that is neither `function` nor a statement keyword
 
-      var tok = this.tok;
-      var assignable = true;
-      var parsedUnary = this.parseUnary();
+      // store value of identifier for label validation below.
+      var identifier = this.tok.getLastValue();
 
-      if (parsedUnary) {
-        assignable = false;
-        this.parsePrimary(REQUIRED);
-      } else {
-        // verify label name and check if it's succeeded by a colon
-
-        // TOFIX: we dont have to check for any of the statement identifiers (break, return, if). can we optimize this case? is it worth it?
-        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+this.tok.getLastValue()+'] found in expression.'+tok.syntaxError();
-        tok.nextPunc();
-
-        var isValueKeyword = this.isValueKeyword(labelName);
-
-        if (tok.nextExprIfNum(ORD_COLON)) {
-          if (isValueKeyword) throw 'Label is a reserved keyword.'+this.syntaxError();
-          this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
-          return; // return undefined, not boolean
-        }
-
-        assignable = !isValueKeyword;
-      }
-
-      assignable = this.parsePrimarySuffixes(assignable) && !parsedUnary;
+      // this will stop before consuming the colon, if any.
+      var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, MAYBELABEL);
 
       this.parseAssignments(assignable);
       this.parseNonAssignments();
 
-      if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
-      this.parseSemi();
+      if (this.tok.nextExprIfNum(ORD_COLON)) {
+        if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+this.tok.syntaxError();
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
+      } else {
+        if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
+        this.parseSemi();
+      }
+
     },
     parseOptionalExpressions: function(){
       var tok = this.tok;
@@ -764,17 +757,25 @@
       return groupAssignable;
     },
     parseExpressionOptional: function(){
-      // any kind of operator in a group makes it unassignable (except new with trailing prop...)
-      var assignable = this.parsePrimary(OPTIONAL);
-
-      // TOFIX: we havent validated actually having a primary yet. this might pass `f(=a)` kinds of crap
       var count = this.tok.tokenCountAll;
-      this.parseAssignments(assignable);
-      this.parseNonAssignments();
+      var assignable = this.parsePrimary(OPTIONAL);
+      var beforeAssignments = this.tok.tokenCountAll;
+      if (count !== beforeAssignments) {
+        this.parseAssignments(assignable);
+        var beforeNonAssignments = this.tok.tokenCountAll;
+        this.parseNonAssignments();
+        var endCount = this.tok.tokenCountAll;
+
+        // if there was a non-assign binary op, the whole thing is nonassign
+        // if there were only assign ops, the whole thing is assignable
+        // if there were no binary ops, the whole thing is whatever the primary was
+
+        assignable = (beforeNonAssignments === endCount) && (beforeAssignments !== beforeNonAssignments || assignable);
+      }
 
       // return state for parseGroup, to determine whether the group as a whole can be assignment lhs
       // the group needs to know about the prim expr AND any binary ops (inc assignments).
-      return (assignable && count === this.tok.tokenCountAll);
+      return assignable;
     },
     parseAssignments: function(assignable){
       // assignment ops are allowed until the first non-assignment binary op
@@ -855,102 +856,17 @@
 
       return (assignable && count === tok.tokenCountAll);
     },
+
     /**
-     * Parse the "primary" expression value. This is like the root
-     * value for any expression. Could be a number, string,
-     * identifier, etc. The primary can have a prefix (like unary
-     * operators) and suffixes (++, --) but they are parsed elsewhere.
+     * Parse a primary value including any prefix operators but without any
+     * of the binary or postfix operators.
      *
-     * @return {boolean}
+     * @return {boolean} Is entire primary (prefix+core+suffix) assignable?
      */
     parsePrimary: function(optional){
-      // parses parts of an expression without any binary operators
-      // TOFIX: unary ++ -- should also report error if rest of primary before suffix is unassignable
-
-      // should make unary parse remainder of primary if it exists, check if its assignable, reject if not with ++--
-      // should add special suffix-is-assignable args for new
-
-      var parsedUnary = this.parseUnary(); // no unary can be valid in the lhs of an assignment
-      var assignable;
-
-      var tok = this.tok;
-      if (tok.isType(IDENTIFIER)) {
-        var identifier = tok.getLastValue();
-        // TOFIX: confirm whether we should do an isnum check before a reserved identifier check (the identifier check subsumes it)
-        if (tok.isNum(ORD_L_F) && identifier === 'function') {
-          this.parseFunction(NOTFORFUNCTIONDECL);
-
-          // can never assign to function directly
-          assignable = false;
-        } else {
-          // TOFIX: maybe we can have isReservedIdentifier return a number indicating a value or not and skip the mandatory value check later
-          if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression.'+tok.syntaxError();
-          tok.nextPunc();
-
-          // any non-keyword identifier can be assigned to
-          assignable = !this.isValueKeyword(identifier);
-        }
-
-      } else {
-        assignable = this.parsePrimaryValue(optional, parsedUnary);
-      }
-
-      assignable = this.parsePrimarySuffixes(assignable);
-
-      // TOFIX: exception for `new` and a trailing property
-      return parsedUnary ? false : assignable;
+      return this.parsePrimaryOrPrefix(optional, HASNONEW, NOTLABEL);
     },
-    parsePrimaryValue: function(optional, parsedUnary){
-      // at this point in the expression parser we will have ruled out anything else.
-      // the next token(s) must be some kind of non-identifier expression value...
-      // returns whether the entire thing is assignable
-
-      var tok = this.tok;
-
-      if (tok.nextPuncIfValue()) {
-        return false;
-      }
-
-      if (tok.nextExprIfNum(ORD_OPEN_PAREN)) {
-        return this.parseGroup();
-      }
-
-      if (tok.nextExprIfNum(ORD_OPEN_CURLY)) {
-        // TOFIX: make test for this being non-assignable
-        this.parseObject();
-        return false;
-      }
-
-      if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) {
-        // TOFIX: make test for this being non-assignable
-        this.parseArray();
-        return false;
-      }
-
-      if (!optional || parsedUnary) throw 'Unable to parse required primary value.'+tok.syntaxError();
-
-      // if the primary was optional but not found, the return value here is irrelevant
-      return true;
-    },
-    parseUnary: function(){
-      var parsed = PARSEDNOTHING;
-      var tok = this.tok;
-      // EOF check: `++` will run into infinite loop otherwise
-      while (!tok.isType(EOF) && this.testUnary()) {
-        tok.nextExpr();
-        parsed = PARSEDSOMETHING;
-      }
-      return parsed; // influences possibility of label, assignability of primary
-    },
-    testUnary: function(){
-
-      // this method works under the assumption that the current token is
-      // part of the set of valid tokens for js. So we don't have to check
-      // for string lengths unless we need to disambiguate optional chars
-
-      var tok = this.tok;
-      var len = tok.getLastLen();
-
+    parsePrimaryOrPrefix: function(optional, hasNew, maybeLabel){
       // TOFIX: we can probably improve on this ... my initial attempt failed though.
 //      len:
 //      1=387k
@@ -965,71 +881,171 @@
 //      10:81k
 //      7=80k
 
-      if (len > 2) {
-        var c = tok.getLastNum();
-        if (c === ORD_L_T) return (len === 6 && tok.getLastValue() === 'typeof');
-        if (c === ORD_L_N) return (tok.getLastValue() === 'new');
-        if (c === ORD_L_D) return (len === 6 && tok.getLastValue() === 'delete');
-        if (c === ORD_L_V) return (tok.getLastValue() === 'void');
-      } else if (len === 1) {
-        var c = tok.getLastNum();
-        return c === ORD_EXCL || c === ORD_MIN || c === ORD_PLUS || c === ORD_TILDE;
-      } else {
-        var c = tok.getLastNum();
-        return (c === ORD_MIN || c === ORD_PLUS) && tok.getNum(1) === c;
+      var tok = this.tok;
+      var len = tok.getLastLen();
+      var c = tok.getLastNum();
+
+      if (tok.isType(IDENTIFIER)) {
+        if (len > 2) {
+          if (c === ORD_L_T) {
+            if (len === 6 && tok.nextExprIfString('typeof')) {
+              if (hasNew) throw 'typeof is illegal right after new.'+tok.syntaxError();
+              this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+              return NOTASSIGNABLE;
+            }
+          } else if (c === ORD_L_N) {
+            if (tok.nextExprIfString('new')) {
+              // new is actually assignable if it has a trailing property AND at least one paren pair
+              return this.parsePrimaryOrPrefix(REQUIRED, HASNEW || hasNew, NOTLABEL);
+            }
+          } else if (c === ORD_L_D) {
+            if (len === 6 && tok.nextExprIfString('delete')) {
+              if (hasNew) throw 'delete is illegal right after new.'+tok.syntaxError();
+              this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+              return NOTASSIGNABLE;
+            }
+          } else if (c === ORD_L_V) {
+            if (tok.nextExprIfString('void')) {
+              if (hasNew) throw 'void is illegal right after new.'+tok.syntaxError();
+              this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+              return NOTASSIGNABLE;
+            }
+          }
+        }
+
+        return this.parsePrimaryCoreIdentifier(optional, hasNew, maybeLabel);
       }
 
-      return false;
+      if ((c === ORD_EXCL || c === ORD_TILDE) && tok.getLastLen() === 1) {
+        if (hasNew) throw '! and ~ are illegal right after new.'+tok.syntaxError();
+        tok.nextExpr();
+        this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+        return NOTASSIGNABLE;
+      }
+
+      if (c === ORD_PLUS || c === ORD_MIN) {
+        if (hasNew) throw 'illegal operator right after new.'+tok.syntaxError();
+        // have to verify len anyways, for += and -= case
+        if (tok.getLastLen() === 1) {
+          tok.nextExpr();
+          this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+        } else if (tok.getNum(1) === c) {
+          tok.nextExpr();
+          var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+          if (!assignable && this.options.strictAssignmentCheck) throw 'The rhs of ++ or -- was not assignable.' + tok.syntaxError();
+        }
+        return NOTASSIGNABLE;
+      }
+
+      return this.parsePrimaryCoreOther(optional, hasNew, maybeLabel);
     },
-    parsePrimarySuffixes: function(assignable){
+    parsePrimaryCoreIdentifier: function(optional, hasNew, maybeLabel){
+      var tok = this.tok;
+      var identifier = tok.getLastValue();
+      // TOFIX: confirm whether we should do an isnum check before a reserved identifier check (the identifier check subsumes it)
+      if (tok.isNum(ORD_L_F) && identifier === 'function') {
+        this.parseFunction(NOTFORFUNCTIONDECL);
+
+        // can never assign to function directly
+
+        return this.parsePrimarySuffixes(NOTASSIGNABLE, hasNew, NOTLABEL);
+      }
+
+      // TOFIX: maybe we can have isReservedIdentifier return a number indicating a value or not and skip the mandatory value check later
+      // TOFIX: should we skip the function check?
+      if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression.'+tok.syntaxError();
+      tok.nextPunc();
+
+      // can not assign to keywords, anything else is fine here
+      return this.parsePrimarySuffixes(!this.isValueKeyword(identifier), hasNew, maybeLabel);
+    },
+    parsePrimaryCoreOther: function(optional, hasNew, maybeLabel){
+      var assignable = this.parsePrimaryValue(optional);
+      return this.parsePrimarySuffixes(assignable, hasNew, maybeLabel);
+    },
+    parsePrimaryValue: function(optional){
+      // at this point in the expression parser we will have ruled out anything else.
+      // the next token(s) must be some kind of non-identifier expression value...
+      // returns whether the entire thing is assignable
+
+      var tok = this.tok;
+
+      // we know it's going to be a punctuator so we wont use tok.isValue() here
+      var t = tok.lastType;
+      if (t === STRING || t === NUMBER || t === REGEX) {
+        tok.nextPunc();
+        return NOTASSIGNABLE;
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_PAREN)) {
+        return this.parseGroup();
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_CURLY)) {
+        // TOFIX: make test for this being non-assignable
+        this.parseObject();
+        return NOTASSIGNABLE;
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) {
+        // TOFIX: make test for this being non-assignable
+        this.parseArray();
+        return NOTASSIGNABLE;
+      }
+
+      if (!optional) throw 'Unable to parse required primary value.'+tok.syntaxError();
+      // if the primary was optional but not found, the return value here is irrelevant
+      return ASSIGNABLE;
+    },
+    parsePrimarySuffixes: function(assignable, unassignableUntilAfterCall, maybeLabel){
       // --
       // ++
       // .<idntf>
       // [<exprs>]
       // (<exprs>)
 
+      // label edge case. if any suffix parsed, colon is no longer valid
+      var colonIsError = false;
+
+      if (unassignableUntilAfterCall) assignable = false; // for new, must have trailing property _after_ a call
+
       // TOFIX: the order of these checks doesn't appear to be optimal (numbers first?)
       var tok = this.tok;
-      var repeat = true;
-      while (repeat) {
+      while (true) {
         var c = tok.getLastNum();
         // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
 //        if (((c/10)|0)!==4) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
-        if (c > 0x2e) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
-          if (c === ORD_OPEN_SQUARE) {
-            tok.nextExpr();
-            this.parseExpressions(); // required
-            tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-            assignable = true; // trailing property
-          } else {
-            repeat = false;
-          }
+        if (c > 0x2e) {
+          // only c>0x2e relevant is OPEN_SQUARE
+          if (c !== ORD_OPEN_SQUARE) break;
+          tok.nextExpr();
+          this.parseExpressions(); // required
+          tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          if (!unassignableUntilAfterCall) assignable = true; // trailing property
         } else if (c === ORD_DOT) {
-          if (!tok.isType(PUNCTUATOR)) throw 'Dot/Number (?) after identifier?'+tok.syntaxError();
+          if (!tok.isType(PUNCTUATOR)) throw 'Dot/Number (?) after identifier?'+tok.syntaxError(); // can we remove this line for build?
           tok.nextPunc();
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          assignable = true; // trailing property
+          if (!unassignableUntilAfterCall) assignable = true; // trailing property
         } else if (c === ORD_OPEN_PAREN) {
-          // TOFIX: if expression was non-assignable up to here, this is an error under the assignment flag
           tok.nextExpr();
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          unassignableUntilAfterCall = false;
           assignable = false; // call, only assignable in IE (case ignored)
-        } else if (c === ORD_PLUS && tok.getNum(1) === ORD_PLUS) {
-          if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.'+this.tok.syntaxError();
-          // TOFIX: if expression was non-assignable up to here, this is an error under the assignment flag
-          tok.nextPunc();
-          assignable = false; // ++
-          repeat = false;
-        } else if (c === ORD_MIN &&  tok.getNum(1) === ORD_MIN) {
-          if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix decrement not allowed here.'+this.tok.syntaxError();
-          tok.nextPunc();
-          assignable = false; // --
-          repeat = false;
         } else {
-          repeat = false;
+
+          if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
+            if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.'+this.tok.syntaxError();
+            tok.nextPunc();
+            assignable = false; // ++
+          }
+
+          break;
         }
+        colonIsError = true;
       }
+      if (colonIsError && maybeLabel && c === ORD_COLON) throw 'Invalid label here, I think.'+tok.syntaxError();
       return assignable;
     },
     isAssignmentOperator: function(){

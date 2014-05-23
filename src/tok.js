@@ -344,6 +344,12 @@
       if (equals) this.nextPunc();
       return equals;
     },
+    nextExprIfString: function(str){
+      var equals = this.isString(str);
+      if (equals) this.nextExpr();
+      return equals;
+    },
+
 
     /**
      * Parser requires the current token to start with (or be) a
