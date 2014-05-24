@@ -837,7 +837,7 @@
       while (repeat) {
         if (this.isBinaryOperator()) {
           // rationale for using getLastNum; this is the `in` check which will succeed
-          // about 50% of the time (stats from 8mb of various js). the other time it
+          // about 50% of the time (parsePrimaryOrPrefix from 8mb of various js). the other time it
           // will check for a primary. it's therefore more likely that an getLastNum will
           // save time because it would cache the charCodeAt for the other token if
           // it failed the check
@@ -889,10 +889,15 @@
         if (len > 2) {
           if (c === ORD_L_T) {
             if (len === 6 && tok.nextExprIfString('typeof')) {
-              if (hasNew) throw 'typeof is illegal right after new.'+tok.syntaxError();
+              if (hasNew) throw 'typeof is illegal right after new.' + tok.syntaxError();
               this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
               return NOTASSIGNABLE;
             }
+          } else if (tok.isNum(ORD_L_F) && tok.isString('function')) {
+              this.parseFunction(NOTFORFUNCTIONDECL);
+
+              // can never assign to function directly
+              return this.parsePrimarySuffixes(NOTASSIGNABLE, hasNew, NOTLABEL);
           } else if (c === ORD_L_N) {
             if (tok.nextExprIfString('new')) {
               // new is actually assignable if it has a trailing property AND at least one paren pair
@@ -923,7 +928,7 @@
         return NOTASSIGNABLE;
       }
 
-      if (c === ORD_PLUS || c === ORD_MIN) {
+      if (c === ORD_MIN || c === ORD_PLUS) {
         if (hasNew) throw 'illegal operator right after new.'+tok.syntaxError();
         // have to verify len anyways, for += and -= case
         if (tok.getLastLen() === 1) {
@@ -942,18 +947,10 @@
     parsePrimaryCoreIdentifier: function(optional, hasNew, maybeLabel){
       var tok = this.tok;
       var identifier = tok.getLastValue();
-      // TOFIX: confirm whether we should do an isnum check before a reserved identifier check (the identifier check subsumes it)
-      if (tok.isNum(ORD_L_F) && identifier === 'function') {
-        this.parseFunction(NOTFORFUNCTIONDECL);
-
-        // can never assign to function directly
-
-        return this.parsePrimarySuffixes(NOTASSIGNABLE, hasNew, NOTLABEL);
-      }
 
       // TOFIX: maybe we can have isReservedIdentifier return a number indicating a value or not and skip the mandatory value check later
       // TOFIX: should we skip the function check?
-      if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression.'+tok.syntaxError();
+      if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
       tok.nextPunc();
 
       // can not assign to keywords, anything else is fine here
