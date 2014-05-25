@@ -1033,7 +1033,7 @@
         } else {
 
           if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
-            if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.'+this.tok.syntaxError();
+            if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.' + this.tok.syntaxError();
             tok.nextPunc();
             assignable = false; // ++
           }
@@ -1058,7 +1058,7 @@
 
       if (len === 1) return c === ORD_IS;
 
-      else if (len === 2) {
+      if (len === 2) {
         // if a token, which must be valid at this point has the equal sign
         // as second char and length 2 there is a white list and black list
         // of possible options;
@@ -1080,19 +1080,13 @@
           c === ORD_XOR;
       }
 
-      else {
-        // TOFIX: len checks may be optimized away. can they fail at this point?
-        // these <<= >>= >>>= cases are very rare
-        if (len === 3 && c === ORD_LT) {
-          return (tok.getNum(1) === ORD_LT && tok.getNum(2) === ORD_IS); // <<=
-        }
-        else if (c === ORD_GT) {
-          return ((tok.getNum(1) === ORD_GT) && (
-            (len === 4 && tok.getNum(2) === ORD_GT && tok.getNum(3) === ORD_IS) || // >>>=
-            (len === 3 && tok.getNum(2) === ORD_IS) // >>=
-          ));
-        }
-      }
+      // these <<= >>= >>>= cases are very rare
+
+      // valid tokens starting with < are: < <= << <<= only len=3 is what we want here
+      if (c === ORD_LT) return len === 3;
+
+      // valid tokens starting with > are: > >> >= >>= >>> >>>=, we only look for >>= and >>>=
+      if (c === ORD_GT) return (len === 4 || (len === 3 && tok.getNum(2) === ORD_IS));
 
       return false;
     },
