@@ -837,7 +837,7 @@
       while (repeat) {
         if (this.isBinaryOperator()) {
           // rationale for using getLastNum; this is the `in` check which will succeed
-          // about 50% of the time (parsePrimaryOrPrefix from 8mb of various js). the other time it
+          // about 50% of the time (stats from 8mb of various js). the other time it
           // will check for a primary. it's therefore more likely that an getLastNum will
           // save time because it would cache the charCodeAt for the other token if
           // it failed the check
@@ -1006,12 +1006,10 @@
 
       if (unassignableUntilAfterCall) assignable = false; // for new, must have trailing property _after_ a call
 
-      // TOFIX: the order of these checks doesn't appear to be optimal (numbers first?)
       var tok = this.tok;
       while (true) {
+        // see c frequency stats in /stats/primary suffix start.txt
         var c = tok.getLastNum();
-        // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
-//        if (((c/10)|0)!==4) { // ORD_DOT ORD_OPEN_PAREN ORD_PLUS ORD_MIN are all 40's
         if (c > 0x2e) {
           // only c>0x2e relevant is OPEN_SQUARE
           if (c !== ORD_OPEN_SQUARE) break;
