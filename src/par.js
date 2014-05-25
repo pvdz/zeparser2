@@ -1092,80 +1092,38 @@
       // _non-assignment binary operator
 
       // this method works under the assumption that the current token is
-      // part of the set of valid _tokens_ for js. So we don't have to check
-      // for string lengths unless we need to disambiguate optional chars
-      // and we dont need to worry about validation. the operator is either
-      // going to be a punctuator, `in`, or `instanceof`. But note that the
-      // token might still be a completely unrelated (error) kind of token.
-      // We will parse it in such a way that the error condition is always
-      // the longest path, though.
+      // part of the set of valid _tokens_ for js. That means we only have
+      // to do extra checks for a token to disambiguate other valid tokens,
+      // usually to eliminate assignments.
+
+      // if the input token is not a punctuator or identifier (-> in/instanceof)
+      // the code will result in an error.
+      // identifier happens about 0.5% of the time
+      // punctuator is 99.5%
+
+      // len=1: 93%
+      // len=2: 5%
+      // len=3: 1%
+      // len>3: nearly 1%
+
+      // function returns false in 86% of the calls
 
       var tok = this.tok;
       var c = tok.getLastNum();
+      var len = tok.getLastLen();
 
-      // so we have a valid  token, checking for binary ops is simple now except
-      // that we have to make sure it's not an (compound) assignment!
-
-      // About 80% of the calls to this method result in none of the ifs
-      // even matching. The times the method returns `false` is even bigger.
-      // To this end, we preliminary check a few cases so we can jump quicker.
-
-      // (most frequent, for 27% 23% and 20% of the times this method is
-      // called, c will be one of them (simple expression enders)
-      if (c === ORD_CLOSE_PAREN || c === ORD_SEMI || c === ORD_COMMA) return false;
-
-      // quite frequent (more than any other single if below it) are } (8%)
-      // and ] (7%). Maybe I'll remove this in the future. The overhead may
-      // not be worth the gains. Hard to tell... :)
-      else if (c === ORD_CLOSE_SQUARE || c === ORD_CLOSE_CURLY) return false;
-
-      // if len is more than 1, it's either a compound assignment (+=) or a unary op (++)
-      else if (c === ORD_PLUS) return (tok.getLastLen() === 1);
-
-      // === !==
-      else if (c === ORD_IS || c === ORD_EXCL) {
-        // we already know token is valid. all tokens that start with = and ! are:
-        // = ! == != === !==, so we must only make sure length > 1
-        return tok.getLastLen() > 1;
+      if (c === ORD_SEMI || c === ORD_CLOSE_PAREN || c === ORD_COMMA) return false; // expression enders: 26% 24% 20%
+      if (len === 1) {
+        if (c === ORD_CLOSE_SQUARE || c === ORD_CLOSE_CURLY) return false; // expression/statement enders: 7% 6%
+        return c === ORD_PLUS || c === ORD_STAR || c === ORD_LT || c === ORD_MIN || c === ORD_GT || c === ORD_FWDSLASH || c === ORD_AND || c === ORD_OR || c === ORD_PERCENT || c === ORD_XOR;
       }
-
-      // & &&
-      else if (c === ORD_AND) return (tok.getLastLen() === 1 || tok.getNum(1) === ORD_AND);
-
-      // | ||
-      else if (c === ORD_OR) return (tok.getLastLen() === 1 || tok.getNum(1) === ORD_OR);
-
-      else if (c === ORD_LT) {
-        // we already know token is valid. all tokens that start with < are:
-        // < <= << <<=, so we must only make sure it's not length=3.
-        return tok.getLastLen() < 3;
+      if (len === 2) {
+        return c === ORD_IS || c === ORD_EXCL || c === ORD_LT || c === ORD_GT || (c === ORD_AND && tok.getNum(1) === ORD_AND) || (c === ORD_OR && tok.getNum(1) === ORD_OR) || tok.isString('in');
       }
-
-      // if len is more than 1, it's a compound assignment (*=)
-      else if (c === ORD_STAR) return (tok.getLastLen() === 1);
-
-      else if (c === ORD_GT) {
-        // >
-        // >>
-        // >>>
-        // >=
-        // >>=
-        // >>>=
-
-        var len = tok.getLastLen();
-        // all the len 1 or 2 tokens are fine here. len 3 might be assignment. 4 is always assignment (only one)
-        // note: tokenizer already makes sure each token is valid. we can skip some checks here
-        return (len < 3 || (len === 3 && tok.getNum(2) === ORD_GT)); // >= >> >>>
+      if (len === 3) {
+        return c === ORD_IS || c === ORD_EXCL || (c === ORD_GT && tok.getNum(2) === ORD_GT)
       }
-
-      // if len is more than 1, it's a compound assignment (%=, ^=, /=, -=)
-      else if (c === ORD_PERCENT || c === ORD_XOR || c === ORD_FWDSLASH || c === ORD_MIN) return (tok.getLastLen() === 1);
-
-      // if not punctuator, it could still be `in` or `instanceof`...
-      else if (c === ORD_L_I) {
-        var len = tok.getLastLen();
-        return (len === 2 && tok.getNum(1) === ORD_L_N) || (len === 10 && tok.getLastValue() === 'instanceof');
-      }
+      if (len === 10) return tok.isString('instanceof');
 
       // not a (non-assignment) binary operator
       return false;
