@@ -1458,9 +1458,11 @@
     },
 
     isValueKeyword: function(c, word){
-      if (c === ORD_L_T) return word.length === 4 && (word === 'true' || word === 'this');
-      if (c === ORD_L_F) return word === 'false';
-      return c === ORD_L_N && word === 'null';
+      if (word.length === 4) {
+        if (c === ORD_L_T) return word === 'this' || word === 'true';
+        return c === ORD_L_N && word === 'null';
+      }
+      return c === ORD_L_F && word.length === 5 && word === 'false';
     },
   };
 
