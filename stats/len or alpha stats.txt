@@ -1,0 +1,40 @@
+//      switch (tok.getLastLen()) {
+//        case 1: break;
+//        case 2: break;
+//        case 3: break;
+//        case 4: break;
+//        case 5: break;
+//        case 6: break;
+//        case 7: break;
+//        case 8: break;
+//        default: break;
+//      }
+//      switch (c) {
+//        case ORD_L_A: break;
+//        case ORD_L_B: break;
+//        case ORD_L_C: break;
+//        case ORD_L_D: break;
+//        case ORD_L_E: break;
+//        case ORD_L_F: break;
+//        case ORD_L_G: break;
+//        case ORD_L_H: break;
+//        case ORD_L_I: break;
+//        case ORD_L_J: break;
+//        case ORD_L_K: break;
+//        case ORD_L_L: break;
+//        case ORD_L_M: break;
+//        case ORD_L_N: break;
+//        case ORD_L_O: break;
+//        case ORD_L_P: break;
+//        case ORD_L_Q: break;
+//        case ORD_L_R: break;
+//        case ORD_L_S: break;
+//        case ORD_L_T: break;
+//        case ORD_L_U: break;
+//        case ORD_L_V: break;
+//        case ORD_L_W: break;
+//        case ORD_L_X: break;
+//        case ORD_L_Y: break;
+//        case ORD_L_Z: break;
+//        default: break;
+//      }

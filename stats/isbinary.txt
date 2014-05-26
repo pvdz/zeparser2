@@ -1,0 +1,19 @@
+These stats are for isBinary function. It only allows non-assignment binary
+operators. This function happens right after parsing assignments. The first
+time it will never encounter an assignment, but it's possible (though in
+error) to encounter them afterwards.
+
+Just to repeat: these stats are not for "binary operators" in general!
+
+These are some stats of the 16mb bench file:
+
+identifier happens about 0.5% of the time
+punctuator is 99.5%
+no other token has been found (is that even possible without error?)
+
+len=1: 93%
+len=2: 5%
+len=3: 1%
+len>3: nearly 1%
+
+the function returns false in 86% of the calls
