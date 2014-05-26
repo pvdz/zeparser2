@@ -566,8 +566,9 @@
     },
     parseEqualSigns: function(){
       var len = 1;
-      if (this.input.charCodeAt(this.lastStart+1) === ORD_IS_3D) {
-        if (this.input.charCodeAt(this.lastStart+2) === ORD_IS_3D) len = 3;
+      var offset = this.lastStart;
+      if (this.input.charCodeAt(offset+1) === ORD_IS_3D) {
+        if (this.input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
         else len = 2;
       }
       this.pos += len;
