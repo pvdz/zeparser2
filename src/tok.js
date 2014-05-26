@@ -256,15 +256,6 @@
     // write scripts to construct them. the only way to keep my sanity
 
     /**
-     * Check whether current token is of certain type
-     *
-     * @param {number} t
-     * @return {boolean}
-     */
-    isType: function(t){
-      return this.lastType === t;
-    },
-    /**
      * Check whether the current token is of string, number,
      * regex, or identifier type. These are the "value"
      * token types, short of arrays and objects.
@@ -325,7 +316,6 @@
       return equals;
     },
 
-
     /**
      * Parser requires the current token to start with (or be) a
      * certain character. Parse the next token if that's the case.
@@ -346,11 +336,8 @@
      * @param {boolean} nextIsExpr
      */
     mustBeIdentifier: function(nextIsExpr){
-      if (this.isType(IDENTIFIER)) {
-        return this.next(nextIsExpr);
-      } else {
-        throw this.syntaxError(IDENTIFIER);
-      }
+      if (this.lastType === IDENTIFIER) return this.next(nextIsExpr);
+      throw this.syntaxError(IDENTIFIER);
     },
     /**
      * Parser requires the current token to be this

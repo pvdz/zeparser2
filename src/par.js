@@ -175,7 +175,7 @@
       while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
-      if (this.tok.isType(IDENTIFIER)) {
+      if (this.tok.lastType === IDENTIFIER) {
         // this might be `false` when encountering `case` or `default` (or `else`?), which are handled elsewhere
         // TOFIX: would it be terrible if `case` and `default` went recursive here?
         return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
@@ -665,7 +665,7 @@
     parseParameters: function(paramCount){
       // [<idntf> [, <idntf>]]
       var tok = this.tok;
-      if (tok.isType(IDENTIFIER)) {
+      if (tok.lastType === IDENTIFIER) {
         if (paramCount === 0) throw 'Getters have no parameters.'+tok.syntaxError();
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
         tok.nextExpr();
@@ -674,7 +674,7 @@
           if (paramCount === 1) throw 'Setters have exactly one param.'+tok.syntaxError();
 
           // param name
-          if (tok.isType(IDENTIFIER)) {
+          if (tok.lastType === IDENTIFIER) {
             if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
             tok.nextPunc();
           } else {
@@ -707,7 +707,7 @@
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
       var tok = this.tok;
-      if (tok.firstTokenChar === ORD_CLOSE_CURLY || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
+      if (tok.firstTokenChar === ORD_CLOSE_CURLY || (tok.lastNewline && tok.lastType !== REGEX) || tok.lastType === EOF) {
         return this.addAsi();
       }
       return PARSEDNOTHING;
@@ -903,7 +903,7 @@
       var len = tok.lastLen;
       var c = tok.firstTokenChar;
 
-      if (tok.isType(IDENTIFIER)) {
+      if (tok.lastType === IDENTIFIER) {
         if (len > 2) {
           if (c === ORD_L_T) {
             if (len === 6 && tok.nextExprIfString('typeof')) {
@@ -1039,7 +1039,7 @@
           tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           if (!unassignableUntilAfterCall) assignable = true; // trailing property
         } else if (c === ORD_DOT) {
-          if (!tok.isType(PUNCTUATOR)) throw 'Dot/Number (?) after identifier?'+tok.syntaxError(); // can we remove this line for build?
+          if (tok.lastType !== PUNCTUATOR) throw 'Dot/Number (?) after identifier?'+tok.syntaxError(); // can we remove this line for build?
           tok.nextPunc();
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           if (!unassignableUntilAfterCall) assignable = true; // trailing property
@@ -1176,7 +1176,7 @@
       do {
         // note: __isValue also passes for a REGEX, objlits dont allow this. we need to check extra.
         // TOFIX: can we perhaps postpone this check till the end? it only fails if there's a syntax error or }
-        if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
+        if (tok.isValue() && tok.lastType !== REGEX) this.parsePair();
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
       // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
@@ -1189,7 +1189,7 @@
 
       var c = tok.firstTokenChar;
       if (c === ORD_L_G && tok.nextPuncIfString('get')) {
-        if (tok.isType(IDENTIFIER)) {
+        if (tok.lastType === IDENTIFIER) {
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.nextPunc();
 
@@ -1197,7 +1197,7 @@
         }
         else this.parseDataPart();
       } else if (c === ORD_L_S && tok.nextPuncIfString('set')) {
-        if (tok.isType(IDENTIFIER)) {
+        if (tok.lastType === IDENTIFIER) {
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.nextPunc();
 
