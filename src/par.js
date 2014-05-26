@@ -4,6 +4,7 @@
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
 // TOFIX: check `(x-a^x-b)<0` rangecheck hack from http://codegolf.stackexchange.com/questions/8649/shortest-code-to-check-if-a-number-is-in-a-range-in-javascript
+// TOFIX: paramcount should not pass on signed and unsigned
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
@@ -171,7 +172,7 @@
     parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
       // note: statements are optional, this function might not parse anything
-      while (!tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
+      while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
       if (this.tok.isType(IDENTIFIER)) {
@@ -449,9 +450,9 @@
 
       if (!inLoop) throw 'Can only continue in a loop.'+tok.syntaxError();
 
-      tok.nextPunc(); // token after continue cannot be a regex, either way.
+      var type = tok.nextPunc(); // token after continue cannot be a regex, either way.
 
-      if (!tok.getLastNewline() && tok.isType(IDENTIFIER)) {
+      if (type === IDENTIFIER && !tok.getLastNewline()) {
         this.parseLabel(labelSet);
       }
 
@@ -466,9 +467,9 @@
       // newline right after keyword = asi
 
       var tok = this.tok;
-      tok.nextPunc(); // token after break cannot be a regex, either way.
+      var type = tok.nextPunc(); // token after break cannot be a regex, either way.
 
-      if (tok.getLastNewline() || !tok.isType(IDENTIFIER)) { // no label after break?
+      if (type !== IDENTIFIER || tok.getLastNewline()) { // no label after break?
         if (!inLoop && !inSwitch) {
           // break without label
           throw 'Break without value only in loops or switches.'+tok.syntaxError();
@@ -589,10 +590,10 @@
 
       var tok = this.tok;
       if (tok.nextPuncIfString('catch')) {
-        tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
+        var type = tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
 
         // catch var
-        if (tok.isType(IDENTIFIER)) {
+        if (type === IDENTIFIER) {
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Catch scope var name is reserved.'+tok.syntaxError();
           tok.nextPunc();
         } else {
@@ -637,8 +638,8 @@
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
       var tok = this.tok;
-      tok.nextPunc(); // 'function'
-      if (tok.isType(IDENTIFIER)) { // name
+      var type = tok.nextPunc(); // 'function'
+      if (type === IDENTIFIER) { // name
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function name ['+this.tok.getLastValue()+'] is reserved.'+tok.syntaxError();
         tok.nextPunc();
       } else if (forFunctionDeclaration) {

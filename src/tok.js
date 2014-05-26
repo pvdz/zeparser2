@@ -361,7 +361,7 @@
      */
     mustBeNum: function(num, nextIsExpr){
       if (this.isNum(num)) {
-        this.next(nextIsExpr);
+        return this.next(nextIsExpr);
       } else {
         throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this.getLastNum()) + '.' + this.syntaxError();
       }
@@ -375,7 +375,7 @@
      */
     mustBeIdentifier: function(nextIsExpr){
       if (this.isType(IDENTIFIER)) {
-        this.next(nextIsExpr);
+        return this.next(nextIsExpr);
       } else {
         throw this.syntaxError(IDENTIFIER);
       }
@@ -390,7 +390,7 @@
      */
     mustBeString: function(str, nextIsExpr){
       if (this.isString(str)) {
-        this.next(nextIsExpr);
+        return this.next(nextIsExpr);
       } else {
         throw this.syntaxError(str);
       }
