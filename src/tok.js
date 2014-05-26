@@ -278,16 +278,6 @@
       );
     },
     /**
-     * Compare the first character of the current token
-     * as a number (for speed).
-     *
-     * @param {number} n
-     * @return {boolean}
-     */
-    isNum: function(n){
-      return this.firstTokenChar === n;
-    },
-    /**
      * Compare the entire input range of the current
      * token to the given value.
      *
@@ -321,7 +311,7 @@
      * @return {boolean}
      */
     nextExprIfNum: function(num){
-      var equals = this.isNum(num);
+      var equals = this.firstTokenChar === num;
       if (equals) this.nextExpr();
       return equals;
     },
@@ -355,11 +345,8 @@
      * @param {boolean} nextIsExpr=false
      */
     mustBeNum: function(num, nextIsExpr){
-      if (this.isNum(num)) {
-        return this.next(nextIsExpr);
-      } else {
-        throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this.firstTokenChar) + '.' + this.syntaxError();
-      }
+      if (this.firstTokenChar === num) return this.next(nextIsExpr);
+      throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this.firstTokenChar) + '.' + this.syntaxError();
     },
     /**
      * Parser requires the current token to be any identifier.

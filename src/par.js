@@ -328,7 +328,7 @@
       do {
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
-        if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
+        if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
           tok.nextExpr();
           this.parseExpression();
         }
@@ -346,7 +346,7 @@
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         ++vars;
 
-        if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
+        if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
           tok.nextExpr();
           this.parseExpressionNoIn();
         }
@@ -411,7 +411,7 @@
       else {
         var validForInLhs;
 
-        if (tok.isNum(ORD_L_V) && tok.nextPuncIfString('var')) validForInLhs = this.parseVarPartNoIn();
+        if (tok.firstTokenChar === ORD_L_V && tok.nextPuncIfString('var')) validForInLhs = this.parseVarPartNoIn();
         // expression_s_ because it might be regular for-loop...
         // (though if it isn't, it can't have more than one expr)
         else validForInLhs = this.parseExpressionsNoIn();
@@ -707,7 +707,7 @@
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
       var tok = this.tok;
-      if (tok.isNum(ORD_CLOSE_CURLY) || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
+      if (tok.firstTokenChar === ORD_CLOSE_CURLY || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
         return this.addAsi();
       }
       return PARSEDNOTHING;
@@ -814,7 +814,7 @@
           tok.nextExpr();
           this.parsePrimary(REQUIRED);
         }
-        else if (tok.isNum(ORD_QMARK)) this.parseTernary();
+        else if (tok.firstTokenChar === ORD_QMARK) this.parseTernary();
         else break;
       }
     },
@@ -866,7 +866,7 @@
             tok.nextExpr();
             this.parsePrimary(REQUIRED);
           }
-        } else if (tok.isNum(ORD_QMARK)) {
+        } else if (tok.firstTokenChar === ORD_QMARK) {
           this.parseTernaryNoIn();
         } else {
           repeat = false;
@@ -911,7 +911,7 @@
               this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
               return NOTASSIGNABLE;
             }
-          } else if (tok.isNum(ORD_L_F) && tok.isString('function')) {
+          } else if (tok.firstTokenChar === ORD_L_F && tok.isString('function')) {
               this.parseFunction(NOTFORFUNCTIONDECL);
 
               // can never assign to function directly
