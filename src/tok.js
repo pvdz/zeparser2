@@ -29,6 +29,9 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
+  var EXPR = true;
+  var PUNC = false;
+
   var UNICODE_LIMIT_127 = 127;
 
   var ORD_L_A_61 = 0x61;
@@ -270,19 +273,6 @@
     },
 
     /**
-     * Parse the next token if the current
-     * token a "value". Next token is parsed
-     * possibly expecting a division (so not
-     * a regex).
-     *
-     * @return {boolean}
-     */
-    nextPuncIfValue: function(){
-      var equals = this.isValue();
-      if (equals) this.nextPunc();
-      return equals;
-    },
-    /**
      * Parse the next token if the first character
      * of the current starts with a character (as
      * a number) equal to num. Next token is parsed
@@ -293,7 +283,7 @@
      */
     nextExprIfNum: function(num){
       var equals = this.firstTokenChar === num;
-      if (equals) this.nextExpr();
+      if (equals) this.next(EXPR);
       return equals;
     },
     /**
@@ -307,12 +297,12 @@
      */
     nextPuncIfString: function(str){
       var equals = this.getLastValue() === str;
-      if (equals) this.nextPunc();
+      if (equals) this.next(PUNC);
       return equals;
     },
     nextExprIfString: function(str){
       var equals = this.getLastValue() === str;
-      if (equals) this.nextExpr();
+      if (equals) this.next(EXPR);
       return equals;
     },
 
@@ -350,13 +340,6 @@
     mustBeString: function(str, nextIsExpr){
       if (this.getLastValue() === str) return this.next(nextIsExpr);
       throw this.syntaxError(str);
-    },
-
-    nextExpr: function(){
-      return this.next(true);
-    },
-    nextPunc: function(){
-      return this.next(false);
     },
 
     next: function(expressionStart){
@@ -407,22 +390,22 @@
     },
     nextTokenDeterminator_a: function(c, expressionStart) {
       switch (c) {
-        case ORD_SPACE_20: // note: many spaces are caught by immediate newline checks (see parseCR and parseNewline)
-          return this.parseOneChar(WHITE);
+        case ORD_SPACE_20: // note: many spaces are caught by immediate newline checks (see parseCR and parseVerifiedNewline)
+          return ++this.pos,(WHITE);
         case ORD_DOT_2E:
           return this.parseLeadingDot();
         case ORD_OPEN_PAREN_28:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_CLOSE_PAREN_29:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_CR_0D:
           return this.parseCR();
         case ORD_LF_0A:
-          return this.parseNewline();
+          return this.parseVerifiedNewline(this.pos);
         case ORD_COMMA_2C:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_TAB_09:
-          return this.parseOneChar(WHITE);
+          return ++this.pos,(WHITE);
         case ORD_DQUOTE_22:
           return this.parseDoubleString();
         case ORD_PLUS_2B:
@@ -446,9 +429,9 @@
         case ORD_PERCENT_25:
           return this.parseCompoundAssignment();
         case ORD_FF_0C:
-          return this.parseOneChar(WHITE);
+          return ++this.pos,(WHITE);
         case ORD_VTAB_0B:
-          return this.parseOneChar(WHITE);
+          return ++this.pos,(WHITE);
         default:
           // cannot be unicode because it's < ORD_L_A and ORD_L_A_UC
           throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
@@ -457,25 +440,25 @@
     nextTokenDeterminator_b: function(c, expressionStart) {
       switch (c) {
         case ORD_SEMI_3B:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_IS_3D:
           return this.parseEqualSigns();
         case ORD_OPEN_CURLY_7B:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_CLOSE_CURLY_7D:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_OPEN_SQUARE_5B:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_CLOSE_SQUARE_5D:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_COLON_3A:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_LODASH_5F:
           return this.parseIdentifier();
         case ORD_OR_7C:
           return this.parseSameOrCompound(c);
         case ORD_QMARK_3F:
-          return this.parseOneChar(PUNCTUATOR);
+          return ++this.pos,(PUNCTUATOR);
         case ORD_LT_3C:
           return this.parseLtgtPunctuator(c);
         case ORD_GT_3E:
@@ -485,13 +468,13 @@
         case ORD_TILDE_7E:
           return this.parseCompoundAssignment();
         case ORD_PS_2028:
-          return this.parseNewline();
+          return this.parseVerifiedNewline(this.pos);
         case ORD_LS_2029:
-          return this.parseNewline();
+          return this.parseVerifiedNewline(this.pos);
         case ORD_NBSP_A0:
-          return this.parseOneChar(WHITE);
+          return ++this.pos,(WHITE);
         case ORD_BOM_FEFF:
-          return this.parseOneChar(WHITE);
+          return ++this.pos,(WHITE);
         case ORD_BACKSLASH_5C:
           return this.parseBackslash();
         default:
@@ -510,23 +493,12 @@
       return IDENTIFIER;
     },
 
-    parseOneChar: function(type){
-      ++this.pos;
-      return type;
-    },
-
     parseFwdSlash: function(expressionStart){
       var d = this.input.charCodeAt(this.pos+1);
       if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
       if (d === ORD_STAR_2A) return this.parseMultiComment();
       if (expressionStart) return this.parseRegex();
       return this.parseDivPunctuator(d);
-    },
-
-    parseNewline: function() {
-      // next char confirmed to be a non-CR newline.
-
-      return this.verifiedNewline(this.pos);
     },
 
     parseCR: function(){
@@ -537,16 +509,16 @@
 
       if (this.input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
 
-      return this.verifiedNewline(pos);
+      return this.parseVerifiedNewline(pos);
     },
-    verifiedNewline: function(pos){
+    parseVerifiedNewline: function(pos){
       // mark for ASI
       this.lastNewline = true;
 
       var input = this.input;
       var tokens = this.tokens;
       var saveTokens = this.options.saveTokens;
-      var count = this.tokenCountAll;
+      var count = 0;
 
       // in JS source it's common to find spaces or tabs after newlines
       // due to indentation. we optimize here by eliminating the scanner
@@ -568,7 +540,7 @@
         }
       }
 
-      this.tokenCountAll = count;
+      this.tokenCountAll += count;
       this.lastStart = pos-1;
       this.pos = pos;
 
@@ -675,7 +647,7 @@
       this.lastStart = pos;
 
       if (foundCr) return this.parseCR();
-      return this.parseNewline();
+      return this.parseVerifiedNewline(this.pos);
 */
     },
     parseMultiComment: function(){
