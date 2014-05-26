@@ -1183,7 +1183,11 @@
     },
     parsePair: function(){
       var tok = this.tok;
-      if (tok.isNum(ORD_L_G) && tok.nextPuncIfString('get')) {
+
+      if (tok.getLastLen() !== 3) return this.parseData(); // 92%
+
+      var c = tok.getLastNum();
+      if (c === ORD_L_G && tok.nextPuncIfString('get')) {
         if (tok.isType(IDENTIFIER)) {
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.nextPunc();
@@ -1191,7 +1195,7 @@
           this.parseFunctionRemainder(0, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
-      } else if (tok.isNum(ORD_L_S) && tok.nextPuncIfString('set')) {
+      } else if (c === ORD_L_S && tok.nextPuncIfString('set')) {
         if (tok.isType(IDENTIFIER)) {
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.nextPunc();
