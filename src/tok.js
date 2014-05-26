@@ -369,11 +369,11 @@
     },
     nextWhiteToken: function(expressionStart){
       // note: this is one of the most called functions of zeparser...
-      var start = this.lastStart = this.pos;
-      var nextChar = this.firstTokenChar = this.input.charCodeAt(start) | 0;
+      var offset = this.lastStart = this.pos;
+      var nextChar = this.firstTokenChar = this.input.charCodeAt(offset) | 0;
       if (!nextChar) return EOF; // a nul char here is EOF (NaN) or error, end regardless
       var type = this.nextTokenDeterminator(nextChar, expressionStart);
-      this.lastLen = (this.lastStop = this.pos) - start;
+      this.lastLen = (this.lastStop = this.pos) - offset;
 
       return type;
     },
@@ -567,8 +567,9 @@
     parseEqualSigns: function(){
       var len = 1;
       var offset = this.lastStart;
-      if (this.input.charCodeAt(offset+1) === ORD_IS_3D) {
-        if (this.input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
+      var input = this.input;
+      if (input.charCodeAt(offset+1) === ORD_IS_3D) {
+        if (input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
         else len = 2;
       }
       this.pos += len;
@@ -576,15 +577,17 @@
     },
     parseLtgtPunctuator: function(c){
       var len = 1;
-      var d = this.input.charCodeAt(this.lastStart+1);
+      var offset = this.lastStart;
+      var input = this.input;
+      var d = input.charCodeAt(offset+1);
       if (d === ORD_IS_3D) len = 2;
       else if (d === c) {
         len = 2;
-        var e = this.input.charCodeAt(this.lastStart+2);
+        var e = input.charCodeAt(offset+2);
         if (e === ORD_IS_3D) len = 3;
         else if (e === c && c !== ORD_LT_3C) {
           len = 3;
-          if (this.input.charCodeAt(this.lastStart+3) === ORD_IS_3D) len = 4;
+          if (input.charCodeAt(offset+3) === ORD_IS_3D) len = 4;
         }
       }
       this.pos += len;
