@@ -767,7 +767,6 @@
     parseHexNumber: function(delta){
       var pos = this.pos + 1;
       var input = this.input;
-      var len = input.length;
 
       // (could use OR, eliminate casing branch)
       do var c = input.charCodeAt(++pos);
@@ -782,7 +781,6 @@
 
       var pos = this.pos;
       var input = this.input;
-      var len = input.length;
 
       do var c = input.charCodeAt(++pos);
       while (c >= ORD_L_0_30 && c <= ORD_L_9_39);
