@@ -71,19 +71,20 @@
             var types = [];
             var tok = new Tok(input, {});
 
-            var protect = 1000;
+            var tokenCount = 0;
             do {
-              var type = tok.nextWhiteToken(regexHints[tok.tokenCountAll]);
+              var type = tok.nextWhiteToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
               types.push(type);
-            } while (--protect && type !== Tok.EOF);
+            } while (tokenCount < 1000 && type !== Tok.EOF);
 
           } catch (e) {
             errorThrown = e.toString();
             console.error('Crash for', input);
             console.error(e);
           }
+          tokenCount += tok.tokenCountAll; // add tokens counted by newline+whitespace trick
 
-          var found = tok.tokenCountAll - 1; // -eof
+          var found = tokenCount - 1; // -eof
 
           var passed = false;
           if (errorThrown) {
@@ -99,7 +100,7 @@
           }
           if (!passed || !hidePasses) if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
           if (!passed || !hidePasses) debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
-          if (!passed || !hidePasses)           debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
+          if (!passed || !hidePasses) debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
           if (!passed || !hidePasses) debug('<br/>');
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test

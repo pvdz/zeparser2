@@ -2,7 +2,8 @@
 // requires explicit regex flag hints if a regex occurs in the test, see api.
 // TOFIX: Parser test results could be checked more thoroughly. Currently appears sufficient for now.
 // API: [input, ?[token-output-count, parser-output-count], ?regex-hints, desc]
-// Regex-hints are for tokenizer, will tell for each token whether it might parse regex or not (parser's job)
+// Regex-hints are for tokenizer, will tell for each token whether it might parse regex or not (parser's job).
+// Skip regex hints for spaces and tabs right after a newline!
 
 // Note: parser-output-counts do NOT include the EOF token
 
@@ -489,8 +490,8 @@ var good = [
   ["\nreturnr", [2, 3], "Linefeed, Identifier Beginning With `return`"],
   ["/ // / /", [4, 5], [true, false, false, true], "RegExp Containing One Space, Division Operator, Space, RegExp Containing One Space"],
   ["trimRight = /\\s+$/;", 6, [false, false, false, false, true, false], "Typical `trimRight` RegExp"],
-  ["trimLeft = /^\\s+/;\n\ttrimRight = /\\s+$/;", 14, [false, false, false, false, true, false, false, false, false, false, false, false, true, false], "`trimLeft` and `trimRight` RegExps"],
-  ["\n\t// Used for trimming whitespace\n\ttrimLeft = /^\\s+/;\n\ttrimRight = /\\s+$/;\t\n", 21, [false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false], "Annotated `trimLeft` and `trimRight` RegExps"],
+  ["trimLeft = /^\\s+/;\n\ttrimRight = /\\s+$/;", 14, [false, false, false, false, true, false, false, false, false, false, false, true, false], "`trimLeft` and `trimRight` RegExps"],
+  ["\n\t// Used for trimming whitespace\n\ttrimLeft = /^\\s+/;\n\ttrimRight = /\\s+$/;\t\n", 21, [false, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false], "Annotated `trimLeft` and `trimRight` RegExps"],
 
   ["/[\\/]/;", 2, [true, false], "RegExp: Escaped `/` Within Character Class"],
   ["/[/]/;", 2, [true, false], "RegExp: Escaped Trailing Character Class End (Valid in ES 5; Invalid in ES 3)"],

@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <title>One Tokenizer Test</title>
+    <style>
+      input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
+      #cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
+      div { font-size: 11px; font-family: monospace; }
+      .red { background-color: red; color: white; }
+      .green { background-color: green; color: white; }
+      hr { margin: 0; padding: 0; font-size: 1px; }
+    </style>
+  </head>
+  <body>
+    (c) qfox.nl<br/>
+    Testing tokenizer:<br/>
+    <script src="../src/uni.js"></script>
+    <script src="../src/tok.js"></script>
+    <script>
+      new function() {
+
+        var input = "\n     ";
+        var outputLen = 6;
+        var regexHints = [];
+
+        var out = document.createElement('pre');
+        document.body.appendChild(out);
+        var debug = function () {
+          var f = document.createElement('div');
+          f.innerHTML = Array.prototype.slice.call(arguments, 0).join(' ');
+          out.appendChild(f);
+        };
+
+        var errorThrown = false;
+
+        var types = [];
+        var tok = new Tok(input, {});
+
+        var tokenCount = 0;
+        do {
+          var type = tok.nextWhiteToken(regexHints[tokenCount++]);
+          types.push(type);
+        } while (tokenCount < 1000 && type !== Tok.EOF);
+        tokenCount += tok.tokenCountAll; // add tokens counted by newline+whitespace trick
+
+        if (errorThrown) {
+          debug('<b class="red">Test failed:</b> <span class="red">(' + errorThrown + ')</span>')
+          console.log(tok);
+        } else if ((tokenCount - 1) == outputLen) {
+          debug('<span class="green">Test ok</span>');
+        } else {
+          debug('<b class="red">Test failed:</b> <span class="red">(found', (tokenCount - 1), 'expected', outputLen + ')</span>')
+          console.log(tok);
+        }
+        if (regexHints && regexHints.length) debug('<i>[regex hints: ' + regexHints + ']</i>');
+        debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+        debug('Types: <i>' + types.map(function (t) { return Tok[t]; }).join(',') + '</i>');
+      };
+    </script>
+  </body>
+</html>
