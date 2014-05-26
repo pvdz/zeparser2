@@ -657,24 +657,25 @@
     parseMultiComment: function(){
       var pos = this.pos + 2;
       var input = this.input;
-      var len = input.length;
 
       var noNewline = true;
       var c = 0;
-      var d = this.input.charCodeAt(pos);
-      while (pos++ < len) {
+      var d = this.input.charCodeAt(pos) | 0;
+      while (d) {
         c = d;
-        d = input.charCodeAt(pos);
+        d = input.charCodeAt(++pos) | 0;
 
-        if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) break;
-        if (noNewline) noNewline = !(c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1); // c === ORD_PS || c === ORD_LS
+        if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) {
+          this.pos = pos+1;
+          // yes I hate the double negation, but it saves doing ! above
+          if (!noNewline) this.lastNewline = true;
+
+          return WHITE;
+        }
+        if (noNewline) noNewline = (c !== ORD_CR_0D && c !== ORD_LF_0A && (c ^ ORD_PS_2028) > 1); // c === ORD_PS || c === ORD_LS
       }
 
-      this.pos = pos+1;
-      // yes I hate the double negation, but it saves doing ! above
-      if (!noNewline) this.lastNewline = true;
-
-      return WHITE;
+      throw 'Unterminated multi line comment found at '+pos;
     },
     parseSingleString: function(){
       return this.parseString(ORD_SQUOTE_27);
@@ -685,10 +686,8 @@
     parseString: function(targetChar){
       var pos = this.pos + 1;
       var input = this.input;
-      var len = input.length;
-      var c = 0;
-      while (pos < len) {
-        c = input.charCodeAt(pos++);
+      do {
+        var c = input.charCodeAt(pos++) | 0;
 
         if (c === targetChar) {
           this.pos = pos;
@@ -705,7 +704,7 @@
             throw 'No newlines in strings! ' + this.syntaxError();
           }
         }
-      }
+      } while (c);
 
       throw 'Unterminated string found at '+pos;
     },
