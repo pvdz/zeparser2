@@ -911,7 +911,7 @@
               this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
               return NOTASSIGNABLE;
             }
-          } else if (tok.firstTokenChar === ORD_L_F && tok.isString('function')) {
+          } else if (tok.firstTokenChar === ORD_L_F && tok.getLastValue() === 'function') {
               this.parseFunction(NOTFORFUNCTIONDECL);
 
               // can never assign to function directly
@@ -1139,12 +1139,12 @@
         return c === ORD_PLUS || c === ORD_STAR || c === ORD_LT || c === ORD_MIN || c === ORD_GT || c === ORD_FWDSLASH || c === ORD_AND || c === ORD_OR || c === ORD_PERCENT || c === ORD_XOR;
       }
       if (len === 2) {
-        return c === ORD_IS || c === ORD_EXCL || c === ORD_LT || c === ORD_GT || (c === ORD_AND && tok.getNum(1) === ORD_AND) || (c === ORD_OR && tok.getNum(1) === ORD_OR) || tok.isString('in');
+        return c === ORD_IS || c === ORD_EXCL || c === ORD_LT || c === ORD_GT || (c === ORD_AND && tok.getNum(1) === ORD_AND) || (c === ORD_OR && tok.getNum(1) === ORD_OR) || tok.getLastValue() === 'in';
       }
       if (len === 3) {
         return c === ORD_IS || c === ORD_EXCL || (c === ORD_GT && tok.getNum(2) === ORD_GT)
       }
-      if (len === 10) return tok.isString('instanceof');
+      if (len === 10) return tok.getLastValue() === 'instanceof';
 
       // not a (non-assignment) binary operator
       return false;

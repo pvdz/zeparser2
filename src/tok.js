@@ -277,16 +277,6 @@
         (this.lastType === STRING || this.lastType === NUMBER || this.lastType === IDENTIFIER || this.lastType === REGEX)
       );
     },
-    /**
-     * Compare the entire input range of the current
-     * token to the given value.
-     *
-     * @param {string} value
-     * @return {boolean}
-     */
-    isString: function(value){
-      return this.getLastValue() === value;
-    },
 
     /**
      * Parse the next token if the current
@@ -325,12 +315,12 @@
      * @return {boolean}
      */
     nextPuncIfString: function(str){
-      var equals = this.isString(str);
+      var equals = this.getLastValue() === str;
       if (equals) this.nextPunc();
       return equals;
     },
     nextExprIfString: function(str){
-      var equals = this.isString(str);
+      var equals = this.getLastValue() === str;
       if (equals) this.nextExpr();
       return equals;
     },
@@ -371,11 +361,8 @@
      * @param {boolean} nextIsExpr=false
      */
     mustBeString: function(str, nextIsExpr){
-      if (this.isString(str)) {
-        return this.next(nextIsExpr);
-      } else {
-        throw this.syntaxError(str);
-      }
+      if (this.getLastValue() === str) return this.next(nextIsExpr);
+      throw this.syntaxError(str);
     },
 
     nextExpr: function(){
