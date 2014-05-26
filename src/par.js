@@ -873,7 +873,6 @@
       return this.parsePrimaryOrPrefix(optional, HASNONEW, NOTLABEL);
     },
     parsePrimaryOrPrefix: function(optional, hasNew, maybeLabel){
-      // TOFIX: we can probably improve on this ... my initial attempt failed though.
 //      len:
 //      1=387k
 //      4=196k (this=126k)
@@ -955,7 +954,6 @@
       var tok = this.tok;
       var identifier = tok.getLastValue();
 
-      // TOFIX: if IGNOREVALUES is only for this case, can we perhaps also ignore unary prefixes?
       if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
         throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
       }
@@ -1264,7 +1262,7 @@
 
     /**
      * Return whether the current token is a reserved identifier or not.
-     * Presumably only called on identifiers. If the passed on boolean is
+     * Presumably only called on identifiers. If the boolean arg is
      * true, the keywords [true, false, this, function, null] are ignored
      * for this check. This will be the case when parsing expression vars.
      * See also this.isValueKeyword
@@ -1273,12 +1271,9 @@
      * @return {boolean}
      */
     isReservedIdentifier: function(ignoreValues){
-      // note that this function will return false most of the time
-      // if it returns true, a syntax error will probably be thrown
-      // in all non-error cases, input token will be an identifier
-
-      // TOFIX: skip statement keywords when checking for label
-      // TOFIX: should ignoreValues also skip `function`?
+      // Note that this function will return false most of the time
+      // If it returns true a syntax error will probably be thrown.
+      // In all non-error cases input token will be an identifier
 
       // len=1: 36%
       // len=2: 7%
@@ -1366,7 +1361,7 @@
 
         // void
         if (c === ORD_L_V) {
-          return tok.getLastValue() === 'void';
+          return !ignoreValues && tok.getLastValue() === 'void';
         }
 
         // with
@@ -1443,7 +1438,7 @@
       }
 
       if (len === 3) { // 4%
-        if (c === ORD_L_N) return tok.getLastValue() === 'new';
+        if (c === ORD_L_N) return !ignoreValues && tok.getLastValue() === 'new';
         if (c === ORD_L_V) return tok.getLastValue() === 'var';
         if (c === ORD_L_T) return tok.getLastValue() === 'try';
         if (c === ORD_L_F) return tok.getLastValue() === 'for';
@@ -1454,10 +1449,10 @@
 
       if (c === ORD_L_S) return tok.getLastValue() === 'switch';
       if (c === ORD_L_R) return tok.getLastValue() === 'return';
-      if (c === ORD_L_T) return tok.getLastValue() === 'typeof';
+      if (c === ORD_L_T) return !ignoreValues && tok.getLastValue() === 'typeof';
       if (c === ORD_L_I) return tok.getLastValue() === 'import';
       if (c === ORD_L_E) return tok.getLastValue() === 'export';
-      if (c === ORD_L_D) return tok.getLastValue() === 'delete';
+      if (c === ORD_L_D) return !ignoreValues && tok.getLastValue() === 'delete';
       return false;
     },
 
