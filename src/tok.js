@@ -4,11 +4,6 @@
   // punctuator occurrence stats: http://qfox.nl/weblog/301
   // token start stats: http://qfox.nl/weblog/302
 
-  // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
-  // TOFIX: confirm all instance properties are set in the constructor
-  // TOFIX: eliminate various EOF checks when possible
-  // TOFIX: various charcodeat occurrences can do some caching
-
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
   var WHITE_SPACE = 1;
@@ -856,19 +851,17 @@
     },
     regexClass: function(){
       var input = this.input;
-      var len = input.length;
       var pos = this.pos;
-      while (pos < len) {
+      // TOFIX: there's no EOF test for regex class. could run in infinite loop.
+      while (true) {
         var c = input.charCodeAt(pos++);
 
         if (c === ORD_CLOSE_SQUARE_5D) {
           this.pos = pos;
           return;
         }
-        if (c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
-          throw 'Illegal newline in regex char class.'+this.syntaxError();
-        }
-        if (c === ORD_BACKSLASH_5C) { // backslash
+
+        if (c === ORD_BACKSLASH_5C) {
           // there's a historical dispute over whether backslashes in regex classes
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this.options.regexNoClassEscape) {
@@ -877,6 +870,8 @@
               throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
             }
           }
+        } else if (!c || c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1) { // c === ORD_PS || c === ORD_LS
+          throw 'Illegal newline in regex char class.'+this.syntaxError();
         }
       }
 

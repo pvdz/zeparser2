@@ -3,8 +3,9 @@
 // this file, see https://github.com/qfox/zeparser2
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
-// TOFIX: check `(x-a^x-b)<0` rangecheck hack from http://codegolf.stackexchange.com/questions/8649/shortest-code-to-check-if-a-number-is-in-a-range-in-javascript
 // TOFIX: paramcount should not pass on signed and unsigned
+// TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
+// TOFIX: confirm all instance properties are set in the constructor
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
