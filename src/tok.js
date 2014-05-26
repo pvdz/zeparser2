@@ -851,9 +851,10 @@
     },
     regexClass: function(){
       var input = this.input;
+      var len = input.length;
       var pos = this.pos;
       // TOFIX: there's no EOF test for regex class. could run in infinite loop.
-      while (true) {
+      while (this.pos < len) {
         var c = input.charCodeAt(pos++);
 
         if (c === ORD_CLOSE_SQUARE_5D) {
@@ -893,7 +894,6 @@
       // also used by regex flag parser!
 
       var input = this.input;
-      var len = input.length;
       var start = this.lastOffset;
       var pos = this.pos + 1;
 
