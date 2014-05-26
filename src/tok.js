@@ -163,7 +163,6 @@
 
     // 0 means uninitialized. if we ever parse a nul it probably results in a syntax error so the overhead is okay for that case.
     this.nextNum1 = 0;
-    this.nextNum2 = 0;
 
     this.tokenCountAll = 0;
 
@@ -248,7 +247,6 @@
 
     // .charCodeAt(pos+n) cache
     nextNum1: 0,
-    nextNum2: 0,
 
     /** @property {number} tokenCountAll Add one for any token, including EOF (Par relies on this) */
     tokenCountAll: 0,
@@ -438,22 +436,12 @@
         return EOF;
       }
 
-      // TOFIX: how about double parsing? how many chars are averagely consumed? does it make sense to parse two and combine them, check them together? XORing?
-      // prepare charCodeAt cache...
-      var nextChar;
-      // `!this.nextNum2`` is more often true than `this.lastLen !== 1` (2:1.5)
-      if (!this.nextNum2 || this.lastLen !== 1) {
-        // this will happen ~ 80% of the time
-        nextChar = this.nextNum1 = this.input.charCodeAt(start);
-      } else {
-        nextChar = this.nextNum1 = this.nextNum2;
-      }
-      this.nextNum2 = 0;
-
-      var result = this.nextTokenDeterminator(nextChar, expressionStart);
+      // TOFIX: how about double parsing? how many chars are averagely consumed? does it make sense to parse two and combine them, check them bitwise?
+      var nextChar = this.nextNum1 = this.input.charCodeAt(start);
+      var type = this.nextTokenDeterminator(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
-      return result;
+      return type;
     },
 
     // current selector
@@ -629,7 +617,6 @@
         }
       }
 
-      this.nextNum2 = c;
       this.tokenCountAll = count;
       this.lastValue = '';
       this.lastStart = pos-1;
@@ -737,7 +724,6 @@
 
       this.lastValue = '';
       this.lastStart = pos;
-      this.nextNum2 = 0;
 
       if (foundCr) return this.parseCR();
       return this.parseNewline();
