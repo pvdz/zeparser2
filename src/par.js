@@ -953,6 +953,7 @@
     parsePrimaryCoreIdentifier: function(optional, hasNew, maybeLabel){
       var tok = this.tok;
       var identifier = tok.getLastValue();
+      var c = tok.getLastNum();
 
       if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
         throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
@@ -961,7 +962,7 @@
       tok.nextPunc();
 
       // can not assign to keywords, anything else is fine here
-      return this.parsePrimarySuffixes(!this.isValueKeyword(identifier), hasNew, maybeLabel);
+      return this.parsePrimarySuffixes(!this.isValueKeyword(c, identifier), hasNew, maybeLabel);
     },
     parsePrimaryCoreOther: function(optional, hasNew, maybeLabel){
       var assignable = this.parsePrimaryValue(optional);
@@ -1456,8 +1457,10 @@
       return false;
     },
 
-    isValueKeyword: function(word){
-      return word === 'true' || word === 'false' || word === 'this' || word === 'null';
+    isValueKeyword: function(c, word){
+      if (c === ORD_L_T) return word.length === 4 && (word === 'true' || word === 'this');
+      if (c === ORD_L_F) return word === 'false';
+      return c === ORD_L_N && word === 'null';
     },
   };
 
