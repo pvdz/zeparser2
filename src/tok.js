@@ -285,7 +285,7 @@
      * @return {boolean}
      */
     isNum: function(n){
-      return this.getLastNum() === n;
+      return this.firstTokenChar === n;
     },
     /**
      * Compare the entire input range of the current
@@ -358,7 +358,7 @@
       if (this.isNum(num)) {
         return this.next(nextIsExpr);
       } else {
-        throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this.getLastNum()) + '.' + this.syntaxError();
+        throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this.firstTokenChar) + '.' + this.syntaxError();
       }
     },
     /**
@@ -1054,19 +1054,9 @@
 //      }
 //      return val;
     },
-    getLastNum: function(){
-      // always cached in nextToken function
-      return this.firstTokenChar;
-    },
+
     getNum: function(offset){
       return this.input.charCodeAt(this.lastStart+offset)
-    },
-
-    getLastLen: function(){
-      return this.lastLen;
-    },
-    getLastNewline: function(){
-      return this.lastNewline;
     },
 
     syntaxError: function(value){

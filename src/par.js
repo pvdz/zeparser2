@@ -185,7 +185,7 @@
     },
     parseNonIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, optional) {
       var tok = this.tok;
-      var c = tok.getLastNum();
+      var c = tok.firstTokenChar;
 
       if (c === ORD_CLOSE_CURLY) { // 65.6%
         if (!optional) throw 'Expected more input...'; // {if(x)}
@@ -215,7 +215,7 @@
       }
 
       if (c === ORD_PLUS || c === ORD_MIN) { // 0.06% 0.04%
-        if (tok.getNum(1) === c || tok.getLastLen() === 1) {
+        if (tok.getNum(1) === c || tok.lastLen === 1) {
           this.parseExpressionStatement();
           return PARSEDSOMETHING;
         }
@@ -230,7 +230,7 @@
 
       // almost never
       if (c === ORD_EXCL) { // 0.03% 0.03%
-        if (tok.getLastLen() === 1) {
+        if (tok.lastLen === 1) {
           this.parseExpressionStatement();
           return PARSEDSOMETHING;
         }
@@ -256,14 +256,14 @@
       // parseExpressionOrLabel function. So we can just get it now.
       var value = tok.getLastValue();
 
-      var len = tok.getLastLen();
+      var len = tok.lastLen;
 
       // TOFIX: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
 
       // yes, this check makes a *huge* difference
       if (len >= 2) {
         // bcdfirstvw, not in that order.
-        var c = tok.getLastNum();
+        var c = tok.firstTokenChar;
 
         if (c === ORD_L_T) {
           if (len !== 4) {
@@ -328,7 +328,7 @@
       do {
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
-        if (tok.isNum(ORD_IS) && tok.getLastLen() === 1) {
+        if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
           tok.nextExpr();
           this.parseExpression();
         }
@@ -346,7 +346,7 @@
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         ++vars;
 
-        if (tok.isNum(ORD_IS) && tok.getLastLen() === 1) {
+        if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
           tok.nextExpr();
           this.parseExpressionNoIn();
         }
@@ -417,7 +417,7 @@
         else validForInLhs = this.parseExpressionsNoIn();
 
         if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader();
-        else if (tok.getLastNum() !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.getLastLen() !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
+        else if (tok.firstTokenChar !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.lastLen !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
         else if (!validForInLhs && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+tok.syntaxError();
         else this.parseForInHeader();
       }
@@ -452,7 +452,7 @@
 
       var type = tok.nextPunc(); // token after continue cannot be a regex, either way.
 
-      if (type === IDENTIFIER && !tok.getLastNewline()) {
+      if (type === IDENTIFIER && !tok.lastNewline) {
         this.parseLabel(labelSet);
       }
 
@@ -469,7 +469,7 @@
       var tok = this.tok;
       var type = tok.nextPunc(); // token after break cannot be a regex, either way.
 
-      if (type !== IDENTIFIER || tok.getLastNewline()) { // no label after break?
+      if (type !== IDENTIFIER || tok.lastNewline) { // no label after break?
         if (!inLoop && !inSwitch) {
           // break without label
           throw 'Break without value only in loops or switches.'+tok.syntaxError();
@@ -503,7 +503,7 @@
 
       // TOFIX: I think I can invert this logic structure and just do parseSemi if !last newline.
       tok.nextExpr();
-      if (tok.getLastNewline()) this.addAsi();
+      if (tok.lastNewline) this.addAsi();
       else {
         this.parseOptionalExpressions();
         this.parseSemi();
@@ -516,7 +516,7 @@
 
       var tok = this.tok;
       tok.nextExpr();
-      if (tok.getLastNewline()) {
+      if (tok.lastNewline) {
         throw 'No newline allowed directly after a throw, ever.'+tok.syntaxError();
       }
 
@@ -707,7 +707,7 @@
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
       var tok = this.tok;
-      if (tok.isNum(ORD_CLOSE_CURLY) || (tok.getLastNewline() && !tok.isType(REGEX)) || tok.isType(EOF)) {
+      if (tok.isNum(ORD_CLOSE_CURLY) || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
         return this.addAsi();
       }
       return PARSEDNOTHING;
@@ -860,7 +860,7 @@
           // will check for a primary. it's therefore more likely that an getLastNum will
           // save time because it would cache the charCodeAt for the other token if
           // it failed the check
-          if (tok.getLastNum() === ORD_L_I && tok.getNum(1) === ORD_L_N && tok.getLastLen() === 2) { // in
+          if (tok.firstTokenChar === ORD_L_I && tok.getNum(1) === ORD_L_N && tok.lastLen === 2) { // in
             repeat = false;
           } else {
             tok.nextExpr();
@@ -900,8 +900,8 @@
 //      7=80k
 
       var tok = this.tok;
-      var len = tok.getLastLen();
-      var c = tok.getLastNum();
+      var len = tok.lastLen;
+      var c = tok.firstTokenChar;
 
       if (tok.isType(IDENTIFIER)) {
         if (len > 2) {
@@ -939,7 +939,7 @@
         return this.parsePrimaryCoreIdentifier(optional, hasNew, maybeLabel);
       }
 
-      if ((c === ORD_EXCL || c === ORD_TILDE) && tok.getLastLen() === 1) {
+      if ((c === ORD_EXCL || c === ORD_TILDE) && tok.lastLen === 1) {
         if (hasNew) throw '! and ~ are illegal right after new.'+tok.syntaxError();
         tok.nextExpr();
         this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
@@ -949,7 +949,7 @@
       if (c === ORD_MIN || c === ORD_PLUS) {
         if (hasNew) throw 'illegal operator right after new.'+tok.syntaxError();
         // have to verify len anyways, for += and -= case
-        if (tok.getLastLen() === 1) {
+        if (tok.lastLen === 1) {
           tok.nextExpr();
           this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
         } else if (tok.getNum(1) === c) {
@@ -966,7 +966,7 @@
     parsePrimaryCoreIdentifier: function(optional, hasNew, maybeLabel){
       var tok = this.tok;
       var identifier = tok.getLastValue();
-      var c = tok.getLastNum();
+      var c = tok.firstTokenChar;
 
       if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
         throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
@@ -1030,7 +1030,7 @@
       var tok = this.tok;
       while (true) {
         // see c frequency stats in /stats/primary suffix start.txt
-        var c = tok.getLastNum();
+        var c = tok.firstTokenChar;
         if (c > 0x2e) {
           // only c>0x2e relevant is OPEN_SQUARE
           if (c !== ORD_OPEN_SQUARE) break;
@@ -1072,8 +1072,8 @@
       // for string lengths unless we need to disambiguate optional chars
 
       var tok = this.tok;
-      var len = tok.getLastLen();
-      var c = tok.getLastNum();
+      var len = tok.lastLen;
+      var c = tok.firstTokenChar;
 
       if (len === 1) return c === ORD_IS;
 
@@ -1130,8 +1130,8 @@
       // function returns false in 86% of the calls
 
       var tok = this.tok;
-      var c = tok.getLastNum();
-      var len = tok.getLastLen();
+      var c = tok.firstTokenChar;
+      var len = tok.lastLen;
 
       if (c === ORD_SEMI || c === ORD_CLOSE_PAREN || c === ORD_COMMA) return false; // expression enders: 26% 24% 20%
       if (len === 1) {
@@ -1185,9 +1185,9 @@
     parsePair: function(){
       var tok = this.tok;
 
-      if (tok.getLastLen() !== 3) return this.parseData(); // 92%
+      if (tok.lastLen !== 3) return this.parseData(); // 92%
 
-      var c = tok.getLastNum();
+      var c = tok.firstTokenChar;
       if (c === ORD_L_G && tok.nextPuncIfString('get')) {
         if (tok.isType(IDENTIFIER)) {
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
@@ -1228,7 +1228,7 @@
 
       var value;
       var tok = this.tok;
-      var c = tok.getLastNum();
+      var c = tok.firstTokenChar;
 
       // stats:
       // len: 1:26%, 2:6%, 3:6%, 4:34%, 5:5%, 6:5%, 7:3%, 8:3%
@@ -1238,7 +1238,7 @@
       if (
         c < ORD_L_C || // 38%
         c === ORD_L_T || // 30%
-        tok.getLastLen() === 1 // 14%
+        tok.lastLen === 1 // 14%
       ) return false;
 
       // stats now:
@@ -1272,7 +1272,7 @@
 
       if (c === ORD_L_I) { // 0.8%
         var d = tok.getNum(1);
-        return (d === ORD_L_N && (tok.getLastLen() === 2 || tok.getLastValue() === 'instanceof')) || (d === ORD_L_M && tok.getLastValue() === 'import');
+        return (d === ORD_L_N && (tok.lastLen === 2 || tok.getLastValue() === 'instanceof')) || (d === ORD_L_M && tok.getLastValue() === 'import');
       }
 
       return false;
@@ -1322,8 +1322,8 @@
 
       var value;
       var tok = this.tok;
-      var c = tok.getLastNum();
-      var len = tok.getLastLen();
+      var c = tok.firstTokenChar;
+      var len = tok.lastLen;
 
       // a:8%, b:6%, c:6%, d:4%, e:4%, f:3%, g:2%, h:2%, i:4%, j:1%, k:1%, l:2%, m:2%, n:4%, o:2%, p:3%, q:0%, r:2%, s:3%, t:17%, u:1%, v:2%, w:1%, x:1%, y:1%, z:0%, rest:17%
 
