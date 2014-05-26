@@ -407,14 +407,18 @@
       this.lastNewline = false;
 
       var toStream = this.options.saveTokens;
+      var tokensParsed = 0;
 
       do {
         var type = this.nextWhiteToken(expressionStart);
+        ++tokensParsed;
         if (toStream) {
           var token = {type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos, white:this.tokens.length};
           this.tokens.push(token);
         }
       } while (type === WHITE);
+
+      this.tokenCountAll += tokensParsed;
 
       if (toStream && this.options.createBlackStream) {
         token.black = this.black.length;
@@ -427,8 +431,6 @@
     nextWhiteToken: function(expressionStart){
       // note: this is one of the most called functions of zeparser...
       this.lastValue = '';
-
-      ++this.tokenCountAll;
 
       var start = this.lastStart = this.pos;
       if (start >= this.len) {
