@@ -610,14 +610,13 @@
     parseSingleComment: function(){
       var pos = this.pos + 1;
       var input = this.input;
-      var len = input.length;
 
       // note: although we _know_ a newline will happen next; explicitly checking for it is slower than not.
 
-      while (++pos < len) {
-        var c = input.charCodeAt(pos);
-        if (c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1 /*c !== ORD_PS && c !== ORD_LS*/) break;
-      }
+      do {
+        var c = input.charCodeAt(++pos);
+        if (!c || c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
+      } while (true);
 
       this.pos = pos;
 
@@ -687,7 +686,7 @@
       var pos = this.pos + 1;
       var input = this.input;
       do {
-        var c = input.charCodeAt(pos++) | 0;
+        var c = input.charCodeAt(pos++);
 
         if (c === targetChar) {
           this.pos = pos;
