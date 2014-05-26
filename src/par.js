@@ -3,6 +3,7 @@
 // this file, see https://github.com/qfox/zeparser2
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
+// TOFIX: check `(x-a^x-b)<0` rangecheck hack from http://codegolf.stackexchange.com/questions/8649/shortest-code-to-check-if-a-number-is-in-a-range-in-javascript
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
@@ -63,10 +64,13 @@
   var ORD_L_G = 0x67;
   var ORD_L_H = 0x68;
   var ORD_L_I = 0x69;
+  var ORD_L_J = 0x6a;
+  var ORD_L_K = 0x6b;
   var ORD_L_L = 0x6c;
   var ORD_L_M = 0x6d;
   var ORD_L_N = 0x6e;
   var ORD_L_O = 0x6f;
+  var ORD_L_P = 0x70;
   var ORD_L_Q = 0x71;
   var ORD_L_R = 0x72;
   var ORD_L_S = 0x73;
@@ -76,6 +80,7 @@
   var ORD_L_W = 0x77;
   var ORD_L_X = 0x78;
   var ORD_L_Y = 0x79;
+  var ORD_L_Z = 0x7a;
 
   var ORD_OPEN_CURLY = 0x7b;
   var ORD_CLOSE_CURLY = 0x7d;
@@ -157,7 +162,8 @@
       tok.nextExpr();
       // go!
       this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
-      if (tok.pos !== tok.len) throw 'Did not complete parsing... '+tok.syntaxError();
+
+      if (tok.pos !== tok.len || tok.lastType !== EOF) throw 'Did not complete parsing... '+tok.syntaxError();
 
       return this;
     },
@@ -942,15 +948,18 @@
         return NOTASSIGNABLE;
       }
 
+      // TOFIX: I think maybeLabel should just be false here...?
       return this.parsePrimaryCoreOther(optional, hasNew, maybeLabel);
     },
     parsePrimaryCoreIdentifier: function(optional, hasNew, maybeLabel){
       var tok = this.tok;
       var identifier = tok.getLastValue();
 
-      // TOFIX: maybe we can have isReservedIdentifier return a number indicating a value or not and skip the mandatory value check later
-      // TOFIX: should we skip the function check?
-      if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
+      // TOFIX: if IGNOREVALUES is only for this case, can we perhaps also ignore unary prefixes?
+      if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
+        throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
+      }
+
       tok.nextPunc();
 
       // can not assign to keywords, anything else is fine here
@@ -1192,6 +1201,67 @@
       this.parseExpression();
     },
 
+    isReservedIdentifierSpecial: function(){
+      // Same as isReservedIdentifier but without the statement
+      // keywords, value keywords and unary operators because
+      // they'll be valid at this point. This check is specific
+      // to the expression or label parsing func.
+
+      // Note that none of these checks should pass.
+      // This function returns 100% false. Let's be quick about it.
+
+      var value;
+      var tok = this.tok;
+      var c = tok.getLastNum();
+
+      // stats:
+      // len: 1:26%, 2:6%, 3:6%, 4:34%, 5:5%, 6:5%, 7:3%, 8:3%
+      // chr: a:5%, b:4%, c:5%, d:3%, e:3%, f:1%, g:2%, h:1%, i:1%, j:1%, k:1%, l:1%, m:2%, n:2%, o:1%, p:2%, q:0%, r:2%, s:2%, t:30%, u:1%, v:1%, w:1%, x:0%, y:0%, z:0%, rest: 28%
+      // so: len=1 and c=t and c as non-lowercase-letter should exit early
+
+      if (
+        c < ORD_L_C || // 38%
+        c === ORD_L_T || // 30%
+        tok.getLastLen() === 1 // 14%
+      ) return false;
+
+      // stats now:
+      // len: 1:0, 2:3%, 3:2%, 4:3%, 5:2%, 6:2%, 7:2%, 8:1%, >8:4%
+      // chr: a:0, b:0, c:2%, d:1%, e:1%, f:1%, g:1%, h:1%, i:1%, j:0%, k:0%, l:1%, m:1%, n:1%, o:1%, p:2%, q:0%, r:1%, s:2%, t:0, u:0%, v:1%, w:0%, x:0%, y:0%, z:0%, rest:0
+      // so: meh. note: no rest because capitals and such are already discarded with the <c check. same goes for _ and $.
+
+      // rest true: 9%, false: 11%?
+
+      if (c === ORD_L_C) { // 2.5%
+        var d = tok.getNum(1);
+        return (d === ORD_L_O && tok.getLastValue() === 'const') || (d === ORD_L_A && ((value=tok.getLastValue()) === 'catch' || value === 'case')) || (d === ORD_L_L && tok.getLastValue() === 'class')
+      }
+
+      if (c === ORD_L_S) { // 1.8%
+        return tok.getNum(1) === ORD_L_U && tok.getLastValue() === 'super';
+      }
+
+      if (c === ORD_L_D) { // 1.5%
+        return tok.getNum(1) === ORD_L_E && tok.getLastValue() === 'default';
+      }
+
+      if (c === ORD_L_E) { // 1.1%
+        var d = tok.getNum(1);
+        return (d === ORD_L_L && tok.getLastValue() === 'else') || (d === ORD_L_N && tok.getLastValue() === 'enum') || (d === ORD_L_X && ((value=tok.getLastValue()) === 'export' || value === 'extends'));
+      }
+
+      if (c === ORD_L_F) { // 0.8%
+        return tok.getNum(1) === ORD_L_I && tok.getLastValue() === 'finally';
+      }
+
+      if (c === ORD_L_I) { // 0.8%
+        var d = tok.getNum(1);
+        return (d === ORD_L_N && (tok.getLastLen() === 2 || tok.getLastValue() === 'instanceof')) || (d === ORD_L_M && tok.getLastValue() === 'import');
+      }
+
+      return false;
+    },
+
     /**
      * Return whether the current token is a reserved identifier or not.
      * Presumably only called on identifiers. If the passed on boolean is
@@ -1205,128 +1275,189 @@
     isReservedIdentifier: function(ignoreValues){
       // note that this function will return false most of the time
       // if it returns true, a syntax error will probably be thrown
+      // in all non-error cases, input token will be an identifier
 
       // TOFIX: skip statement keywords when checking for label
       // TOFIX: should ignoreValues also skip `function`?
 
-      var tok = this.tok;
+      // len=1: 36%
+      // len=2: 7%
+      // len=3: 7%
+      // len=4: 24%
+      // len=5: 5%
+      // len=6: 4%
+      // len=7: 3%
+      // len=8: 3%
+      // each len >8 is <=2%, combined: 11%
 
-      if (tok.getLastLen() > 1) {
-        var c = tok.getLastNum();
-        if (c >= ORD_L_A && c <= ORD_L_W) {
-          if (c < ORD_L_G || c > ORD_L_Q) {
-            if (c === ORD_L_T) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_H) {
-                var id = tok.getLastValue();
-                if (id === 'this') return !ignoreValues;
-                return id === 'throw';
-              } else if (d === ORD_L_R) {
-                var id = tok.getLastValue();
-                if (id === 'true') return !ignoreValues;
-                if (id === 'try') return true;
-              } else if (d === ORD_L_Y) {
-                return tok.getLastValue() === 'typeof';
-              }
-            } else if (c === ORD_L_S) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_W) {
-                return tok.getLastValue() === 'switch';
-              } else if (d === ORD_L_U) {
-                return tok.getLastValue() === 'super';
-              } else {
-                return false;
-              }
-            } else if (c === ORD_L_F) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_A) {
-                if (ignoreValues) return false;
-                return tok.getLastValue() === 'false';
-              } else if (d === ORD_L_U) {
-                // this is an ignoreValues case as well, but can never be triggered
-                // rationale: this function is only called with ignoreValues true
-                // when checking a label. labels are first words of statements. if
-                // function is the first word of a statement, it will never branch
-                // to parsing an identifier expression statement. and never get here.
-                return tok.getLastValue() === 'function';
-              } else if (d === ORD_L_O) {
-                return tok.getLastValue() === 'for';
-              } else if (d === ORD_L_I) {
-                return tok.getLastValue() === 'finally';
-              }
-            } else if (c === ORD_L_D) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_O) {
-                return tok.getLastLen() === 2; // do
-              } else if (d === ORD_L_E) {
-                var id = tok.getLastValue();
-                return id === 'debugger' || id === 'default' || id === 'delete';
-              }
-            } else if (c === ORD_L_E) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_L) {
-                return tok.getLastValue() === 'else';
-              } else if (d === ORD_L_N) {
-                return tok.getLastValue() === 'enum';
-              } else if (d === ORD_L_X) {
-                var id = tok.getLastValue();
-                return id === 'export' || id === 'extends';
-              }
-            } else if (c === ORD_L_B) {
-              return tok.getNum(1) === ORD_L_R && tok.getLastValue() === 'break';
-            } else if (c === ORD_L_C) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_A) {
-                var id = tok.getLastValue();
-                return id === 'case' || id === 'catch';
-              } else if (d === ORD_L_O) {
-                var id = tok.getLastValue();
-                return id === 'continue' || id === 'const';
-              } else if (d === ORD_L_L) {
-                return tok.getLastValue() === 'class';
-              }
-            } else if (c === ORD_L_R) {
-              if (tok.getNum(1) === ORD_L_E) {
-                return tok.getLastValue() === 'return';
-              }
-            } else if (c === ORD_L_V) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_A) {
-                return tok.getLastValue() === 'var';
-              } else if (d === ORD_L_O) {
-                return tok.getLastValue() === 'void';
-              }
-            } else if (c === ORD_L_W) {
-              var d = tok.getNum(1);
-              if (d === ORD_L_H) {
-                return tok.getLastValue() === 'while';
-              } else if (d === ORD_L_I) {
-                return tok.getLastValue() === 'with';
-              }
-            }
-          // we checked for b-f and r-w, but must not forget
-          // to check n and i:
-          } else if (c === ORD_L_N) {
-            var d = tok.getNum(1);
-            if (d === ORD_L_U) {
-              if (ignoreValues) return false;
-              return tok.getLastValue() === 'null';
-            } else if (d === ORD_L_E) {
-              return tok.getLastValue() === 'new';
-            }
-          } else if (c === ORD_L_I) {
-            var d = tok.getNum(1);
-            if (d === ORD_L_N) {
-              return tok.getLastLen() === 2 || tok.getLastValue() === 'instanceof'; // 'in'
-            } else if (d === ORD_L_F) {
-              return tok.getLastLen() === 2; // 'if'
-            } else if (d === ORD_L_M) {
-              return tok.getLastValue() === 'import';
-            }
-          }
+      // keywords per len (from the 16mb bench file):
+      // 1:
+      // 2: do if in: never happens (could it validly?)
+      // 3: new var for try: never happens (could it validly?)
+      // 4: case else void this with enum true null: 17% [this:15.5%, true:1%, null:1.2%]
+      // 5: break catch while throw class super const false: 1% [false: 1%]
+      // 6: typeof return switch delete export import: never
+      // 7: finally default extends: never
+      // 8: continue debugger function: never
+      // 9:
+      // 10: instanceof: never
+
+      // From the above it's obvious that only value keywords might be found
+      // by this function. anything else is probably an error.
+      // The reason statement keywords are not found here is because that is
+      // handled by a function that specifically scans them.
+
+      var value;
+      var tok = this.tok;
+      var c = tok.getLastNum();
+      var len = tok.getLastLen();
+
+      // a:8%, b:6%, c:6%, d:4%, e:4%, f:3%, g:2%, h:2%, i:4%, j:1%, k:1%, l:2%, m:2%, n:4%, o:2%, p:3%, q:0%, r:2%, s:3%, t:17%, u:1%, v:2%, w:1%, x:1%, y:1%, z:0%, rest:17%
+
+      if (len === 1) return false; // 39%
+
+      // stats after only dropping len=1:
+      // len: 1:0, 2:7%, 3:7%, 4:22%, 5:5%, 6:4%, 7:3%, 8:3%, rest:10%
+      // chr: a:2%, b:2%, c:3%, d:2%, e:2%, f:2%, g:1%, h:1%, i:2%, j:0%, k:1%, l:1%, m:1%, n:3%, o:1%, p:2%, q:0%, r:1%, s:3%, t:16%, u:1%, v:1%, w:1%, x:0%, y:0%, z:0%, rest: 12%
+      // conclusion: len=4 (22%) has a significance. c=t (12%) does too. probably the same step, unfortunately. can probably do the <=a trick here as well
+
+      if (c <= ORD_L_A) return false; // 14%
+
+      // after dropping <=a
+      // 1:0, 2:2%, 3:2%, 4:8%, 5:2%, 6:1%, 7:1%, 8:1%, rest: 3%
+      // a:0, b:1%, c:1%, d:1%, e:1%, f:0%, g:0%, h:0%, i:1%, j:0%, k:0%, l:0%, m:1%, n:1%, o:1%, p:1%, q:0%, s:1%, t:7%, u:0%, v:1%, w:0%, x:0%, y:0%, z:0%, rest:0
+      // so: only c=t and len=4 are standing out, slightly. rest is negligible
+
+      if (len === 4) { // 19%
+        // case else void this with enum true null
+        // relevant character stats per position:
+        // 1: t:14% n:2% (centvw)
+        // 2: h:12% a:1% e:1% o:1% r:1% u:2% (ahilnoru)
+        // 3: i:13% d:1% e:1% l:2% u:1% (ilstu)
+        // 4: s:13% e:3% l:2% t:1% (dehmls)
+
+        // true
+        // this
+        if (c === ORD_L_T) {
+          if (ignoreValues) return false;
+          var value = tok.getLastValue();
+          return (value === 'this' || value === 'true');
         }
+
+        // null
+        if (c === ORD_L_N) {
+          return !ignoreValues && tok.getLastValue() === 'null';
+        }
+
+        // else
+        // enum
+        if (c === ORD_L_E) {
+          // case else true
+          var value = tok.getLastValue();
+          return (value === 'else' || value === 'enum');
+        }
+
+        // case
+        if (c === ORD_L_C) {
+          return tok.getLastValue() === 'case';
+        }
+
+        if (c < ORD_L_V) return false; // 2.3% (way more than the 0.15% of v and w)
+
+        // void
+        if (c === ORD_L_V) {
+          return tok.getLastValue() === 'void';
+        }
+
+        // with
+        if (c === ORD_L_W) {
+          return tok.getLastValue() === 'with';
+        }
+
+        return false;
       }
 
+//      bcdefinrstvw
+
+      // 1:0 2:4.6 3:4 4:0 5:4.2 6:3 7:2.7 8:2.2 >8:6.9 = 27.6
+      // a:0 b:1.5 c:2.5 d:1.5 e:1.5 f:2 g:1 h:0.5 i:1.5 j:0.5 k:0.5 l:1 m:1: n:1 o:1.5 p:2: q:0 r:1.5 s:2.5 t:1.5 u:1: v:1 w:0.5 x:0.5 y:0 z:0
+
+      if (len >= 7) { // 11.7%
+
+        // 7: finally default extends: never
+        // 8: continue debugger function: never
+        // 10: instanceof: never
+        // cdefi
+
+        if (c > ORD_L_I) return false; // 6.4%
+
+        if (c === ORD_L_C) { // 1.5%
+          return tok.getLastValue() === 'continue';
+        }
+
+        if (c === ORD_L_D) { // 0.8%
+          var value = tok.getLastValue();
+          return value === 'default' || value === 'debugger';
+        }
+
+        if (c === ORD_L_E) { // 0.8%
+          return tok.getLastValue() === 'extends';
+        }
+
+        if (c === ORD_L_F) { // 0.5%
+          var value = tok.getLastValue();
+          return value === 'finally' || value === 'function';
+        }
+
+        if (c === ORD_L_I) { // 0.7%
+          return tok.getLastValue() === 'instanceof';
+        }
+
+        return false; // 1%
+      }
+
+      // 3: new var for try : 4
+      // 5: break catch while throw class super const false: 4.2
+      // 6: typeof return switch delete export import: never: 3
+
+      if (len === 2) { // 4.6%
+        if (c === ORD_L_I) {
+          var value = tok.getLastValue();
+          return value === 'if' || value === 'in';
+        }
+        if (c === ORD_L_D) return tok.getLastValue() === 'do';
+        return false;
+      }
+
+      if (len === 5) { // 4.2%
+        if (c === ORD_L_F) return !ignoreValues && tok.getLastValue() === 'false';
+        if (c === ORD_L_S) return tok.getLastValue() === 'super';
+        if (c === ORD_L_C) {
+          var value = tok.getLastValue();
+          return value === 'catch' || value === 'class' || value === 'const';
+        }
+        if (c === ORD_L_T) return tok.getLastValue() === 'throw';
+        if (c === ORD_L_B) return tok.getLastValue() === 'break';
+        if (c === ORD_L_W) return tok.getLastValue() === 'while';
+        return false;
+      }
+
+      if (len === 3) { // 4%
+        if (c === ORD_L_N) return tok.getLastValue() === 'new';
+        if (c === ORD_L_V) return tok.getLastValue() === 'var';
+        if (c === ORD_L_T) return tok.getLastValue() === 'try';
+        if (c === ORD_L_F) return tok.getLastValue() === 'for';
+        return false;
+      }
+
+      // 3%
+
+      if (c === ORD_L_S) return tok.getLastValue() === 'switch';
+      if (c === ORD_L_R) return tok.getLastValue() === 'return';
+      if (c === ORD_L_T) return tok.getLastValue() === 'typeof';
+      if (c === ORD_L_I) return tok.getLastValue() === 'import';
+      if (c === ORD_L_E) return tok.getLastValue() === 'export';
+      if (c === ORD_L_D) return tok.getLastValue() === 'delete';
       return false;
     },
 
