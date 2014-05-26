@@ -1,0 +1,150 @@
+<body>
+<script src="../src/uni.js"></script>
+<script src="../src/tok.js"></script>
+<script src="../src/par.js"></script>
+<script>
+  var tokens = [
+    'identifier',
+    '$ident',
+    '_ident',
+    'iden$fier',
+    'ident_ier',
+    '\\u0065foo',
+    'foo\\u0065bar',
+    '500',
+    '.50',
+    '.050',
+    '0e5',
+    '5e2',
+    '.5e05',
+    '"string"',
+    "'string'",
+    '/foo/',
+    '/foo/g',
+
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+    '!',
+    '!=',
+    '!==',
+    '%',
+    '%=',
+    '^',
+    '^=',
+    '&',
+    '&&',
+    '&=',
+    '*',
+    '*=',
+    '|',
+    '|=',
+    '-',
+    '--',
+    '-=',
+    '+',
+    '++',
+    '+=',
+    '~',
+    '~=',
+    ':',
+    ';',
+    '<',
+    '<=',
+    '<<',
+    '<<=',
+    '>',
+    '>>',
+    '>=',
+    '>>',
+    '>>=',
+    '>>>',
+    '>>>=',
+    ',',
+    '.',
+    '/',
+    '/=',
+    '\\',
+    '=',
+    '==',
+    '===',
+    'break',
+    'do',
+    'instanceof',
+    'typeof',
+    'case',
+    'else',
+    'new',
+    'var',
+    'catch',
+    'finally',
+    'return',
+    'void',
+    'continue',
+    'for',
+    'switch',
+    'while',
+    'debugger',
+    'function',
+    'this',
+    'with',
+    'default',
+    'if',
+    'throw',
+    'delete',
+    'in',
+    'try',
+    'class',
+    'enum',
+    'extends',
+    'super',
+    'const',
+    'export',
+    'import',
+  ];
+  var white = [' ', '\t', '\r', '\n', '\r\n', '\u2028', '\u2029'];
+
+  var total = 0;
+  var n = 0;
+  function repeat(){
+
+    var list = [];
+    for (var i = 0; i < 10; ++i) {
+      var len = Math.floor(Math.random() * 10) + 1;
+      var s = '';
+      while (len--) {
+        s += tokens[Math.floor(Math.random() * tokens.length)];
+        while (Math.random() > 0.4) s += white[Math.floor(Math.random() * white.length)];
+      }
+      list.push(s);
+    }
+
+    document.body.innerHTML = '<pre>'+total+':\n'+(list.join('<hr>'))+'</pre>';
+
+    setTimeout(function () {
+      ++total;
+      while (list.length) {
+        try {
+          new Par(list.pop(), {
+            functionMode: false,
+            regexNoClassEscape: false,
+            saveTokens: true,
+            strictAssignmentCheck: true,
+            strictForInCheck: true,
+          }).run();
+        } catch (e) {
+          // dont care
+        }
+      }
+
+      repeat();
+    }, 1);
+
+  }
+
+  repeat();
+
+</script>
