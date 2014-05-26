@@ -157,7 +157,7 @@
     // v8 "appreciates" it when all instance properties are set explicitly
     this.pos = 0;
 
-    this.lastStart = 0;
+    this.lastOffset = 0;
     this.lastStop = 0;
     this.lastLen = 0;
     this.lastType = 0;
@@ -234,8 +234,8 @@
 
     // parser can look at these positions to see where in the input the last token was
     // this way the tokenizer can simply return number-constants-as-types.
-    /** @property {number} lastStart Start pos of the last token */
-    lastStart: 0,
+    /** @property {number} lastOffset Start pos of the last token */
+    lastOffset: 0,
     /** @property {number} lastStop End pos of the last token */
     lastStop: 0,
     /** @property {number} lastLen */
@@ -352,7 +352,7 @@
         var type = this.nextWhiteToken(expressionStart);
         ++tokensParsed;
         if (toStream) {
-          var token = {type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos, white:this.tokens.length};
+          var token = {type:type, value:this.getLastValue(), start:this.lastOffset, stop:this.pos, white:this.tokens.length};
           this.tokens.push(token);
         }
       } while (type === WHITE);
@@ -369,7 +369,7 @@
     },
     nextWhiteToken: function(expressionStart){
       // note: this is one of the most called functions of zeparser...
-      var offset = this.lastStart = this.pos;
+      var offset = this.lastOffset = this.pos;
       var nextChar = this.firstTokenChar = this.input.charCodeAt(offset) | 0;
       if (!nextChar) return EOF; // a nul char here is EOF (NaN) or error, end regardless
       var type = this.nextTokenDeterminator(nextChar, expressionStart);
@@ -541,7 +541,7 @@
       }
 
       this.tokenCountAll += count;
-      this.lastStart = pos-1;
+      this.lastOffset = pos-1;
       this.pos = pos;
 
       return WHITE;
@@ -566,7 +566,7 @@
     },
     parseEqualSigns: function(){
       var len = 1;
-      var offset = this.lastStart;
+      var offset = this.lastOffset;
       var input = this.input;
       if (input.charCodeAt(offset+1) === ORD_IS_3D) {
         if (input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
@@ -577,7 +577,7 @@
     },
     parseLtgtPunctuator: function(c){
       var len = 1;
-      var offset = this.lastStart;
+      var offset = this.lastOffset;
       var input = this.input;
       var d = input.charCodeAt(offset+1);
       if (d === ORD_IS_3D) len = 2;
@@ -648,7 +648,7 @@
         this.tokens.push({type:WHITE, value:input.slice(start, pos), start:start, stop:pos, white:this.tokens.length});
       }
 
-      this.lastStart = pos;
+      this.lastOffset = pos;
 
       if (foundCr) return this.parseCR();
       return this.parseVerifiedNewline(this.pos);
@@ -903,7 +903,7 @@
 
       var input = this.input;
       var len = input.length;
-      var start = this.lastStart;
+      var start = this.lastOffset;
       var pos = this.pos + 1;
 
       if (pos - start === 0) { // #zp-build drop line
@@ -979,25 +979,25 @@
     },
 
     getLastValue: function(){
-//      return this.input.substring(this.lastStart, this.lastStop);
-//      return this.input.slice(this.lastStart, this.lastStop);
-      return this.input.substr(this.lastStart, this.lastLen);
+//      return this.input.substring(this.lastOffset, this.lastStop);
+//      return this.input.slice(this.lastOffset, this.lastStop);
+      return this.input.substr(this.lastOffset, this.lastLen);
 
       // this seems slightly slower
 //      var val = this.lastValue;
 //      if (!val) {
 //        var input = this.input;
-//        val = this.lastValue = input.substring(this.lastStart, this.lastStop);
+//        val = this.lastValue = input.substring(this.lastOffset, this.lastStop);
 //      }
 //      return val;
     },
 
     getNum: function(offset){
-      return this.input.charCodeAt(this.lastStart+offset)
+      return this.input.charCodeAt(this.lastOffset+offset)
     },
 
     syntaxError: function(value){
-      var pos = (this.lastStop === this.pos) ? this.lastStart : this.pos;
+      var pos = (this.lastStop === this.pos) ? this.lastOffset : this.pos;
 
       return (
         ' A syntax error at pos='+pos+' '+
