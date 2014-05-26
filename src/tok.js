@@ -660,10 +660,10 @@
 
       var noNewline = true;
       var c = 0;
-      var d = this.input.charCodeAt(pos) | 0;
+      var d = this.input.charCodeAt(pos);
       while (d) {
         c = d;
-        d = input.charCodeAt(++pos) | 0;
+        d = input.charCodeAt(++pos);
 
         if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) {
           this.pos = pos+1;
@@ -672,7 +672,7 @@
 
           return WHITE;
         }
-        if (noNewline) noNewline = (c !== ORD_CR_0D && c !== ORD_LF_0A && (c ^ ORD_PS_2028) > 1); // c === ORD_PS || c === ORD_LS
+        if (noNewline) noNewline = !(c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1);; // c === ORD_PS || c === ORD_LS
       }
 
       throw 'Unterminated multi line comment found at '+pos;
