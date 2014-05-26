@@ -260,32 +260,44 @@
       // TOFIX: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
 
       // yes, this check makes a *huge* difference
-      if (len >= 2 && len <= 8) {
+      if (len >= 2) {
         // bcdfirstvw, not in that order.
         var c = tok.getLastNum();
 
         if (c === ORD_L_T) {
-          if (value === 'try') return this.parseTry(inFunction, inLoop, inSwitch, labelSet);
-          if (value === 'throw') return this.parseThrow();
+          if (len !== 4) {
+            if (value === 'try') return this.parseTry(inFunction, inLoop, inSwitch, labelSet);
+            if (value === 'throw') return this.parseThrow();
+          }
         }
-        else if (c === ORD_L_I && len === 2 && tok.getNum(1) === ORD_L_F) return this.parseIf(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_V && value === 'var') return this.parseVar();
-        else if (c === ORD_L_R && value === 'return') return this.parseReturn(inFunction, inLoop, inSwitch);
+        else if (c === ORD_L_I) {
+          if (value === 'if') return this.parseIf(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === ORD_L_V) {
+          if (value === 'var') return this.parseVar();
+        }
+        else if (c === ORD_L_R) {
+          if (value === 'return') return this.parseReturn(inFunction, inLoop, inSwitch);
+        }
         else if (c === ORD_L_F) {
-          if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
           if (value === 'for') return this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
         }
         else if (c === ORD_L_C) {
-          if (value === 'continue') return this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
           if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
+          if (value === 'continue') return this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
         }
-        else if (c === ORD_L_B && value === 'break') return this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_B) {
+          if (value === 'break') return this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+        }
         else if (c === ORD_L_D) {
           if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
-          if (len === 2 && tok.getNum(1) === ORD_L_O) return this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'do') return this.parseDo(inFunction, inLoop, inSwitch, labelSet);
           if (value === 'debugger') return this.parseDebugger();
         }
-        else if (c === ORD_L_S && value === 'switch') return this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_S) {
+          if (value === 'switch') return this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+        }
         else if (c === ORD_L_W) {
           if (value === 'while') return this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
           if (value === 'with') return this.parseWith(inFunction, inLoop, inSwitch, labelSet);
