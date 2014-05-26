@@ -59,6 +59,7 @@ if (!process.argv[2]) {
 
     next = process.argv[++argIndex];
   }
+  if (enableLast > showLast) showLast = enableLast;
 
   dirnameBare = process
     .argv
