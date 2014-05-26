@@ -162,7 +162,7 @@
     this.lastNewline = false;
 
     // 0 means uninitialized. if we ever parse a nul it probably results in a syntax error so the overhead is okay for that case.
-    this.nextNum1 = 0;
+    this.firstTokenChar = 0;
 
     this.tokenCountAll = 0;
 
@@ -246,7 +246,7 @@
     lastNewline: false,
 
     // .charCodeAt(pos+n) cache
-    nextNum1: 0,
+    firstTokenChar: 0,
 
     /** @property {number} tokenCountAll Add one for any token, including EOF (Par relies on this) */
     tokenCountAll: 0,
@@ -406,9 +406,10 @@
 
       var toStream = this.options.saveTokens;
       var tokensParsed = 0;
+      var len = this.len;
 
       do {
-        var type = this.nextWhiteToken(expressionStart);
+        var type = this.nextWhiteToken(expressionStart, len);
         ++tokensParsed;
         if (toStream) {
           var token = {type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos, white:this.tokens.length};
@@ -426,19 +427,19 @@
       this.lastType = type;
       return type;
     },
-    nextWhiteToken: function(expressionStart){
+    nextWhiteToken: function(expressionStart, len){
       // note: this is one of the most called functions of zeparser...
       this.lastValue = '';
 
       var start = this.lastStart = this.pos;
-      if (start >= this.len) {
-        this.nextNum1 = 0;
+      if (start >= len) {
+        this.firstTokenChar = 0;
         return EOF;
       }
 
       // TOFIX: how about double parsing? how many chars are averagely consumed? does it make sense to parse two and combine them, check them bitwise?
-      var nextChar = this.nextNum1 = this.input.charCodeAt(start);
-      var type = this.nextTokenDeterminator(nextChar, expressionStart);
+      var nextChar = this.firstTokenChar = this.input.charCodeAt(start);
+      var type = this.nextTokenDeterminator(nextChar, expressionStart) | 0;
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return type;
@@ -1066,7 +1067,7 @@
     },
     getLastNum: function(){
       // always cached in nextToken function
-      return this.nextNum1;
+      return this.firstTokenChar;
     },
     getNum: function(offset){
       return this.input.charCodeAt(this.lastStart+offset)
