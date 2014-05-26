@@ -158,7 +158,6 @@
     this.lastStop = 0;
     this.lastLen = 0;
     this.lastType = 0;
-    this.lastValue = '';
     this.lastNewline = false;
 
     // 0 means uninitialized. if we ever parse a nul it probably results in a syntax error so the overhead is okay for that case.
@@ -240,8 +239,6 @@
     lastLen: 0,
     /** @property {number} lastType Type of the last token */
     lastType: 0,
-    /** @property {string} lastValue String value of the last token, or empty string if not yet fetched (see this.getLastValue()) */
-    lastValue: '',
     /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
     lastNewline: false,
 
@@ -406,10 +403,9 @@
 
       var toStream = this.options.saveTokens;
       var tokensParsed = 0;
-      var len = this.len;
 
       do {
-        var type = this.nextWhiteToken(expressionStart, len);
+        var type = this.nextWhiteToken(expressionStart);
         ++tokensParsed;
         if (toStream) {
           var token = {type:type, value:this.getLastValue(), start:this.lastStart, stop:this.pos, white:this.tokens.length};
@@ -427,19 +423,12 @@
       this.lastType = type;
       return type;
     },
-    nextWhiteToken: function(expressionStart, len){
+    nextWhiteToken: function(expressionStart){
       // note: this is one of the most called functions of zeparser...
-      this.lastValue = '';
-
       var start = this.lastStart = this.pos;
-      if (start >= len) {
-        this.firstTokenChar = 0;
-        return EOF;
-      }
-
-      // TOFIX: how about double parsing? how many chars are averagely consumed? does it make sense to parse two and combine them, check them bitwise?
-      var nextChar = this.firstTokenChar = this.input.charCodeAt(start);
-      var type = this.nextTokenDeterminator(nextChar, expressionStart) | 0;
+      var nextChar = this.firstTokenChar = this.input.charCodeAt(start) | 0;
+      if (!nextChar) return EOF; // a nul char here is EOF (NaN) or error, end regardless
+      var type = this.nextTokenDeterminator(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - start;
 
       return type;
@@ -619,7 +608,6 @@
       }
 
       this.tokenCountAll = count;
-      this.lastValue = '';
       this.lastStart = pos-1;
       this.pos = pos;
 
@@ -723,7 +711,6 @@
         this.tokens.push({type:WHITE, value:input.slice(start, pos), start:start, stop:pos, white:this.tokens.length});
       }
 
-      this.lastValue = '';
       this.lastStart = pos;
 
       if (foundCr) return this.parseCR();
@@ -1055,7 +1042,9 @@
     },
 
     getLastValue: function(){
-      return this.lastValue || (this.lastValue = this.input.substring(this.lastStart, this.lastStop));
+//      return this.input.substring(this.lastStart, this.lastStop);
+//      return this.input.slice(this.lastStart, this.lastStop);
+      return this.input.substr(this.lastStart, this.lastLen);
 
       // this seems slightly slower
 //      var val = this.lastValue;
