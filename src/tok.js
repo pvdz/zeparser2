@@ -380,7 +380,7 @@
       var b = c & 0xffdf; // clear 0x20. note that input string must be in range of utf-16, so 0xffdf will suffice.
       if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) return this.parseIdentifier();
 
-      if (c > ORD_L_9_39) return this.nextTokenDeterminator_b(c, expressionStart);
+      if (c > ORD_L_9_39) return this.nextTokenDeterminator_b(c);
       return this.parseDecimalNumber();
     },
     nextTokenDeterminator_a: function(c, expressionStart) {
@@ -432,7 +432,7 @@
           throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
       }
     },
-    nextTokenDeterminator_b: function(c, expressionStart) {
+    nextTokenDeterminator_b: function(c) {
       switch (c) {
         case ORD_SEMI_3B:
           return ++this.pos,(PUNCTUATOR);
@@ -666,7 +666,7 @@
 
           return WHITE;
         }
-        if (noNewline) noNewline = !(c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1);; // c === ORD_PS || c === ORD_LS
+        if (noNewline) noNewline = !(c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1); // c === ORD_PS || c === ORD_LS
       }
 
       throw 'Unterminated multi line comment found at '+pos;
@@ -759,7 +759,7 @@
 
       return NUMBER;
     },
-    parseHexNumber: function(delta){
+    parseHexNumber: function(){
       var pos = this.pos + 1;
       var input = this.input;
 
@@ -894,7 +894,7 @@
       // also used by regex flag parser!
 
       var input = this.input;
-      var start = this.lastOffset;
+      var start = this.lastOffset; // #zp-build drop line
       var pos = this.pos + 1;
 
       if (pos - start === 0) { // #zp-build drop line
@@ -962,7 +962,7 @@
           return true;
         }
 
-        throw 'Encountered \\u escape ('+u+') but the char is not a valid identifier part.'
+        throw 'Encountered \\u escape ('+u+') but the char is not a valid identifier part.';
       }
 
       this.pos = pos;
@@ -984,7 +984,7 @@
     },
 
     getNum: function(offset){
-      return this.input.charCodeAt(this.lastOffset+offset)
+      return this.input.charCodeAt(this.lastOffset+offset);
     },
 
     syntaxError: function(value){

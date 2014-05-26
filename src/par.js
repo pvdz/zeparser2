@@ -123,7 +123,6 @@
 
     // `this['tok'] prevents build script mangling :)
     this['tok'] = new Tok(input, this.options);
-    if (options.nextToken) this['tok'].nextTokenIfElse_search = options.nextToken;
     this['run'] = this.run; // used in Par.parse
   };
 
@@ -279,29 +278,29 @@
           if (value === 'var') return this.parseVar();
         }
         else if (c === ORD_L_R) {
-          if (value === 'return') return this.parseReturn(inFunction, inLoop, inSwitch);
+          if (value === 'return') return this.parseReturn(inFunction);
         }
         else if (c === ORD_L_F) {
-          if (value === 'for') return this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'for') return this.parseFor(inFunction, inSwitch, labelSet);
           if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
         }
         else if (c === ORD_L_C) {
           if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
-          if (value === 'continue') return this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'continue') return this.parseContinue(inLoop, labelSet);
         }
         else if (c === ORD_L_B) {
-          if (value === 'break') return this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'break') return this.parseBreak(inLoop, inSwitch, labelSet);
         }
         else if (c === ORD_L_D) {
           if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
-          if (value === 'do') return this.parseDo(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'do') return this.parseDo(inFunction, inSwitch, labelSet);
           if (value === 'debugger') return this.parseDebugger();
         }
         else if (c === ORD_L_S) {
-          if (value === 'switch') return this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'switch') return this.parseSwitch(inFunction, inLoop, labelSet);
         }
         else if (c === ORD_L_W) {
-          if (value === 'while') return this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'while') return this.parseWhile(inFunction, inSwitch, labelSet);
           if (value === 'with') return this.parseWith(inFunction, inLoop, inSwitch, labelSet);
         }
       }
@@ -373,7 +372,7 @@
 
       return PARSEDSOMETHING;
     },
-    parseDo: function(inFunction, inLoop, inSwitch, labelSet){
+    parseDo: function(inFunction, inSwitch, labelSet){
       // do <stmt> while ( <exprs> ) ;
 
       var tok = this.tok;
@@ -389,7 +388,7 @@
 
       return PARSEDSOMETHING;
     },
-    parseWhile: function(inFunction, inLoop, inSwitch, labelSet){
+    parseWhile: function(inFunction, inSwitch, labelSet){
       // while ( <exprs> ) <stmt>
 
       this.tok.next(PUNC);
@@ -398,7 +397,7 @@
 
       return PARSEDSOMETHING;
     },
-    parseFor: function(inFunction, inLoop, inSwitch, labelSet){
+    parseFor: function(inFunction, inSwitch, labelSet){
       // for ( <expr-no-in-=> in <exprs> ) <stmt>
       // for ( var <idntf> in <exprs> ) <stmt>
       // for ( var <idntf> = <expr-no-in> in <exprs> ) <stmt>
@@ -442,7 +441,7 @@
       tok.next(EXPR); // `in` validated by `parseFor`
       this.parseExpressions();
     },
-    parseContinue: function(inFunction, inLoop, inSwitch, labelSet){
+    parseContinue: function(inLoop, labelSet){
       // continue ;
       // continue <idntf> ;
       // newline right after keyword = asi
@@ -461,7 +460,7 @@
 
       return PARSEDSOMETHING;
     },
-    parseBreak: function(inFunction, inLoop, inSwitch, labelSet){
+    parseBreak: function(inLoop, inSwitch, labelSet){
       // break ;
       // break <idntf> ;
       // break \n <idntf> ;
@@ -493,7 +492,7 @@
         throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
       }
     },
-    parseReturn: function(inFunction, inLoop, inSwitch){
+    parseReturn: function(inFunction){
       // return ;
       // return <exprs> ;
       // newline right after keyword = asi
@@ -526,7 +525,7 @@
 
       return PARSEDSOMETHING;
     },
-    parseSwitch: function(inFunction, inLoop, inSwitch, labelSet){
+    parseSwitch: function(inFunction, inLoop, labelSet){
       // switch ( <exprs> ) { <switchbody> }
 
       var tok = this.tok;
@@ -937,7 +936,7 @@
           }
         }
 
-        return this.parsePrimaryCoreIdentifier(optional, hasNew, maybeLabel);
+        return this.parsePrimaryCoreIdentifier(hasNew, maybeLabel);
       }
 
       if ((c === ORD_EXCL || c === ORD_TILDE) && tok.lastLen === 1) {
@@ -964,7 +963,7 @@
       // TOFIX: I think maybeLabel should just be false here...?
       return this.parsePrimaryCoreOther(optional, hasNew, maybeLabel);
     },
-    parsePrimaryCoreIdentifier: function(optional, hasNew, maybeLabel){
+    parsePrimaryCoreIdentifier: function(hasNew, maybeLabel){
       var tok = this.tok;
       var identifier = tok.getLastValue();
       var c = tok.firstTokenChar;
@@ -1143,7 +1142,7 @@
         return c === ORD_IS || c === ORD_EXCL || c === ORD_LT || c === ORD_GT || (c === ORD_AND && tok.getNum(1) === ORD_AND) || (c === ORD_OR && tok.getNum(1) === ORD_OR) || tok.getLastValue() === 'in';
       }
       if (len === 3) {
-        return c === ORD_IS || c === ORD_EXCL || (c === ORD_GT && tok.getNum(2) === ORD_GT)
+        return c === ORD_IS || c === ORD_EXCL || (c === ORD_GT && tok.getNum(2) === ORD_GT);
       }
       if (len === 10) return tok.getLastValue() === 'instanceof';
 
@@ -1251,7 +1250,7 @@
 
       if (c === ORD_L_C) { // 2.5%
         var d = tok.getNum(1);
-        return (d === ORD_L_O && tok.getLastValue() === 'const') || (d === ORD_L_A && ((value=tok.getLastValue()) === 'catch' || value === 'case')) || (d === ORD_L_L && tok.getLastValue() === 'class')
+        return (d === ORD_L_O && tok.getLastValue() === 'const') || (d === ORD_L_A && ((value=tok.getLastValue()) === 'catch' || value === 'case')) || (d === ORD_L_L && tok.getLastValue() === 'class');
       }
 
       if (c === ORD_L_S) { // 1.8%
@@ -1321,7 +1320,6 @@
       // The reason statement keywords are not found here is because that is
       // handled by a function that specifically scans them.
 
-      var value;
       var tok = this.tok;
       var c = tok.firstTokenChar;
       var len = tok.lastLen;
