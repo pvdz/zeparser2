@@ -15,15 +15,13 @@ var ParMeta = require('./zeparser2-meta.js').Par;
 var Par = require(ROOT_DIR + '/src/par.js').Par;
 var Tok = require(ROOT_DIR + '/src/tok.js').Tok;
 
-var v8opt = false;
 var noComment = true;
 var enableLast = 5;
 var showLast = 10;
 var dirnameBare = '';
 if (!process.argv[2]) {
   console.log('(Note: no params found. If you add a param you can name this build and have it auto-added to the gonzales project locally).');
-//  console.log('--v8-opt for special v8 mode (default=false)');
-  console.log('--comments to include comments (default=false)');
+  console.log('--comments (no arg) to include comments, they are omitted without this arg');
   console.log('--show n To show last n builds (default:10)');
   console.log('--enable n To enable last n builds (default:5)');
 } else {
@@ -32,9 +30,6 @@ if (!process.argv[2]) {
   while (next && next[0] === '-' && next[1] === '-') {
 
     switch (next.slice(2)) {
-      case 'v8-opt':
-        v8opt = true;
-        break;
       case 'comments':
         noComment = false;
         break;
@@ -43,6 +38,8 @@ if (!process.argv[2]) {
         if (n+'' === process.argv[argIndex+1]) {
           enableLast = n;
           ++argIndex;
+        } else {
+          throw 'Bad arg for --enable, expecting int';
         }
         break;
       case 'show':
@@ -50,6 +47,8 @@ if (!process.argv[2]) {
         if (m+'' === process.argv[argIndex+1]) {
           showLast = m;
           ++argIndex;
+        } else {
+          throw 'Bad arg for --show, expecting int';
         }
         break;
       default:
@@ -82,7 +81,7 @@ var all = files.map(function(f){
   var source = fs.readFileSync(ROOT_DIR+'/src/'+f).toString('utf8');
 
   // remove individual scope wrappers
-  if (source.indexOf("})(typeof exports === 'object' ? exports : window);") < 0) console.warn('Warning: Scope boilerplate not found for '+f);
+  if (source.indexOf("})(typeof exports === 'object' ? exports : window);") < 0) console.warn('Warning: Scope boilerplate not found for '+f+' (this is a problem!)');
   else {
     source = source
       .replace("var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;", '')
