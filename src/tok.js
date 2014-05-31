@@ -536,7 +536,8 @@
       }
 
       this.tokenCountAll += count;
-      this.lastOffset = pos-1;
+      // TOFIX: confirm this offset. token values seem off. pos-1
+      this.lastOffset = pos-count-1;
       this.pos = pos;
 
       return WHITE;
