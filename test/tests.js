@@ -767,6 +767,11 @@ var good = [
 
   ["new function(){}().b = 5;", 16, "good either way"],
 
+  ["foo:foobar:x;", 6, "dont fail on partial matching label dupes"],
+  ["bar:foobar:x;", 6, "dont fail on partial matching label dupes"],
+  ["foobar:foo:x;", 6, "dont fail on partial matching label dupes"],
+  ["foobar:bar:x;", 6, "dont fail on partial matching label dupes"],
+
   // TOFIX: verify that these chars indeed valid unicodes
   ['\xff', [1, 2], "del char is valid unicode identifier (i think...)"],
   // TOFIX: find variation of this that is actually illegal
@@ -779,6 +784,22 @@ var bad = [
   ['while(true)continue 5+5;', "break arg, if any, must be a valid label identifier"],
   ['while(true)break if;', "break arg, if any, must be a valid label identifier"],
   ['while(true)continue if;', "break arg, if any, must be a valid label identifier"],
+
+  ["foo: return;", "label only must not allow out-of-context for return"],
+  ["foo:break;", "label only must not allow out-of-context break"],
+  ["foo:continue;", "label only must not allow out-of-context continue"],
+  ["foo:continue foo;", "label only must not allow out-of-context for continue"],
+
+  ["foo: foo: x;", "double label decl 1"],
+  ["foo: bar: foo: x;", "double label decl 2"],
+  ["foo: { foo: x; }", "double label decl 3"],
+
+  ["foobar: break foo;", "dont detect partial label match as valid"],
+  ["foobar: break bar;", "dont detect partial label match as valid"],
+  ["foo: break foobar;", "dont detect partial label match as valid"],
+  ["bar: break foobar;", "dont detect partial label match as valid"],
+
+  // TOFIX: out-of-scope continue/break targets that partially match valid labels
 
   ['do {} while() fail;', "semi after while is required"],
   ["foo--.toString();", "postfix ops effectively end the primary expression"],
