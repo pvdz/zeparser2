@@ -399,7 +399,7 @@
         case ORD_CR_0D:
           return this.parseCR();
         case ORD_LF_0A:
-          return this.parseVerifiedNewline(this.pos);
+          return this.parseVerifiedNewline(this.pos, 0);
         case ORD_COMMA_2C:
           return ++this.pos,(PUNCTUATOR);
         case ORD_TAB_09:
@@ -466,9 +466,9 @@
         case ORD_TILDE_7E:
           return this.parseCompoundAssignment();
         case ORD_PS_2028:
-          return this.parseVerifiedNewline(this.pos);
+          return this.parseVerifiedNewline(this.pos, 0);
         case ORD_LS_2029:
-          return this.parseVerifiedNewline(this.pos);
+          return this.parseVerifiedNewline(this.pos, 0);
         case ORD_NBSP_A0:
           return ++this.pos,(WHITE);
         case ORD_BOM_FEFF:
@@ -504,12 +504,11 @@
       // consume it for the CRLF case. this is completely optional.
 
       var pos = this.pos;
+      var crlf = this.input.charCodeAt(pos+1) === ORD_LF_0A ? 1 : 0;
 
-      if (this.input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
-
-      return this.parseVerifiedNewline(pos);
+      return this.parseVerifiedNewline(pos + crlf, crlf);
     },
-    parseVerifiedNewline: function(pos){
+    parseVerifiedNewline: function(pos, extraForCrlf){
       // mark for ASI
       this.lastNewline = true;
 
@@ -533,14 +532,16 @@
         ++count;
         if (saveTokens) {
           // we just checked another token, stash the _previous_ one.
-          var s = pos-1;
+          var s = pos-(1+extraForCrlf);
           tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
         }
+
+        extraForCrlf = 0; // only first iteration char is newline
       }
 
       this.tokenCountAll += count;
       // TOFIX: confirm this offset. token values seem off. pos-1
-      this.lastOffset = pos-count-1;
+      this.lastOffset = pos-(extraForCrlf+1);
       this.pos = pos;
 
       return WHITE;
@@ -649,7 +650,7 @@
       this.lastOffset = pos;
 
       if (foundCr) return this.parseCR();
-      return this.parseVerifiedNewline(this.pos);
+      return this.parseVerifiedNewline(this.pos, 0);
 */
     },
     parseMultiComment: function(){
