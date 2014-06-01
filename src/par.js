@@ -486,7 +486,7 @@
       var tok = this.tok;
       // next tag must be an identifier
       var label = tok.getLastValue();
-      if (labelSet && labelSet.indexOf(label) >= 0) {
+      if (labelSet && labelSet.indexOf(' '+label+' ') >= 0) {
         tok.next(EXPR); // label (already validated)
       } else {
         throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
@@ -725,8 +725,10 @@
       // this method is only called at the start of a statement that starts
       // with an identifier that is neither `function` nor a statement keyword
 
+      var tok = this.tok;
+
       // store value of identifier for label validation below.
-      var identifier = this.tok.getLastValue();
+      var identifier = tok.getLastValue();
 
       // this will stop before consuming the colon, if any.
       var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, MAYBELABEL);
@@ -734,11 +736,14 @@
       this.parseAssignments(assignable);
       this.parseNonAssignments();
 
-      if (this.tok.nextExprIfNum(ORD_COLON)) {
+      if (tok.firstTokenChar === ORD_COLON) {
+        tok.next(EXPR);
         if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+this.tok.syntaxError();
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, REQUIRED);
+        var labelSpaced = labelName + ' ';
+        if (labelSet.indexOf(' ' + labelSpaced) >= 0) throw 'Label ['+identifier+'] is already defined.'+this.tok.syntaxError();
+        this.parseStatement(inFunction, inLoop, inSwitch, (labelSet || ' ')+labelSpaced, REQUIRED);
       } else {
-        if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
+        if (tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
         this.parseSemi();
       }
 
