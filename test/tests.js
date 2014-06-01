@@ -766,6 +766,11 @@ var good = [
   ["a?b():d;", 8, "just making sure i didnt screw up ternaries and labels"],
 
   ["new function(){}().b = 5;", 16, "good either way"],
+
+  // TOFIX: verify that these chars indeed valid unicodes
+  ['\xff', [1, 2], "del char is valid unicode identifier (i think...)"],
+  // TOFIX: find variation of this that is actually illegal
+  ['\u0f7a', [1, 2], "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 ];
 
 // these are mainly for the parser, of course...
@@ -885,7 +890,6 @@ var bad = [
   ['`', "backticks do not occur in js syntax"],
   ['#', "hashes do not occur in js syntax"],
   ['@', "at signs do not occur in js syntax"],
-  ['\xff', "del char (127) means bad range check"],
   ['\x00', "NUL means bad range check"],
   ['\x01', "\\x01 means bad range check"],
   ['\x02', "\\x02 means bad range check"],
@@ -913,7 +917,6 @@ var bad = [
   ['\x1d', "\\x1d means bad range check"],
   ['\x1e', "\\x1e means bad range check"],
   ['\x1f', "\\x1f means bad range check"],
-  ['\u0f7a', "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 
   ['x/**/bar;', "asi not applied"],
   ['x/*      */bar;', "asi not applied"],
