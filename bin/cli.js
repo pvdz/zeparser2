@@ -13,9 +13,10 @@ process.stdin.on('data', function (chunk) {
 
 process.stdin.on('end', function () {
   if (data.length < 2000) console.log(data);
+  var start = Date.now();
   var par = new Par(data);
   par.run();
-  console.log('-- finished ('+par.tok.tokenCountAll+' tokens)');
+  console.log('-- finished ('+par.tok.tokenCountAll+' tokens, '+(Date.now()-start)+'ms)');
 });
 
 /*
