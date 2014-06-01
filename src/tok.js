@@ -558,7 +558,7 @@
         }
         if (onToken) {
           var s = pos-(1+extraForCrlf);
-          var v = v || input.slice(s, pos);
+          var v = input.slice(s, pos);
           onToken(WHITE, v, s, pos, count);
         }
 
