@@ -364,11 +364,14 @@
     },
     nextWhiteToken: function(expressionStart){
       // note: this is one of the most called functions of zeparser...
-      var offset = this.lastOffset = this.pos;
-      var nextChar = this.firstTokenChar = this.input.charCodeAt(offset) | 0;
+
+      // note: the offset might change in the newline+space optim trick, so dont re-use it
+      var fullStart = this.lastOffset = this.pos;
+      var nextChar = this.firstTokenChar = this.input.charCodeAt(fullStart) | 0;
       if (!nextChar) return EOF; // a nul char here is EOF (NaN) or error, end regardless
+
       var type = this.nextTokenDeterminator(nextChar, expressionStart);
-      this.lastLen = (this.lastStop = this.pos) - offset;
+      this.lastLen = (this.lastStop = this.pos) - this.lastOffset;
 
       return type;
     },
