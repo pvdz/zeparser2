@@ -50,7 +50,7 @@ Another focus point is black and white token indexes.<br>
     // do it again with just onToken
     whites = 0;
     blacks = 0;
-    var tokens = Par.parse(code, {saveTokens: false, onToken:onToken}).tok.tokens;
+    Par.parse(code, {saveTokens: false, onToken:onToken}).tok.tokens;
   }
 
   assertCode('base', "foo ;", [
