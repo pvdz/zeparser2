@@ -143,8 +143,18 @@
    * @constructor
    * @param {string} input
    */
-  var Tok = exports.Tok = function(input, options){
-    this.options = options || {}; // should be same as in Par, if any
+  var Tok = exports.Tok = function(input, opt){
+    var options = this.options = {
+      saveToken: false,
+      createBlackStream: false,
+      regexNoClassEscape: false,
+      onToken: null
+    };
+
+    if (opt.saveTokens) options.saveTokens = opt.saveTokens;
+    if (opt.createBlackStream) options.createBlackStream = opt.createBlackStream;
+    if (opt.regexNoClassEscape) options.regexNoClassEscape = opt.regexNoClassEscape;
+    if (opt.onToken) options.onToken = opt.onToken;
 
     this.input = (input||'');
     this.len = this.input.length;
@@ -162,6 +172,7 @@
     this.firstTokenChar = 0;
 
     this.tokenCountAll = 0;
+    this.tokenCountBlack = 0;
 
     if (options.saveTokens) {
       // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
@@ -224,6 +235,7 @@
      * @property {boolean} [options.saveTokens=false] Put all found tokens in .tokens
      * @property {boolean} [options.createBlackStream=false] Requires saveTokens, put black tokens in .black
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
+     * @property {Function} [options.onToken=null] Call for every token
      */
     options: null,
 
@@ -245,6 +257,7 @@
 
     /** @property {number} tokenCountAll Add one for any token, including EOF (Par relies on this) */
     tokenCountAll: 0,
+    tokenCountBlack: 0,
     /** @property {Object[]} tokens List of (all) tokens, if saving them is enabled (this.options.saveTokens) */
     tokens: null,
     /** @property {Object[]} black List of only black tokens, if saving them is enabled (this.options.saveTokens) and createBlackStream is too */
@@ -340,24 +353,31 @@
     next: function(expressionStart){
       this.lastNewline = false;
 
-      var toStream = this.options.saveTokens;
-      var tokensParsed = 0;
+      var options = this.options;
+      var saveTokens = options.saveTokens;
+      var onToken = options.onToken;
+      var tokens = this.tokens;
 
       do {
         var type = this.nextWhiteToken(expressionStart);
-        ++tokensParsed;
-        if (toStream) {
-          var token = {type:type, value:this.getLastValue(), start:this.lastOffset, stop:this.pos, white:this.tokens.length};
-          this.tokens.push(token);
+        if (saveTokens) {
+          var token = {type:type, value:this.getLastValue(), start:this.lastOffset, stop:this.pos, white:this.tokenCountAll};
+          tokens.push(token);
         }
+        if (onToken) {
+          onToken(type, this.getLastValue(), this.lastOffset, this.pos, this.tokenCountAll);
+        }
+        ++this.tokenCountAll;
       } while (type === WHITE);
 
-      this.tokenCountAll += tokensParsed;
 
-      if (toStream && this.options.createBlackStream) {
-        token.black = this.black.length;
-        this.black.push(token);
+      if (token) {
+        token.black = this.tokenCountBlack++;
+        if (options.createBlackStream) {
+          this.black.push(token);
+        }
       }
+
 
       this.lastType = type;
       return type;
@@ -515,7 +535,8 @@
       var input = this.input;
       var tokens = this.tokens;
       var saveTokens = this.options.saveTokens;
-      var count = 0;
+      var onToken = this.options.onToken;
+      var count = this.tokenCountAll;
 
       // in JS source it's common to find spaces or tabs after newlines
       // due to indentation. we optimize here by eliminating the scanner
@@ -529,19 +550,24 @@
 
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
-        ++count;
         if (saveTokens) {
           // we just checked another token, stash the _previous_ one.
           var s = pos-(1+extraForCrlf);
-          tokens.push({type:WHITE, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
+          var v = input.slice(s, pos);
+          tokens.push({type:WHITE, value:v, start:s, stop:pos, white:count});
+        }
+        if (onToken) {
+          var s = pos-(1+extraForCrlf);
+          var v = v || input.slice(s, pos);
+          onToken(WHITE, v, s, pos, count);
         }
 
         extraForCrlf = 0; // only first iteration char is newline
+        ++count;
       }
 
-      this.tokenCountAll += count;
-      // TOFIX: confirm this offset. token values seem off. pos-1
-      this.lastOffset = pos-(extraForCrlf+1);
+      this.tokenCountAll = count;
+      this.lastOffset = pos-(1+extraForCrlf);
       this.pos = pos;
 
       return WHITE;
