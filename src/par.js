@@ -40,8 +40,8 @@
   var NOTFORFUNCTIONDECL = false;
   var NEXTTOKENCANBEREGEX = true;
   var NEXTTOKENCANBEDIV = false;
-  var INLOOP = true;
-  var NOTINLOOP = false;
+  var INLOOP = ' ';
+  var NOTINLOOP = '';
   var INSWITCH = true;
   var NOTINSWITCH = false;
   var INFUNCTION = true;
@@ -172,13 +172,13 @@
     parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
       // note: statements are optional, this function might not parse anything
-      while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
+      while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL, EMPTY_LABELSET));
     },
-    parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
+    parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional, freshLabels){
       if (this.tok.lastType === IDENTIFIER) {
         // this might be `false` when encountering `case` or `default` (or `else`?), which are handled elsewhere
         // TOFIX: would it be terrible if `case` and `default` went recursive here?
-        return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
+        return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels);
       } else {
         return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
       }
@@ -248,7 +248,7 @@
       // EOF? i'm not sure happens for any other reason.
       return PARSEDNOTHING;
     },
-    parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet){
+    parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, freshLabels){
       var tok = this.tok;
 
       // The current token is an identifier. Either its value will be
@@ -281,7 +281,7 @@
           if (value === 'return') return this.parseReturn(inFunction);
         }
         else if (c === ORD_L_F) {
-          if (value === 'for') return this.parseFor(inFunction, inSwitch, labelSet);
+          if (value === 'for') return this.parseFor(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
         }
         else if (c === ORD_L_C) {
@@ -293,20 +293,20 @@
         }
         else if (c === ORD_L_D) {
           if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
-          if (value === 'do') return this.parseDo(inFunction, inSwitch, labelSet);
+          if (value === 'do') return this.parseDo(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'debugger') return this.parseDebugger();
         }
         else if (c === ORD_L_S) {
           if (value === 'switch') return this.parseSwitch(inFunction, inLoop, labelSet);
         }
         else if (c === ORD_L_W) {
-          if (value === 'while') return this.parseWhile(inFunction, inSwitch, labelSet);
+          if (value === 'while') return this.parseWhile(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'with') return this.parseWith(inFunction, inLoop, inSwitch, labelSet);
         }
       }
 
       // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
-      this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
+      this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet, freshLabels);
 
       return PARSEDSOMETHING;
     },
@@ -363,22 +363,22 @@
 
       tok.next(PUNC);
       this.parseStatementHeader();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
 
       if (tok.getLastValue() === 'else') {
         tok.next(EXPR);
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
       }
 
       return PARSEDSOMETHING;
     },
-    parseDo: function(inFunction, inSwitch, labelSet){
+    parseDo: function(inFunction, inSwitch, labelSet, inLoop){
       // do <stmt> while ( <exprs> ) ;
 
       var tok = this.tok;
 
       tok.next(EXPR); // do
-      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
       tok.mustBeString('while', NEXTTOKENCANBEDIV);
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
       this.parseExpressions();
@@ -388,16 +388,16 @@
 
       return PARSEDSOMETHING;
     },
-    parseWhile: function(inFunction, inSwitch, labelSet){
+    parseWhile: function(inFunction, inSwitch, labelSet, inLoop){
       // while ( <exprs> ) <stmt>
 
       this.tok.next(PUNC);
       this.parseStatementHeader();
-      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
 
       return PARSEDSOMETHING;
     },
-    parseFor: function(inFunction, inSwitch, labelSet){
+    parseFor: function(inFunction, inSwitch, labelSet, inLoop){
       // for ( <expr-no-in-=> in <exprs> ) <stmt>
       // for ( var <idntf> in <exprs> ) <stmt>
       // for ( var <idntf> = <expr-no-in> in <exprs> ) <stmt>
@@ -423,7 +423,7 @@
       }
 
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
-      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
 
       return PARSEDSOMETHING;
     },
@@ -453,7 +453,14 @@
       var type = tok.next(PUNC); // token after continue cannot be a regex, either way.
 
       if (type === IDENTIFIER && !tok.lastNewline) {
-        this.parseLabel(labelSet);
+        var label = tok.getLastValue();
+        if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
+          throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
+        }
+        if (!inLoop || inLoop.indexOf(' '+label+' ') < 0) {
+          throw 'Label ['+label+'] is not a valid label for this loop.'+tok.syntaxError();
+        }
+        tok.next(EXPR); // label (already validated)
       }
 
       this.parseSemi();
@@ -475,22 +482,16 @@
           throw 'Break without value only in loops or switches.'+tok.syntaxError();
         }
       } else {
-        this.parseLabel(labelSet);
+        var label = tok.getLastValue();
+        if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
+          throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
+        }
+        tok.next(EXPR); // label (already validated)
       }
 
       this.parseSemi();
 
       return PARSEDSOMETHING;
-    },
-    parseLabel: function(labelSet){
-      var tok = this.tok;
-      // next tag must be an identifier
-      var label = tok.getLastValue();
-      if (labelSet && labelSet.indexOf(' '+label+' ') >= 0) {
-        tok.next(EXPR); // label (already validated)
-      } else {
-        throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
-      }
     },
     parseReturn: function(inFunction){
       // return ;
@@ -630,7 +631,7 @@
 
       this.tok.next(PUNC);
       this.parseStatementHeader();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
 
       return PARSEDSOMETHING;
     },
@@ -721,7 +722,7 @@
       this.parseExpressions();
       this.parseSemi();
     },
-    parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet){
+    parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet, freshLabels){
       // this method is only called at the start of a statement that starts
       // with an identifier that is neither `function` nor a statement keyword
 
@@ -741,7 +742,8 @@
         if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+this.tok.syntaxError();
         var labelSpaced = labelName + ' ';
         if (labelSet.indexOf(' ' + labelSpaced) >= 0) throw 'Label ['+identifier+'] is already defined.'+this.tok.syntaxError();
-        this.parseStatement(inFunction, inLoop, inSwitch, (labelSet || ' ')+labelSpaced, REQUIRED);
+        if (inLoop) inLoop += labelSpaced; // these are the only valid jump targets for `continue`
+        this.parseStatement(inFunction, inLoop, inSwitch, (labelSet || ' ')+labelSpaced, REQUIRED, (freshLabels||' ')+labelSpaced);
       } else {
         if (tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
         this.parseSemi();
