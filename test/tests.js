@@ -515,7 +515,11 @@ var good = [
   ["while(true){continue}", [7, 8], "ASI: `continue`"],
   ["function f(){return}", [8, 9], "ASI: `return`"],
   ["a:while(true){continue a}", [11, 12], "ASI: `continue`, Identifier"],
+  ["c:a:while(true){continue a}", [13, 14], "ASI: `continue`, Identifier nested labels"],
+  ["a:c:while(true){continue a}", [13, 14], "ASI: `continue`, Identifier nested labels"],
   ["b:while(true){break b}", [11, 12], "ASI: `break`, Identifier"],
+  ["c:b:while(true){break b}", [13, 14], "ASI: `break`, Identifier nested labels"],
+  ["b:c:while(true){break b}", [13, 14], "ASI: `break`, Identifier nested labels"],
   ["function f(){return c}", [10, 11], "ASI: `return`, Identifier"],
 
   ["this.charsX = Gui.getSize(this.textarea).w / this.fontSize.w;", 25, "Complex Division Not Treated as RegExp"],
@@ -771,6 +775,9 @@ var good = [
   ["bar:foobar:x;", 6, "dont fail on partial matching label dupes"],
   ["foobar:foo:x;", 6, "dont fail on partial matching label dupes"],
   ["foobar:bar:x;", 6, "dont fail on partial matching label dupes"],
+  ["a:break a;", 6, "valid label regression"],
+  ["a:for(;;)for(;;)continue a;", 16, "second loop discarded loop labels"],
+  ["a:for(;;)for(;;)break a;", 16, "should be fine for break either way"],
 
   // TOFIX: verify that these chars indeed valid unicodes
   ['\xff', [1, 2], "del char is valid unicode identifier (i think...)"],
@@ -1121,7 +1128,14 @@ var bad = [
   ["=foo;", "due to label crap, this once was a thing"],
 
   ["foo:{while(false){continue foo;}}", "continue labels must be one from an iteration label set"],
+  ["foo:x:{while(false){continue foo;}}", "continue labels must be one from an iteration label set nested"],
+  ["x:foo:{while(false){continue foo;}}", "continue labels must be one from an iteration label set nested"],
+  ["foo:{bar:while(false){continue foo;}}", "continue labels must be one from an iteration label set with inside label"],
   ["foo: { for (;;) continue foo; }", "continue inside for to illegal label"],
+  ["x:foo: { for (;;) continue foo; }", "continue inside for to illegal nested label"],
+  ["foo:x: { for (;;) continue foo; }", "continue inside for to illegal nested label"],
+  ["foo: { bar: for (;;) continue foo; }", "continue inside for to illegal label with inside label"],
+
   ["throw\nfoo;", "throw does not get ASI applied to it, a newline is always a syntax error"],
 
   ["var x == 5;", "make sure tokens arent skipped by checking just one character"],
