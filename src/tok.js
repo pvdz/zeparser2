@@ -131,6 +131,7 @@
   var ORD_CR_0D = 0x0D; // \r
   var ORD_LS_2029 = 0x2029;
   var ORD_PS_2028 = 0x2028;
+  var ORD_ZWS = 0x200B;
   var ORD_LODASH_5F = 0x5f;
 
   /**
@@ -489,19 +490,47 @@
           return this.parseVerifiedNewline(this.pos, 0);
         case ORD_LS_2029:
           return this.parseVerifiedNewline(this.pos, 0);
-        case ORD_NBSP_A0:
-          return ++this.pos,(WHITE);
-        case ORD_BOM_FEFF:
-          return ++this.pos,(WHITE);
         case ORD_BACKSLASH_5C:
           return this.parseBackslash();
         default:
-          if (c > UNICODE_LIMIT_127 && uniRegex.test(String.fromCharCode(c))) {
-            return this.parseIdentifier();
-          }
-
-          throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
+          return this.parseOtherUnicode(c);
       }
+    },
+
+    parseOtherUnicode: function(c){
+      if (this.isExoticWhitespace(c)) return ++this.pos,(WHITE);
+      if (uniRegex.test(String.fromCharCode(c))) return this.parseIdentifier();
+
+      throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
+    },
+    isExoticWhitespace: function(c){
+      // https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/RegExp
+      // http://en.wikipedia.org/wiki/Whitespace_character
+      // note that this is nearly the last line of defense and virtually never executed.
+      switch (c) {
+        case ORD_NBSP_A0:
+        case ORD_BOM_FEFF:
+        case 0x0085: // NEL
+        case 0x1680:
+        case 0x180e: // not uni whitespace but accepted, regardless
+        case 0x2000:
+        case 0x2001:
+        case 0x2002:
+        case 0x2003:
+        case 0x2004:
+        case 0x2005:
+        case 0x2006:
+        case 0x2007:
+        case 0x2008:
+        case 0x2009:
+        case 0x200a:
+//        case ORD_ZWS: // not accepted AFAICS
+        case 0x202f:
+        case 0x205f:
+        case 0x3000:
+          return true;
+      }
+      return false;
     },
 
     parseBackslash: function(){
