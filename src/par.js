@@ -50,8 +50,9 @@
   var DONTIGNOREVALUES = false;
   var HASNEW = true;
   var HASNONEW = false;
-  var NOTASSIGNABLE = false;
-  var ASSIGNABLE = true;
+  var NOTASSIGNABLE = 0;
+  var ASSIGNABLE = 1;
+  var ASSIGNABLEUNLESSGROUPED = 2;
   var MAYBELABEL = true;
   var NOTLABEL = false;
   var EXPR = true;
@@ -736,6 +737,7 @@
 
       var count = tok.tokenCountAll;
       this.parseAssignments(assignable);
+      // note: no need for grouped assignment check here (we cannot be in a group right now)
       this.parseNonAssignments();
 
       if (tok.firstTokenChar === ORD_COLON) {
@@ -769,7 +771,7 @@
       var tok = this.tok;
       while (tok.nextExprIfNum(ORD_COMMA)) {
         this.parseExpression();
-        groupAssignable = false;
+        groupAssignable = NOTASSIGNABLE;
       }
       return groupAssignable;
     },
@@ -796,10 +798,13 @@
         var endCount = this.tok.tokenCountAll;
 
         // if there was a non-assign binary op, the whole thing is nonassign
-        // if there were only assign ops, the whole thing is assignable
+        // if there were only assign ops, the whole thing is assignable unless grouped
         // if there were no binary ops, the whole thing is whatever the primary was
 
-        assignable = (beforeNonAssignments === endCount) && (beforeAssignments !== beforeNonAssignments || assignable);
+        if (beforeNonAssignments !== endCount) assignable = NOTASSIGNABLE;
+        else if (beforeAssignments !== beforeNonAssignments) assignable = ASSIGNABLEUNLESSGROUPED;
+
+        return assignable;
       }
 
       // return state for parseGroup, to determine whether the group as a whole can be assignment lhs
@@ -859,7 +864,7 @@
       var tok = this.tok;
 
       var count = tok.tokenCountAll;
-      this.parseAssignments(assignable);
+      this.parseAssignments(assignable); // any assignment is illegal in for-in, with and without group. no need to check here.
 
       // keep parsing non-assignment binary/ternary ops unless `in`
       var repeat = true;
@@ -1169,6 +1174,8 @@
 
       // groups cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       this.tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
+
+      if (groupAssignable === ASSIGNABLEUNLESSGROUPED) groupAssignable = NOTASSIGNABLE;
 
       return groupAssignable;
     },
