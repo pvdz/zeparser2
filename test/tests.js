@@ -806,6 +806,11 @@ var bad = [
   ["foo: break foobar;", "dont detect partial label match as valid"],
   ["bar: break foobar;", "dont detect partial label match as valid"],
 
+  ["a=b:c;", "regression; primary not validated as single black token"],
+  ["a+b:c;", "regression; primary not validated as single black token"],
+  ["a++:c;", "regression; primary not validated as single black token"],
+  ["new a:c;", "regression; primary not validated as single black token"],
+
   // TOFIX: out-of-scope continue/break targets that partially match valid labels
 
   ['do {} while() fail;', "semi after while is required"],
