@@ -734,14 +734,17 @@
       // this will stop before consuming the colon, if any.
       var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, MAYBELABEL);
 
+      var count = tok.tokenCountAll;
       this.parseAssignments(assignable);
       this.parseNonAssignments();
 
       if (tok.firstTokenChar === ORD_COLON) {
-        tok.next(EXPR);
+        if (tok.tokenCountAll !== count) throw 'Unexpected colon encountered.'+this.tok.syntaxError();
         if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+this.tok.syntaxError();
         var labelSpaced = labelName + ' ';
         if (labelSet.indexOf(' ' + labelSpaced) >= 0) throw 'Label ['+identifier+'] is already defined.'+this.tok.syntaxError();
+        tok.next(EXPR);
+
         if (inLoop) inLoop += labelSpaced; // these are the only valid jump targets for `continue`
         this.parseStatement(inFunction, inLoop, inSwitch, (labelSet || ' ')+labelSpaced, REQUIRED, (freshLabels||' ')+labelSpaced);
       } else {
