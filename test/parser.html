@@ -18,6 +18,7 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script src="tests.js"></script>
+    <script src="js1k.js"></script>
     <script>
       new function(){
         var hidePasses = true;
@@ -144,6 +145,29 @@
           var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
           if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
           else newlineState = NEWLINESTATE_N;
+        }
+
+        if (typeof js1kScripts !== 'undefined') {
+          // not included in repo due to copyright so for my eyes only :) this simply tries to parse all published js1k demos
+          debug("<h1>JS1k tests:");
+
+          for (var j1=0; j1<js1kScripts.length; ++j1) {
+            try {
+              var par = new Par(js1kScripts[j1].code);
+              par.run();
+              if (!hidePasses) debug('<span class="green">JS1k demo ['+js1kScripts[j1].id+'] ok</span>');
+              if (!hidePasses) debug('<br/>');
+              ++ok;
+            } catch (e) {
+              debug(
+                '<b class="red">Unable to parse JS1k demo ['+js1kScripts[j1].id+']:</span> (<textarea>' +
+                  e.toString().replace(/"/g, '&quot;').replace(/</g, '&lt;').slice(e.toString().indexOf('#|#:')+6, -1) +
+                '</textarea>)'
+              );
+              debug('<br/>');
+              ++fail;
+            }
+          }
         }
 
         debug("<h1>These tests should optionally fail</h1>");
