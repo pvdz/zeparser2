@@ -155,6 +155,7 @@
      * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
      * @property {boolean} [options.checkAccessorArgs=false] Formally, getters have no arg and setters exactly one. Browsers are more lax in this though.
      * @property {boolean} [options.requireDoWhileSemi=false] Formally the do-while should be terminated by a semi-colon (or asi) but browsers dont enforce this.
+     * @property {boolean} [options.neverThrow=false] Dont throw on syntax errors. Will mark the current token an error token and continue parsing. Not yet battle hardened, use at own risk. TOFIX
      */
     options: null,
 

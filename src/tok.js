@@ -149,12 +149,14 @@
       saveToken: false,
       createBlackStream: false,
       regexNoClassEscape: false,
+      neverThrow: false,
       onToken: null
     };
 
-    if (opt.saveTokens) options.saveTokens = opt.saveTokens;
-    if (opt.createBlackStream) options.createBlackStream = opt.createBlackStream;
-    if (opt.regexNoClassEscape) options.regexNoClassEscape = opt.regexNoClassEscape;
+    if (opt.saveTokens) options.saveTokens = true;
+    if (opt.createBlackStream) options.createBlackStream = true;
+    if (opt.regexNoClassEscape) options.regexNoClassEscape = true;
+    if (opt.neverThrow) options.neverThrow = true; // warning: not yet battle hardened yet
     if (opt.onToken) options.onToken = opt.onToken;
 
     this.input = (input||'');
@@ -238,6 +240,7 @@
      * @property {boolean} [options.createBlackStream=false] Requires saveTokens, put black tokens in .black
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      * @property {Function} [options.onToken=null] Call for every token
+     * @property {boolean} [options.neverThrow=false] Never throw on syntax errors (use at own risk)
      */
     options: null,
 
@@ -1050,6 +1053,11 @@
     },
 
     throwSyntaxError: function(message){
+      if (this.options.neverThrow) {
+        if (this.options.onToken) this.options.onToken.call(null, ERROR);
+        if (this.options.saveTokens) this.tokens.push({type:ERROR}); // TOFIX improve
+        return; // TOFIX: do we consume? either we do and we risk consuming tokens for no reason or we dont and we risk infinite loops.
+      }
       var pos = (this.lastStop === this.pos) ? this.lastOffset : this.pos;
       var inp = this.input;
       throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
