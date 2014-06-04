@@ -4,7 +4,6 @@
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
 // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
-// TOFIX: confirm all instance properties are set in the constructor
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
@@ -472,6 +471,7 @@
         }
         tok.next(EXPR); // label (already validated)
       }
+      // continue without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
 
       this.parseSemi();
 
@@ -486,7 +486,8 @@
       var tok = this.tok;
       var type = tok.next(PUNC); // token after break cannot be a regex, either way.
 
-      if (type !== IDENTIFIER || tok.lastNewline) { // no label after break?
+      if (type !== IDENTIFIER || tok.lastNewline) {
+        // break without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
         if (!inLoop && !inSwitch) {
           // break without label
           throw 'Break without value only in loops or switches.'+tok.syntaxError();
@@ -750,10 +751,10 @@
       this.parseNonAssignments();
 
       if (tok.firstTokenChar === ORD_COLON) {
-        if (tok.tokenCountAll !== count) throw 'Unexpected colon encountered.'+this.tok.syntaxError();
-        if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+this.tok.syntaxError();
+        if (tok.tokenCountAll !== count) throw 'Unexpected colon encountered.'+tok.syntaxError();
+        if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+tok.syntaxError();
         var labelSpaced = labelName + ' ';
-        if (labelSet.indexOf(' ' + labelSpaced) >= 0) throw 'Label ['+identifier+'] is already defined.'+this.tok.syntaxError();
+        if (labelSet.indexOf(' ' + labelSpaced) >= 0) throw 'Label ['+identifier+'] is already defined.'+tok.syntaxError();
         tok.next(EXPR);
 
         if (inLoop) inLoop += labelSpaced; // these are the only valid jump targets for `continue`
@@ -797,14 +798,15 @@
       return groupAssignable;
     },
     parseExpressionOptional: function(){
-      var count = this.tok.tokenCountAll;
+      var tok = this.tok;
+      var count = tok.tokenCountAll;
       var assignable = this.parsePrimary(OPTIONAL);
-      var beforeAssignments = this.tok.tokenCountAll;
+      var beforeAssignments = tok.tokenCountAll;
       if (count !== beforeAssignments) {
         this.parseAssignments(assignable);
-        var beforeNonAssignments = this.tok.tokenCountAll;
+        var beforeNonAssignments = tok.tokenCountAll;
         this.parseNonAssignments();
-        var endCount = this.tok.tokenCountAll;
+        var endCount = tok.tokenCountAll;
 
         // if there was a non-assign binary op, the whole thing is nonassign
         // if there were only assign ops, the whole thing is assignable unless grouped
@@ -823,8 +825,9 @@
     parseAssignments: function(assignable){
       // assignment ops are allowed until the first non-assignment binary op
       var tok = this.tok;
+      var strictAssign = this.options.strictAssignmentCheck;
       while (this.isAssignmentOperator()) {
-        if (!assignable && this.options.strictAssignmentCheck) throw 'LHS of this assignment is invalid assignee.'+tok.syntaxError();
+        if (!assignable && strictAssign) throw 'LHS of this assignment is invalid assignee.'+tok.syntaxError();
         // any assignment means not a for-in per definition
         tok.next(EXPR);
         assignable = this.parsePrimary(REQUIRED);
@@ -1076,7 +1079,7 @@
         } else {
 
           if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
-            if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.' + this.tok.syntaxError();
+            if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.' + tok.syntaxError();
             tok.next(PUNC);
             assignable = false; // ++
           }
