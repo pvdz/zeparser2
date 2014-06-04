@@ -755,7 +755,6 @@ var good = [
 
   ["new [function(){}][0]()", [14, 15], "never do this"],
   ["new {a:function(){}}.a()", [15, 16], "never do this either"],
-  ["new (function(){}).foo = doh", [15, 16], "why would you"],
 
   ["for (;;!x++);", 10, "weird construct"],
 
@@ -787,7 +786,7 @@ var good = [
   ["((a=b).c)=d;", 12, "group assignment is non-assignable, but trailing prop fixes that"],
   ["a=((a=b).c)=d;", 14, "group assignment is non-assignable, but trailing prop fixes that 2"],
   ["(new A().b)=d;", 12, "grouped new is still assignable"],
-  ["(new (function(){}).foo)=d;", 16, "grouped new over anon function is still assignable"],
+  ["((new function(){}).foo)=5;", 16, "grouped new function"],
 
   ['var\u1680x;', 4, "exotic whitespace u1680"],
   ['var\u180ex;', 4, "exotic whitespace u180e"],
@@ -1486,8 +1485,11 @@ var optional = [ // for expected: true = pass, false = throw
       ["--(x)++", "--x is not a valid assignee for postfix ++ with valid assignee inside parens"],
       ["++(x)--", "++x is not a valid assignee for postfix -- with valid assignee inside parens"],
 
-      ["new (function(){}).b = 5;", "syntactical good"],
-      ["new function(){}.b = 5", "good either way"],
+      ["new (function(){}).b = 5;", "illegal new function prop assignment"],
+      ["new function(){}.b = 5", "illegal new function prop assignment"],
+      ["(new function(){}.foo) = 5", "illegal new function prop assignment"],
+      ["new (function(){}).foo = 5", "illegal new function prop assignment"],
+      ["(new (function(){}).foo) = 5", "illegal new function prop assignment"],
 
       ["(++x)=b", "assigning to group with non-assignable expression 1"],
       ["(--x)=b", "assigning to group with non-assignable expression 2"],
