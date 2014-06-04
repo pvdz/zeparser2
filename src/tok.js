@@ -375,14 +375,12 @@
         ++this.tokenCountAll;
       } while (type === WHITE);
 
-
-      if (token) {
+      if (saveTokens) {
         token.black = this.tokenCountBlack++;
         if (options.createBlackStream) {
           this.black.push(token);
         }
       }
-
 
       this.lastType = type;
       return type;
