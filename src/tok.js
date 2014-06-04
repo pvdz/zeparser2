@@ -177,6 +177,7 @@
 
     if (options.saveTokens) {
       // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
+      // TOFIX: how does this look after the build?
       this['tokens'] = this.tokens = [];
       if (options.createBlackStream) this['black'] = this.black = [];
     }
@@ -253,12 +254,15 @@
     /** @property {boolean} lastNewline Was the current token preceeded by a newline? For determining ASI. */
     lastNewline: false,
 
-    // .charCodeAt(pos+n) cache
+    // .charCodeAt(this.lastOffset) cache
     firstTokenChar: 0,
 
     /** @property {number} tokenCountAll Add one for any token, including EOF (Par relies on this) */
     tokenCountAll: 0,
+    /** @property {number} tokenCountBlack Number of non-whitespace tokens */
     tokenCountBlack: 0,
+
+    // TOFIX: rename tokens/black to whiteTokens/blackTokens
     /** @property {Object[]} tokens List of (all) tokens, if saving them is enabled (this.options.saveTokens) */
     tokens: null,
     /** @property {Object[]} black List of only black tokens, if saving them is enabled (this.options.saveTokens) and createBlackStream is too */
@@ -958,7 +962,7 @@
       var pos = this.pos + 1;
 
       if (pos - start === 0) { // #zp-build drop line
-        throw 'Internal error; identifier scanner should already have validated first char.'+this.tok.syntaxError(); // #zp-build drop line
+        throw 'Internal error; identifier scanner should already have validated first char.'+this.syntaxError(); // #zp-build drop line
       } // #zp-build drop line
 
       // note: statements in this loop are the second most executed statements
