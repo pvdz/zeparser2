@@ -387,7 +387,7 @@
       tok.mustBeString('while', NEXTTOKENCANBEDIV);
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
       this.parseExpressions();
-      tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); //no regex following because it's either semi or newline without asi if a forward slash follows it
+      tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
       // TOFIX: support browsers that allow semi to be omitted w/o asi?
       this.parseSemi();
 
@@ -1211,17 +1211,13 @@
       var c = tok.firstTokenChar;
       if (c === ORD_L_G && tok.nextPuncIfString('get')) {
         if (tok.lastType === IDENTIFIER) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.next(PUNC);
-
           this.parseFunctionRemainder(this.options.checkAccessorArgs ? NOARGS : ANYARGS, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
       } else if (c === ORD_L_S && tok.nextPuncIfString('set')) {
         if (tok.lastType === IDENTIFIER) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.next(PUNC);
-
           this.parseFunctionRemainder(this.options.checkAccessorArgs ? ONEARG : ANYARGS, FORFUNCTIONDECL);
         }
         else this.parseDataPart();

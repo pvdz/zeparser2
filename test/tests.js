@@ -817,6 +817,13 @@ var good = [
   ["foo:for(;;)break foo\n/bar/g", [12, 14], [false, false, false, false, false, false, false, false, false, false, false, true], "break-regex asi test 2 (label cannot be part of expr)"],
   ["foo:for(;;)continue foo\n/bar/", [12, 14], [false, false, false, false, false, false, false, false, false, false, false, true], "continue-regex asi test 1 (label cannot be part of expr)"],
   ["foo:for(;;)continue foo\n/bar/g", [12, 14], [false, false, false, false, false, false, false, false, false, false, false, true], "continue-regex asi test 2 (label cannot be part of expr)"],
+  ["do{}while(x)\n/foo/;", [10, 11], [false, false, false, false, false, false, false, false, true], "asi due to regex"],
+  ["do{}while(x)\n/foo/g;", [10, 11], [false, false, false, false, false, false, false, false, true], "asi due to regex"],
+
+  ["({get if(){}})", [11, 12], "getter name must be valid"],
+  ["({set while(x){}})", [12, 13], "setter name must be valid"],
+  ["({get false(){}})", [11, 12], "getter name must be valid"],
+  ["({set true(x){}})", [12, 13], "setter name must be valid"],
 ];
 
 // these are mainly for the parser, of course...
@@ -988,7 +995,6 @@ var bad = [
   ["throw foo\n/bar/", "throw-regex asi tests, invalid because `foo/bar/` is invalid expr"],
   ["f=function(){}\n/bar/", "function-regex asi tests, invalid because `func/bar/` is invalid expr"],
 
-  ['do{}while(x)\n/foo/;', "no asi due to regex"],
   ['do{}while(x)/foo/;', "do while expects a semi (wont parse /foo/ as regex, regardless)"],
   ['try{}catch(/foo/){}', "catch argument cannot be a regex, regardless"],
   ['try /foo/; catch(e){}', "try body must always be a block"],
@@ -1243,8 +1249,6 @@ var bad = [
   ["function foo(if){}", "function param name 1 must be valid"],
   ["function foo(a, break){}", "function param name 2 must be valid"],
   ["function foo(a, b, throw){}", "function param name 3 must be valid"],
-  ["({get if(){}})", "getter name must be valid"],
-  ["({set while(x){}})", "setter name must be valid"],
   ["({set a(if){}})", "setter param name must be valid"],
 
   ["x %== y", "making sure weird punctuators are not valid: %=="],
