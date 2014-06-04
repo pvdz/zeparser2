@@ -530,7 +530,7 @@ var good = [
   ["/foo/\\u0069", [1, 2], [true], "regular expression with unicode escape as flag. yes, i went there"],
 
   ["for (var x=y=z in a);", 16, "assignment as initializer"],
-  ["do{}while(x)\nok;", [10, 11], "ASI after do-while because the semi is required"],
+  ["do{}while(x)\nok;", 10, "ASI after do-while because the semi is required"],
 
   ["a:b:c:nested;",8,"nested labels"],
 
@@ -817,8 +817,8 @@ var good = [
   ["foo:for(;;)break foo\n/bar/g", [12, 14], [false, false, false, false, false, false, false, false, false, false, false, true], "break-regex asi test 2 (label cannot be part of expr)"],
   ["foo:for(;;)continue foo\n/bar/", [12, 14], [false, false, false, false, false, false, false, false, false, false, false, true], "continue-regex asi test 1 (label cannot be part of expr)"],
   ["foo:for(;;)continue foo\n/bar/g", [12, 14], [false, false, false, false, false, false, false, false, false, false, false, true], "continue-regex asi test 2 (label cannot be part of expr)"],
-  ["do{}while(x)\n/foo/;", [10, 11], [false, false, false, false, false, false, false, false, true], "asi due to regex"],
-  ["do{}while(x)\n/foo/g;", [10, 11], [false, false, false, false, false, false, false, false, true], "asi due to regex"],
+  ["do{}while(x)\n/foo/;", 10, [false, false, false, false, false, false, false, false, true], "asi due to regex"],
+  ["do{}while(x)\n/foo/g;", 10, [false, false, false, false, false, false, false, false, true], "asi due to regex"],
 
   ["({get if(){}})", [11, 12], "getter name must be valid"],
   ["({set while(x){}})", [12, 13], "setter name must be valid"],
@@ -853,7 +853,6 @@ var bad = [
 
   // TOFIX: out-of-scope continue/break targets that partially match valid labels
 
-  ['do {} while() fail;', "semi after while is required"],
   ["foo--.toString();", "postfix ops effectively end the primary expression"],
   ["foo++.toString();", "postfix ops effectively end the primary expression"],
   ["foo--['toString'];", "postfix ops effectively end the primary expression"],
@@ -995,7 +994,6 @@ var bad = [
   ["throw foo\n/bar/", "throw-regex asi tests, invalid because `foo/bar/` is invalid expr"],
   ["f=function(){}\n/bar/", "function-regex asi tests, invalid because `func/bar/` is invalid expr"],
 
-  ['do{}while(x)/foo/;', "do while expects a semi (wont parse /foo/ as regex, regardless)"],
   ['try{}catch(/foo/){}', "catch argument cannot be a regex, regardless"],
   ['try /foo/; catch(e){}', "try body must always be a block"],
   ['try{}catch(e)/foo/', "catch body must always be a block"],
@@ -1330,6 +1328,8 @@ var bad = [
   ["x--: bar;", "current parser approach for labels might allow this but shouldnt 25"],
   ["x--: bar;", "current parser approach for labels might allow this but shouldnt 26"],
 
+  ["do x while(x)y", "do-while must have complete statement after do, no asi is applied"],
+
   // TOFIX: this is currently passing because the unicode is part of the regex
   //["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 ];
@@ -1340,6 +1340,7 @@ var optional = [ // for expected: true = pass, false = throw
     optionName: 'functionMode',
     expectedWhenOff: false,
     expectedWhenOn: true,
+    browserShouldCompile: true, // since we use Function, using return like this is fine
     cases: [
       ["return;", "return in global scope is illegal"],
       ["return 15;", "return in global scope is illegal 2"],
@@ -1349,6 +1350,7 @@ var optional = [ // for expected: true = pass, false = throw
     optionName: 'regexNoClassEscape',
     expectedWhenOn: false,
     expectedWhenOff: true,
+    browserShouldCompile: false, // recent browsers wont accept this because the (single!) backslash escapes the ]
     cases: [
       ["/f[o\\]o/", "class escapes are enabled by default (so this should fail by default)"],
     ]
@@ -1357,6 +1359,7 @@ var optional = [ // for expected: true = pass, false = throw
     optionName: 'strictForInCheck',
     expectedWhenOff: true,
     expectedWhenOn: false,
+    browserShouldCompile: false,
     cases: [
       ["for (x = 5 in y) ;", "initialization (dead code) in for-in is only allowed with var keyword or with parens"],
       ["for (a?b:(c in y) in d)z;", "even if you wrap the `in`, still invalid"],
@@ -1388,12 +1391,10 @@ var optional = [ // for expected: true = pass, false = throw
       ["for ((++a) in c);", "lhs parens must wrap single expression 2"],
       ["for ((--a) in c);", "lhs parens must wrap single expression 3"],
       ["for ((a--) in c);", "lhs parens must wrap single expression 4"],
-      ["for ((a()) in c);", "lhs parens must wrap single expression 5"],
 
       ["for (new a in c);", "new without prop as for-in lhs"],
       ["for (new a() in c);", "new without prop as for-in lhs"],
       // note: new is valid only in the form that trails a property
-      ["for (new a().b() in c);", "new without prop as for-in lhs"],
       ["for (delete a in c);", "delete without prop as for-in lhs"],
       ["for (delete a.b in c);", "delete with prop as for-in lhs"],
       ["for (delete a[b] in c);", "delete with prop as for-in lhs"],
@@ -1434,11 +1435,19 @@ var optional = [ // for expected: true = pass, false = throw
       ["for (typeof a[b] in c);", "typeof with prop as for-in lhs"],
       ["for (typeof a().b in c);", "typeof with prop of call as for-in lhs"],
       ["for (typeof a()[b] in c);", "typeof with dprop of call as for-in lhs"],
+      ["for (new a() in c);", "lhs parens must wrap single expression 5"],
+
+      // note: these do compile but must crash at runtime (unless IE?)
+      ["for (a() in c);", "lhs parens must wrap single expression 5"],
+      ["for (a().b() in c);", "lhs parens must wrap single expression 5"],
+      ["for ((a()) in c);", "lhs parens must wrap single expression 5"],
+      ["for (new a().b() in c);", "new without prop as for-in lhs"],
     ]
   }, {
     optionName: 'checkAccessorArgs',
     expectedWhenOff: true,
     expectedWhenOn: false,
+    browserShouldCompile: true,
     cases: [
       ['x={get foo(x){}};', "getters have no params"],
       ['x={get foo(x,y){}};', "getters have no params"],
@@ -1449,6 +1458,7 @@ var optional = [ // for expected: true = pass, false = throw
     optionName: 'strictAssignmentCheck',
     expectedWhenOff: true,
     expectedWhenOn: false,
+    browserShouldCompile: false,
     cases: [
       ['5 = 10;', 'Assignment to number, which doesnt return a reference'],
       ['null = 10;', 'Assignment to null, which doesnt return a reference'],
@@ -1513,6 +1523,7 @@ var optional = [ // for expected: true = pass, false = throw
       ["(--x)=b", "assigning to group with non-assignable expression 2"],
       ["(x++)=b", "assigning to group with non-assignable expression 3"],
       ["(x--)=b", "assigning to group with non-assignable expression 4"],
+
       ["(x())=b", "assigning to group with non-assignable expression 5"],
 
       ["(a=b.c)=d;", "grouped assignments are always non-assignable"],
@@ -1522,6 +1533,18 @@ var optional = [ // for expected: true = pass, false = throw
       ["new Date++;", "`new` operator with postfix increment"],
 
       ["new (A).foo = bar", "invalid assignment because the parens aren't a call"],
+    ]
+  }, {
+    optionName: 'requireDoWhileSemi',
+    expectedWhenOff: true,
+    expectedWhenOn: false,
+    browserShouldCompile: true,
+    cases: [
+      ["do x; while(x)y", "dowhile without semi or asi 1"],
+      ["do x\nwhile(x)y", "dowhile without semi or asi 2"],
+      ["do {x} while(x) y", "dowhile without semi or asi 3"],
+      ["do {x} while(x) /x/", "dowhile-regex without semi or asi 4"],
+      ['do{}while(x)/foo/;', "do while expects a semi 5 (parses /foo/ as regex, regardless)"],
     ]
   }
 ];

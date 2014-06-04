@@ -124,6 +124,7 @@
     if (!options.strictForInCheck) options.strictForInCheck = false;
     if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
     if (!options.checkAccessorArgs) options.checkAccessorArgs = false;
+    if (!options.requireDoWhileSemi) options.requireDoWhileSemi = false;
 
     // `this['tok'] prevents build script mangling :)
     this['tok'] = new Tok(input, this.options);
@@ -154,6 +155,7 @@
      * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
      * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
      * @property {boolean} [options.checkAccessorArgs=false] Formally, getters have no arg and setters exactly one. Browsers are more lax in this though.
+     * @property {boolean} [options.requireDoWhileSemi=false] Formally the do-while should be terminated by a semi-colon (or asi) but browsers dont enforce this.
      */
     options: null,
 
@@ -388,8 +390,11 @@
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
       this.parseExpressions();
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
-      // TOFIX: support browsers that allow semi to be omitted w/o asi?
-      this.parseSemi();
+
+      // spec requires the semi but browsers made it optional
+      if (this.options.requireDoWhileSemi || tok.firstTokenChar === ORD_SEMI) {
+        this.parseSemi();
+      }
 
       return PARSEDSOMETHING;
     },
