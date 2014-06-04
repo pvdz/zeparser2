@@ -207,6 +207,12 @@
               desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
             }
 
+            try { Function(input);
+              if (!testGroup.browserShouldCompile) console.error('Bad test! ['+i+']['+input+']; did compile in browser');
+            } catch (e) {
+              if (testGroup.browserShouldCompile) console.error('Bad test! ['+i+']['+input+']; cant compile in browser');
+            }
+
             var passedWhenFalse = false;
             var passedWhenTrue = false;
             var trueFailMessage = '';
