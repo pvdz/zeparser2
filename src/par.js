@@ -709,7 +709,7 @@
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
       var tok = this.tok;
-      if (tok.firstTokenChar === ORD_CLOSE_CURLY || (tok.lastNewline && tok.lastType !== REGEX) || tok.lastType === EOF) {
+      if (tok.firstTokenChar === ORD_CLOSE_CURLY || (tok.lastNewline) || tok.lastType === EOF) {
         return this.addAsi();
       }
       return PARSEDNOTHING;

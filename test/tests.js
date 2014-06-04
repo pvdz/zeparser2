@@ -778,10 +778,7 @@ var good = [
   ["a:for(;;)for(;;)continue a;", 16, "second loop discarded loop labels"],
   ["a:for(;;)for(;;)break a;", 16, "should be fine for break either way"],
 
-  // TOFIX: verify that these chars indeed valid unicodes
   ['\xff', [1, 2], "del char is valid unicode identifier (i think...)"],
-  // TOFIX: find variation of this that is actually illegal
-  ['\u0f7a', [1, 2], "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 
   ["((a=b).c)=d;", 12, "group assignment is non-assignable, but trailing prop fixes that"],
   ["a=((a=b).c)=d;", 14, "group assignment is non-assignable, but trailing prop fixes that 2"],
@@ -804,6 +801,11 @@ var good = [
   ['var\u202fx;', 4, "exotic whitespace u202f"],
   ['var\u205fx;', 4, "exotic whitespace u205f"],
   ['var\u3000x;', 4, "exotic whitespace u3000"],
+
+  ["var x\n/foo/", [5, 7], "regex after var asi"],
+  ["var x\n/foo/g", [5, 7], "regex after var asi"],
+  ["var x=5,x\n/5/", [9, 11], "var-regex tests (no asi)"],
+  ["var x=5,x\n/5/g", [9, 11], "var-regex tests (no asi)"],
 ];
 
 // these are mainly for the parser, of course...
@@ -936,8 +938,6 @@ var bad = [
   ["for ((c in y))z;", "parens are invalid here"],
   ['({/foo/:5});', "regex as objlit key"],
   ['({x:y, /foo/:5});', "regex as (second) objlit key"],
-  ["var x\n/foo/", "regex after var asi"],
-  ["var x\n/foo/g", "regex after var asi"],
   ["var x=5\n/foo/", "regex without flag after var initializer asi doesnt make correct division either"],
 
   // ascii chars that are invalid plain source
@@ -980,7 +980,6 @@ var bad = [
   ['/foo\\\nbar/', "escaped newline in regex"],
   ['/foo[\\\n]bar/', "escaped newline in regex char class"],
   ['(x)\n/foo/;', "no asi when forward slash starts on next line"],
-  ["var x\n/a/", "No semi if next statement starts with regex literal (by @garethheyes)"],
 
   ['do{}while(x)\n/foo/;', "no asi due to regex"],
   ['do{}while(x)/foo/;', "do while expects a semi (wont parse /foo/ as regex, regardless)"],
@@ -1222,8 +1221,6 @@ var bad = [
 
   // series of tests after discussion (https://twitter.com/kuvos/status/260487571623256064):
   ["var x\n/5", "var-regex tests (this is always invalid)"],
-  ["var x\n/5/", "var-regex tests (this is always invalid, no asi)"],
-  ["var x\n/5/g", "var-regex tests (this is always invalid, no asi)"],
   ["var x=\n/5", "var-regex tests (this is always invalid)"],
   ["var x=5\n/5/", "var-regex tests (no asi)"],
 
@@ -1231,11 +1228,8 @@ var bad = [
   ["var x=5,\n/5/", "var-regex tests"],
   ["var x=5,\n/5/g", "var-regex tests"],
   ["var x=5,x\n/5", "var-regex tests (var name requires = first)"],
-  ["var x=5,x\n/5/", "var-regex tests (no asi)"],
-  ["var x=5,x\n/5/g", "var-regex tests (no asi)"],
   ["var x=5,x=5\n/5/", "var-regex tests"],
   ["x\n/5/", "shorter regex test"],
-
 
   ["function(){}", "function declarations must have a name"],
   ["function if(){}", "function declarations name must be valid"],
@@ -1326,6 +1320,8 @@ var bad = [
   ["--x: bar;", "current parser approach for labels might allow this but shouldnt 24"],
   ["x--: bar;", "current parser approach for labels might allow this but shouldnt 25"],
   ["x--: bar;", "current parser approach for labels might allow this but shouldnt 26"],
+
+  ["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 ];
 
 // test options
