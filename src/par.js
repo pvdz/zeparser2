@@ -3,7 +3,6 @@
 // this file, see https://github.com/qfox/zeparser2
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
-// TOFIX: paramcount should not pass on signed and unsigned
 // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
 // TOFIX: confirm all instance properties are set in the constructor
 
@@ -57,6 +56,9 @@
   var NOTLABEL = false;
   var EXPR = true;
   var PUNC = false;
+  var NOARGS = 0;
+  var ONEARG = 1;
+  var ANYARGS = 2;
 
   var ORD_L_A = 0x61;
   var ORD_L_B = 0x62;
@@ -121,6 +123,7 @@
     if (!options.regexNoClassEscape) options.regexNoClassEscape = false;
     if (!options.strictForInCheck) options.strictForInCheck = false;
     if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
+    if (!options.checkAccessorArgs) options.checkAccessorArgs = false;
 
     // `this['tok'] prevents build script mangling :)
     this['tok'] = new Tok(input, this.options);
@@ -150,6 +153,7 @@
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
      * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
+     * @property {boolean} [options.checkAccessorArgs=false] Formally, getters have no arg and setters exactly one. Browsers are more lax in this though.
      */
     options: null,
 
@@ -647,7 +651,7 @@
       } else if (forFunctionDeclaration) {
         throw 'Function declaration requires a name.'+tok.syntaxError();
       }
-      this.parseFunctionRemainder(-1, forFunctionDeclaration);
+      this.parseFunctionRemainder(ANYARGS, forFunctionDeclaration);
 
       return PARSEDSOMETHING;
     },
@@ -668,12 +672,12 @@
       // [<idntf> [, <idntf>]]
       var tok = this.tok;
       if (tok.lastType === IDENTIFIER) {
-        if (paramCount === 0) throw 'Getters have no parameters.'+tok.syntaxError();
+        if (paramCount === NOARGS) throw 'Getters have no parameters.'+tok.syntaxError();
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
         tok.next(EXPR);
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (paramCount === 1) throw 'Setters have exactly one param.'+tok.syntaxError();
+          if (paramCount === ONEARG) throw 'Setters have exactly one param.'+tok.syntaxError();
 
           // param name
           if (tok.lastType === IDENTIFIER) {
@@ -1210,7 +1214,7 @@
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.next(PUNC);
 
-          this.parseFunctionRemainder(0, FORFUNCTIONDECL);
+          this.parseFunctionRemainder(this.options.checkAccessorArgs ? NOARGS : ANYARGS, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
       } else if (c === ORD_L_S && tok.nextPuncIfString('set')) {
@@ -1218,7 +1222,7 @@
           if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved.'+tok.syntaxError();
           tok.next(PUNC);
 
-          this.parseFunctionRemainder(1, FORFUNCTIONDECL);
+          this.parseFunctionRemainder(this.options.checkAccessorArgs ? ONEARG : ANYARGS, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
       } else {
