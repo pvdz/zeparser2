@@ -783,6 +783,28 @@ var good = [
   ['\xff', [1, 2], "del char is valid unicode identifier (i think...)"],
   // TOFIX: find variation of this that is actually illegal
   ['\u0f7a', [1, 2], "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
+
+  ["((a=b).c)=d;", 12, "group assignment is non-assignable, but trailing prop fixes that"],
+  ["a=((a=b).c)=d;", 14, "group assignment is non-assignable, but trailing prop fixes that 2"],
+  ["(new A().b)=d;", 12, "grouped new is still assignable"],
+  ["(new (function(){}).foo)=d;", 16, "grouped new over anon function is still assignable"],
+
+  ['var\u1680x;', 4, "exotic whitespace u1680"],
+  ['var\u180ex;', 4, "exotic whitespace u180e"],
+  ['var\u2000x;', 4, "exotic whitespace u2000"],
+  ['var\u2001x;', 4, "exotic whitespace u2001"],
+  ['var\u2002x;', 4, "exotic whitespace u2002"],
+  ['var\u2003x;', 4, "exotic whitespace u2003"],
+  ['var\u2004x;', 4, "exotic whitespace u2004"],
+  ['var\u2005x;', 4, "exotic whitespace u2005"],
+  ['var\u2006x;', 4, "exotic whitespace u2006"],
+  ['var\u2007x;', 4, "exotic whitespace u2007"],
+  ['var\u2008x;', 4, "exotic whitespace u2008"],
+  ['var\u2009x;', 4, "exotic whitespace u2009"],
+  ['var\u200ax;', 4, "exotic whitespace u200a"],
+  ['var\u202fx;', 4, "exotic whitespace u202f"],
+  ['var\u205fx;', 4, "exotic whitespace u205f"],
+  ['var\u3000x;', 4, "exotic whitespace u3000"],
 ];
 
 // these are mainly for the parser, of course...
@@ -1472,6 +1494,9 @@ var optional = [ // for expected: true = pass, false = throw
       ["(x++)=b", "assigning to group with non-assignable expression 3"],
       ["(x--)=b", "assigning to group with non-assignable expression 4"],
       ["(x())=b", "assigning to group with non-assignable expression 5"],
+
+      ["(a=b.c)=d;", "grouped assignments are always non-assignable"],
+      ["a=(a=b.c)=d;", "grouped assignments are always non-assignable 2"],
 
       ["({a:b}[ohi].iets()++);", "Object Literal With 1 Member, Square Bracket Member Accessor, Dot Member Accessor, Function Call, Postfix Increment"],
       ["new Date++;", "`new` operator with postfix increment"],
