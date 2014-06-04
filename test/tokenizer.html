@@ -104,7 +104,7 @@
           if (!passed || !hidePasses) debug('<br/>');
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
-          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0);
+          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0 && passed);
           if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
           else newlineState = NEWLINESTATE_N;
         }

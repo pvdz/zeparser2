@@ -97,6 +97,7 @@
             if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
             if (!hidePasses) debug('<br/>');
             ++ok;
+            test.noRepeat = true;
           } else {
             debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
             debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
