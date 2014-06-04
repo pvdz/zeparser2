@@ -826,7 +826,6 @@ var bad = [
   ['while(true)break if;', "break arg, if any, must be a valid label identifier"],
   ['while(true)continue if;', "break arg, if any, must be a valid label identifier"],
 
-  ["foo: return;", "label only must not allow out-of-context for return"],
   ["foo:break;", "label only must not allow out-of-context break"],
   ["foo:continue;", "label only must not allow out-of-context continue"],
   ["foo:continue foo;", "label only must not allow out-of-context for continue"],
@@ -1017,8 +1016,6 @@ var bad = [
   ['void: ;', "void as label"],
   ['if: ;', 'if as label'],
   ["foo;\nbar:", "program ending with a label without a statement"],
-
-  ['return foo;', "return outside of function"],
 
   ['var break = 5;', 'keyword as varname'],
   ['var case = 5;', 'keyword as varname'],
@@ -1346,6 +1343,7 @@ var optional = [ // for expected: true = pass, false = throw
     cases: [
       ["return;", "return in global scope is illegal"],
       ["return 15;", "return in global scope is illegal 2"],
+      ["foo: return;", "label only must not allow out-of-context for return"],
     ]
   }, {
     optionName: 'regexNoClassEscape',

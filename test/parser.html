@@ -268,8 +268,6 @@
             var input = test[0];
             var desc = test[2];
 
-            var failed = false;
-
             // test all valid newlines
             if (currentNewline) {
               input = input.replace(/\n/g, currentNewline);
@@ -324,15 +322,12 @@
           // also check if all bad tests still fail with this flag set, because they should
           for (var obi = 0; obi < bad.length; ++obi) {
             var currentNewline = NEWLINEFORSTATE[newlineState];
-            // TOFIX: good -> bad :'(
-            var test = good[obi];
+            var test = bad[obi];
             if (!test) console.warn("Probably missing a comma...");
             if (test.noRepeat) continue;
 
             var input = test[0];
             var desc = test[2];
-
-            var failed = false;
 
             // test all valid newlines
             if (currentNewline) {
@@ -363,7 +358,7 @@
               passedWhenFalse = false;
             }
 
-            var badCasePassed = passedWhenTrue && passedWhenFalse;
+            var badCasePassed = !passedWhenTrue && !passedWhenFalse;
             if (!badCasePassed) {
               debug('<b class="red">Always bad test ' + ogi + ' passed under either flag value:</span>', desc);
               debug('flag=true:  expect:fail, was:'+(passedWhenTrue?'pass':'fail'));
