@@ -802,10 +802,21 @@ var good = [
   ['var\u205fx;', 4, "exotic whitespace u205f"],
   ['var\u3000x;', 4, "exotic whitespace u3000"],
 
-  ["var x\n/foo/", [5, 7], "regex after var asi"],
-  ["var x\n/foo/g", [5, 7], "regex after var asi"],
-  ["var x=5,x\n/5/", [9, 11], "var-regex tests (no asi)"],
-  ["var x=5,x\n/5/g", [9, 11], "var-regex tests (no asi)"],
+  ["var x\n/foo/", [5, 7], "var-regex tests 1"],
+  ["var x\n/foo/g", [5, 7], "var-regex tests 2"],
+  ["var x=y\n/foo/g", [10, 11], "var-regex tests 3"],
+  ["var x=5,x\n/5/", [9, 11], "var-regex tests 4"],
+  ["var x=5,x\n/5/g", [9, 11], "var-regex asi tests 5"],
+  ["var x=5,x=y\n/5/g", [14, 15], "var-regex asi tests 6"],
+  ["throw foo\n/bar/g", [8, 9], "throw-regex asi tests"],
+  ["function f(){return foo\n/bar/g}", [15, 16], "return-regex asi testing"],
+  ["function f(){}\n/bar/", [9, 10], "function-regex asi tests 1"],
+  ["function f(){}\n/bar/g", [9, 10], "function-regex asi tests 2"],
+  ["f=function(){}\n/bar/g", [12, 13], "function-regex asi tests 3"],
+  ["foo:for(;;)break foo\n/bar/", [12, 14], "break-regex asi test 1 (label cannot be part of expr)"],
+  ["foo:for(;;)break foo\n/bar/g", [12, 14], "break-regex asi test 2 (label cannot be part of expr)"],
+  ["foo:for(;;)continue foo\n/bar/", [12, 14], "continue-regex asi test 1 (label cannot be part of expr)"],
+  ["foo:for(;;)continue foo\n/bar/g", [12, 14], "continue-regex asi test 2 (label cannot be part of expr)"],
 ];
 
 // these are mainly for the parser, of course...
@@ -938,7 +949,6 @@ var bad = [
   ["for ((c in y))z;", "parens are invalid here"],
   ['({/foo/:5});', "regex as objlit key"],
   ['({x:y, /foo/:5});', "regex as (second) objlit key"],
-  ["var x=5\n/foo/", "regex without flag after var initializer asi doesnt make correct division either"],
 
   // ascii chars that are invalid plain source
   ['`', "backticks do not occur in js syntax"],
@@ -980,6 +990,9 @@ var bad = [
   ['/foo\\\nbar/', "escaped newline in regex"],
   ['/foo[\\\n]bar/', "escaped newline in regex char class"],
   ['(x)\n/foo/;', "no asi when forward slash starts on next line"],
+  ["function f(){return foo\n/bar/}", "return-regex asi tests, invalid because `foo/bar/` is invalid expr"],
+  ["throw foo\n/bar/", "throw-regex asi tests, invalid because `foo/bar/` is invalid expr"],
+  ["f=function(){}\n/bar/", "function-regex asi tests, invalid because `func/bar/` is invalid expr"],
 
   ['do{}while(x)\n/foo/;', "no asi due to regex"],
   ['do{}while(x)/foo/;', "do while expects a semi (wont parse /foo/ as regex, regardless)"],
