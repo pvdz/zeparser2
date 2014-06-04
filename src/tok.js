@@ -329,7 +329,7 @@
      */
     mustBeNum: function(num, nextIsExpr){
       if (this.firstTokenChar === num) return this.next(nextIsExpr);
-      throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this.firstTokenChar) + '.' + this.syntaxError();
+      this.throwSyntaxError('Expected char=' + String.fromCharCode(num) + ' ('+num+') got=' + String.fromCharCode(this.firstTokenChar)+' ('+this.firstTokenChar+')');
     },
     /**
      * Parser requires the current token to be any identifier.
@@ -340,7 +340,7 @@
      */
     mustBeIdentifier: function(nextIsExpr){
       if (this.lastType === IDENTIFIER) return this.next(nextIsExpr);
-      throw this.syntaxError(IDENTIFIER);
+      this.throwSyntaxError('Expecting current type to be IDENTIFIER but is '+Tok[this.lastType]+' ('+this.lastType+')');
     },
     /**
      * Parser requires the current token to be this
@@ -352,7 +352,7 @@
      */
     mustBeString: function(str, nextIsExpr){
       if (this.getLastValue() === str) return this.next(nextIsExpr);
-      throw this.syntaxError(str);
+      this.throwSyntaxError('Expecting current value to be ['+str+'] is ['+this.getLastValue()+']');
     },
 
     next: function(expressionStart){
@@ -455,7 +455,7 @@
           return ++this.pos,(WHITE);
         default:
           // cannot be unicode because it's < ORD_L_A and ORD_L_A_UC
-          throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
+          this.throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']');
       }
     },
     nextTokenDeterminator_b: function(c) {
@@ -503,7 +503,7 @@
       if (this.isExoticWhitespace(c)) return ++this.pos,(WHITE);
       if (uniRegex.test(String.fromCharCode(c))) return this.parseIdentifier();
 
-      throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this.syntaxError();
+      this.throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']');
     },
     isExoticWhitespace: function(c){
       // https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/RegExp
@@ -731,7 +731,7 @@
         if (noNewline) noNewline = !(c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1); // c === ORD_PS || c === ORD_LS
       }
 
-      throw 'Unterminated multi line comment found at '+pos;
+      this.throwSyntaxError('Unterminated multi line comment found');
     },
     parseSingleString: function(){
       return this.parseString(ORD_SQUOTE_27);
@@ -757,12 +757,12 @@
             // none of them have first AND second bit set. this filters about 95%
             // ftr: c&80 filters 84%, c&3<3 filters 75%. together they filter 95% :)
           else if ((c & 83) < 3 && (c === ORD_LF_0A || c === ORD_CR_0D || c === ORD_PS_2028 || c === ORD_LS_2029)) {
-            throw 'No newlines in strings! ' + this.syntaxError();
+            this.throwSyntaxError('No newlines in strings!');
           }
         }
       } while (c);
 
-      throw 'Unterminated string found at '+pos;
+      this.throwSyntaxError('Unterminated string found');
     },
     parseStringEscape: function(pos){
       var input = this.input;
@@ -771,7 +771,7 @@
       // unicode escapes
       if (c === ORD_L_U_75) {
         if (this.parseUnicodeEscapeBody(pos+1)) pos += 4;
-        else throw 'Invalid unicode escape.'+this.syntaxError();
+        else this.throwSyntaxError('Invalid unicode escape');
       // line continuation; skip windows newlines as if they're one char
       } else if (c === ORD_CR_0D) {
         // keep in mind, we are already skipping a char. no need to check
@@ -781,7 +781,7 @@
       // hex escapes
       } else if (c === ORD_L_X_78) {
         if (this.parseHexDigit(input.charCodeAt(pos+1)) && this.parseHexDigit(input.charCodeAt(pos+2))) pos += 2;
-        else throw 'Invalid hex escape.'+this.syntaxError();
+        else this.throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     },
@@ -814,7 +814,7 @@
       } else if (d === ORD_DOT_2E) {
         this.parseAfterDot(this.pos+2);
       } else if (d <= ORD_L_9_39 && d >= ORD_L_0_30) {
-        throw 'Invalid octal literal.'+this.syntaxError();
+        this.throwSyntaxError('Invalid octal literal');
       } else {
         this.pos = this.parseExponent(d, this.pos+1, this.input);
       }
@@ -866,7 +866,7 @@
 
         // first digit is mandatory
         if (c >= ORD_L_0_30 && c <= ORD_L_9_39) c = input.charCodeAt(++pos);
-        else throw 'Missing required digits after exponent.'+this.syntaxError();
+        else this.throwSyntaxError('Missing required digits after exponent');
 
         // rest is optional
         while (c >= ORD_L_0_30 && c <= ORD_L_9_39) c = input.charCodeAt(++pos);
@@ -898,18 +898,18 @@
         if (c === ORD_BACKSLASH_5C) { // backslash
           var d = input.charCodeAt(this.pos++);
           if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
-            throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
+            this.throwSyntaxError('Newline can not be escaped in regular expression');
           }
         }
         else if (c === ORD_OPEN_PAREN_28) this.regexBody(); // TOFIX: we dont actually validate anything here. should add more regex syntax tests
         else if (c === ORD_CLOSE_PAREN_29 || c === ORD_FWDSLASH_2F) return;
         else if (c === ORD_OPEN_SQUARE_5B) this.regexClass();
         else if (c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
-          throw 'Newline can not be escaped in regular expression ['+c+'].'+this.syntaxError();
+          this.throwSyntaxError('Newline can not be escaped in regular expression ['+c+']');
         }
       }
 
-      throw 'Unterminated regular expression at eof.'+this.syntaxError();
+      this.throwSyntaxError('Unterminated regular expression at eof');
     },
     regexClass: function(){
       var input = this.input;
@@ -930,15 +930,15 @@
           if (this.options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
             if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
-              throw 'Newline can not be escaped in regular expression.'+this.syntaxError();
+              this.throwSyntaxError('Newline can not be escaped in regular expression');
             }
           }
         } else if (!c || c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1) { // c === ORD_PS || c === ORD_LS
-          throw 'Illegal newline in regex char class.'+this.syntaxError();
+          this.throwSyntaxError('Illegal newline in regex char class');
         }
       }
 
-      throw 'Unterminated regular expression at eof.'+this.syntaxError();
+      this.throwSyntaxError('Unterminated regular expression at eof');
     },
     regexFlags: function(){
       // we cant use the actual identifier parser because that's assuming the identifier
@@ -960,7 +960,7 @@
       var pos = this.pos + 1;
 
       if (pos - start === 0) { // #zp-build drop line
-        throw 'Internal error; identifier scanner should already have validated first char.'+this.syntaxError(); // #zp-build drop line
+        this.throwSyntaxError('Internal error; identifier scanner should already have validated first char'); // #zp-build drop line
       } // #zp-build drop line
 
       // note: statements in this loop are the second most executed statements
@@ -1014,7 +1014,7 @@
           return true;
         }
         if (u >= ORD_L_0_30 && u <= ORD_L_9_39) {
-          if (atStart) throw 'Digit not allowed at start of identifier, not even escaped.'+this.syntaxError();
+          if (atStart) this.throwSyntaxError('Digit not allowed at start of identifier, not even escaped');
           return true;
         }
         if (u === ORD_LODASH_5F || u === ORD_$_24) {
@@ -1024,11 +1024,11 @@
           return true;
         }
 
-        throw 'Encountered \\u escape ('+u+') but the char is not a valid identifier part.';
+        this.throwSyntaxError('Encountered \\u escape ('+u+') but the char is not a valid identifier part');
       }
 
       this.pos = pos;
-      throw 'Unexpected backslash inside identifier.'+this.syntaxError();
+      this.throwSyntaxError('Unexpected backslash inside identifier');
     },
 
     getLastValue: function(){
@@ -1049,20 +1049,10 @@
       return this.input.charCodeAt(this.lastOffset+offset);
     },
 
-    syntaxError: function(value){
+    throwSyntaxError: function(message){
       var pos = (this.lastStop === this.pos) ? this.lastOffset : this.pos;
-
-      return (
-        ' A syntax error at pos='+pos+' '+
-        (
-          typeof value !== 'undefined' ?
-            'expected '+(typeof value === 'number' ? 'type='+Tok[value] : 'value=`'+value+'`') +
-            ' is '+(typeof value === 'number' ? Tok[this.lastType] : '`'+this.getLastValue()+'`') + ' '
-            :
-            ''
-        ) +
-        'Search for #|#: `'+this.input.substring(pos-2000, pos)+'#|#'+this.input.substring(pos, pos+2000)+'`'
-      );
+      var inp = this.input;
+      throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
     },
   };
 

@@ -170,7 +170,7 @@
       // go!
       this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
 
-      if (tok.pos !== tok.len || tok.lastType !== EOF) throw 'Did not complete parsing... '+tok.syntaxError();
+      if (tok.pos !== tok.len || tok.lastType !== EOF) tok.throwSyntaxError('Did not complete parsing..');
 
       return this;
     },
@@ -194,7 +194,7 @@
       var c = tok.firstTokenChar;
 
       if (c === ORD_CLOSE_CURLY) { // 65.6%
-        if (!optional) throw 'Expected more input...'; // {if(x)}
+        if (!optional) tok.throwSyntaxError('Expected more input..'); // {if(x)}
         return PARSEDNOTHING;
       }
 
@@ -225,7 +225,7 @@
           this.parseExpressionStatement();
           return PARSEDSOMETHING;
         }
-        throw 'Statement cannot start with binary op.'+tok.syntaxError();
+        tok.throwSyntaxError('Statement cannot start with binary op');
       }
 
       // rare
@@ -240,7 +240,7 @@
           this.parseExpressionStatement();
           return PARSEDSOMETHING;
         }
-        throw 'Statement cannot start with binary op.'+tok.syntaxError();
+        tok.throwSyntaxError('Statement cannot start with binary op');
       }
 
       // almost never
@@ -250,7 +250,7 @@
       }
 
       // TOFIX: is there any case where empty optional does not end with curly close? otherwise we can drop this check.
-      if (!optional) throw 'Expected more input...';
+      if (!optional) tok.throwSyntaxError('Expected more input..');
       // EOF? i'm not sure happens for any other reason.
       return PARSEDNOTHING;
     },
@@ -332,7 +332,7 @@
       var tok = this.tok;
       tok.next(PUNC);
       do {
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
           tok.next(EXPR);
@@ -348,7 +348,7 @@
       var vars = 0;
 
       do {
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Var name is reserved.'+tok.syntaxError();
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name ['+tok.getLastValue()+'] is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         ++vars;
 
@@ -426,8 +426,8 @@
         else validForInLhs = this.parseExpressionsNoIn();
 
         if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader();
-        else if (tok.firstTokenChar !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.lastLen !== 2) throw 'Expected `in` or `;` here...'+tok.syntaxError();
-        else if (!validForInLhs && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+tok.syntaxError();
+        else if (tok.firstTokenChar !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.lastLen !== 2) tok.throwSyntaxError('Expected `in` or `;` here..');
+        else if (!validForInLhs && this.options.strictForInCheck) tok.throwSyntaxError('Encountered illegal for-in lhs');
         else this.parseForInHeader();
       }
 
@@ -457,17 +457,17 @@
 
       var tok = this.tok;
 
-      if (!inLoop) throw 'Can only continue in a loop.'+tok.syntaxError();
+      if (!inLoop) tok.throwSyntaxError('Can only continue in a loop');
 
       var type = tok.next(PUNC); // token after continue cannot be a regex, either way.
 
       if (type === IDENTIFIER && !tok.lastNewline) {
         var label = tok.getLastValue();
         if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
-          throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
+          tok.throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']');
         }
         if (!inLoop || inLoop.indexOf(' '+label+' ') < 0) {
-          throw 'Label ['+label+'] is not a valid label for this loop.'+tok.syntaxError();
+          tok.throwSyntaxError('Label ['+label+'] is not a valid label for this loop');
         }
         tok.next(EXPR); // label (already validated)
       }
@@ -490,12 +490,12 @@
         // break without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
         if (!inLoop && !inSwitch) {
           // break without label
-          throw 'Break without value only in loops or switches.'+tok.syntaxError();
+          tok.throwSyntaxError('Break without value only in loops or switches');
         }
       } else {
         var label = tok.getLastValue();
         if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
-          throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+tok.syntaxError();
+          tok.throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']');
         }
         tok.next(EXPR); // label (already validated)
       }
@@ -511,7 +511,7 @@
 
       var tok = this.tok;
 
-      if (!inFunction && !this.options.functionMode) throw 'Can only return in a function.'+tok.syntaxError('break');
+      if (!inFunction && !this.options.functionMode) tok.throwSyntaxError('Can only return in a function');
 
       // TOFIX: I think I can invert this logic structure and just do parseSemi if !last newline.
       tok.next(EXPR);
@@ -528,9 +528,7 @@
 
       var tok = this.tok;
       tok.next(EXPR);
-      if (tok.lastNewline) {
-        throw 'No newline allowed directly after a throw, ever.'+tok.syntaxError();
-      }
+      if (tok.lastNewline) tok.throwSyntaxError('No newline allowed directly after a throw, ever');
 
       this.parseExpressions();
       this.parseSemi();
@@ -594,7 +592,7 @@
       var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
       var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
 
-      if (!one && !two) throw 'Try must have at least a catch or finally block or both.'+this.tok.syntaxError();
+      if (!one && !two) tok.throwSyntaxError('Try must have at least a catch or finally block or both');
       return PARSEDSOMETHING;
     },
     parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
@@ -606,10 +604,10 @@
 
         // catch var
         if (type === IDENTIFIER) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Catch scope var name is reserved.'+tok.syntaxError();
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Catch scope var name is reserved');
           tok.next(PUNC);
         } else {
-          throw 'Missing catch scope variable.'+tok.syntaxError();
+          tok.throwSyntaxError('Missing catch scope variable');
         }
 
         tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
@@ -652,10 +650,10 @@
       var tok = this.tok;
       var type = tok.next(PUNC); // 'function'
       if (type === IDENTIFIER) { // name
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function name ['+this.tok.getLastValue()+'] is reserved.'+tok.syntaxError();
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function name ['+this.tok.getLastValue()+'] is reserved');
         tok.next(PUNC);
       } else if (forFunctionDeclaration) {
-        throw 'Function declaration requires a name.'+tok.syntaxError();
+        tok.throwSyntaxError('Function declaration requires a name');
       }
       this.parseFunctionRemainder(ANYARGS, forFunctionDeclaration);
 
@@ -678,23 +676,23 @@
       // [<idntf> [, <idntf>]]
       var tok = this.tok;
       if (tok.lastType === IDENTIFIER) {
-        if (paramCount === NOARGS) throw 'Getters have no parameters.'+tok.syntaxError();
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
+        if (paramCount === NOARGS) tok.throwSyntaxError('Getters have no parameters');
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function param name is reserved.');
         tok.next(EXPR);
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (paramCount === ONEARG) throw 'Setters have exactly one param.'+tok.syntaxError();
+          if (paramCount === ONEARG) tok.throwSyntaxError('Setters have exactly one param');
 
           // param name
           if (tok.lastType === IDENTIFIER) {
-            if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved.'+tok.syntaxError();
+            if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function param name is reserved');
             tok.next(PUNC);
           } else {
-            throw 'Missing func param name.'+tok.syntaxError();
+            tok.throwSyntaxError('Missing func param name');
           }
         }
       } else if (paramCount === 1) {
-        throw 'Setters have exactly one param.'+tok.syntaxError();
+        tok.throwSyntaxError('Setters have exactly one param');
       }
     },
     // TOFIX: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
@@ -710,9 +708,10 @@
       this.parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet);
     },
     parseSemi: function(){
-      if (this.tok.nextExprIfNum(ORD_SEMI)) return PUNCTUATOR;
+      var tok = this.tok;
+      if (tok.nextExprIfNum(ORD_SEMI)) return PUNCTUATOR;
       if (this.parseAsi()) return ASI;
-      throw 'Unable to parse semi, unable to apply ASI.'+this.tok.syntaxError();
+      tok.throwSyntaxError('Unable to parse semi, unable to apply ASI');
     },
     parseAsi: function(){
       // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
@@ -751,10 +750,10 @@
       this.parseNonAssignments();
 
       if (tok.firstTokenChar === ORD_COLON) {
-        if (tok.tokenCountAll !== count) throw 'Unexpected colon encountered.'+tok.syntaxError();
-        if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+tok.syntaxError();
+        if (tok.tokenCountAll !== count) tok.throwSyntaxError('Unexpected colon encountered');
+        if (!assignable) tok.throwSyntaxError('Label ['+identifier+'] is a reserved keyword');
         var labelSpaced = labelName + ' ';
-        if (labelSet.indexOf(' ' + labelSpaced) >= 0) throw 'Label ['+identifier+'] is already defined.'+tok.syntaxError();
+        if (labelSet.indexOf(' ' + labelSpaced) >= 0) tok.throwSyntaxError('Label ['+identifier+'] is already defined');
         tok.next(EXPR);
 
         if (inLoop) inLoop += labelSpaced; // these are the only valid jump targets for `continue`
@@ -793,7 +792,7 @@
       var groupAssignable = this.parseExpressionOptional();
 
       // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
-      if (tokCount === tok.tokenCountAll) throw 'Expected to parse an expression, did not find any.'+tok.syntaxError();
+      if (tokCount === tok.tokenCountAll) tok.throwSyntaxError('Expected to parse an expression, did not find any');
 
       return groupAssignable;
     },
@@ -827,7 +826,7 @@
       var tok = this.tok;
       var strictAssign = this.options.strictAssignmentCheck;
       while (this.isAssignmentOperator()) {
-        if (!assignable && strictAssign) throw 'LHS of this assignment is invalid assignee.'+tok.syntaxError();
+        if (!assignable && strictAssign) tok.throwSyntaxError('LHS of this assignment is invalid assignee');
         // any assignment means not a for-in per definition
         tok.next(EXPR);
         assignable = this.parsePrimary(REQUIRED);
@@ -934,7 +933,7 @@
         if (len > 2) {
           if (c === ORD_L_T) {
             if (len === 6 && tok.nextExprIfString('typeof')) {
-              if (hasNew) throw 'typeof is illegal right after new.' + tok.syntaxError();
+              if (hasNew) tok.throwSyntaxError('typeof is illegal right after new');
               this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
               return NOTASSIGNABLE;
             }
@@ -950,13 +949,13 @@
             }
           } else if (c === ORD_L_D) {
             if (len === 6 && tok.nextExprIfString('delete')) {
-              if (hasNew) throw 'delete is illegal right after new.'+tok.syntaxError();
+              if (hasNew) tok.throwSyntaxError('delete is illegal right after new');
               this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
               return NOTASSIGNABLE;
             }
           } else if (c === ORD_L_V) {
             if (tok.nextExprIfString('void')) {
-              if (hasNew) throw 'void is illegal right after new.'+tok.syntaxError();
+              if (hasNew) tok.throwSyntaxError('void is illegal right after new');
               this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
               return NOTASSIGNABLE;
             }
@@ -967,14 +966,14 @@
       }
 
       if ((c === ORD_EXCL || c === ORD_TILDE) && tok.lastLen === 1) {
-        if (hasNew) throw '! and ~ are illegal right after new.'+tok.syntaxError();
+        if (hasNew) tok.throwSyntaxError('! and ~ are illegal right after new');
         tok.next(EXPR);
         this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
         return NOTASSIGNABLE;
       }
 
       if (c === ORD_MIN || c === ORD_PLUS) {
-        if (hasNew) throw 'illegal operator right after new.'+tok.syntaxError();
+        if (hasNew) tok.throwSyntaxError('illegal operator right after new');
         // have to verify len anyways, for += and -= case
         if (tok.lastLen === 1) {
           tok.next(EXPR);
@@ -982,7 +981,7 @@
         } else if (tok.getNum(1) === c) {
           tok.next(EXPR);
           var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
-          if (!assignable && this.options.strictAssignmentCheck) throw 'The rhs of ++ or -- was not assignable.' + tok.syntaxError();
+          if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('The rhs of ++ or -- was not assignable');
         }
         return NOTASSIGNABLE;
       }
@@ -996,7 +995,7 @@
       var c = tok.firstTokenChar;
 
       if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
-        throw 'Reserved identifier ['+identifier+'] found in expression.'+tok.syntaxError();
+        tok.throwSyntaxError('Reserved identifier ['+identifier+'] found in expression');
       }
 
       tok.next(PUNC);
@@ -1038,7 +1037,7 @@
         return NOTASSIGNABLE;
       }
 
-      if (!optional) throw 'Unable to parse required primary value.'+tok.syntaxError();
+      if (!optional) tok.throwSyntaxError('Unable to parse required primary value');
       // if the primary was optional but not found, the return value here is irrelevant
       return ASSIGNABLE;
     },
@@ -1066,7 +1065,7 @@
           tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           if (!unassignableUntilAfterCall) assignable = true; // trailing property
         } else if (c === ORD_DOT) {
-          if (tok.lastType !== PUNCTUATOR) throw 'Dot/Number (?) after identifier?'+tok.syntaxError(); // can we remove this line for build?
+          if (tok.lastType !== PUNCTUATOR) tok.throwSyntaxError('Dot/Number (?) after identifier?'); // #zp-build drop line
           tok.next(PUNC);
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           if (!unassignableUntilAfterCall) assignable = true; // trailing property
@@ -1079,7 +1078,7 @@
         } else {
 
           if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
-            if (!assignable && this.options.strictAssignmentCheck) throw 'Postfix increment not allowed here.' + tok.syntaxError();
+            if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('Postfix increment not allowed here');
             tok.next(PUNC);
             assignable = false; // ++
           }
@@ -1088,7 +1087,7 @@
         }
         colonIsError = true;
       }
-      if (colonIsError && maybeLabel && c === ORD_COLON) throw 'Invalid label here, I think.'+tok.syntaxError();
+      if (colonIsError && maybeLabel && c === ORD_COLON) tok.throwSyntaxError('Invalid label here, I think');
       return assignable;
     },
     isAssignmentOperator: function(){
