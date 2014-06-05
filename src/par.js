@@ -523,7 +523,7 @@
       tok.next(PUNC);
       this.parseStatementHeader();
       tok.mustBeNum(ORD_OPEN_CURLY, NEXTTOKENCANBEREGEX);
-      
+
       var value = tok.getLastValue();
       var defaults = 0;
       if (value === 'default') ++defaults;
@@ -552,14 +552,14 @@
       // try { <stmts> } finally { <stmts> }
       // try { <stmts> } catch ( <idntf> ) { <stmts> } finally { <stmts> }
 
-      this.tok.next(PUNC);
+      var tok = this.tok;
+      tok.next(PUNC);
       this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
 
-      // TOFIX: detect this with token count
-      var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
-      var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
-
-      if (!one && !two) this.tok.throwSyntaxError('Try must have at least a catch or finally block or both');
+      var count = tok.tokenCountAll;
+      this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
+      this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
+      if (count === tok.tokenCountAll) this.tok.throwSyntaxError('Try must have at least a catch or finally block or both');
     },
     parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
       // catch ( <idntf> ) { <stmts> }
@@ -578,19 +578,14 @@
 
         tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
         this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
-        return PARSEDSOMETHING;
       }
-      return PARSEDNOTHING;
     },
     parseFinally: function(inFunction, inLoop, inSwitch, labelSet){
       // finally { <stmts> }
 
       if (this.tok.nextPuncIfString('finally')) {
         this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
-
-        return PARSEDSOMETHING;
       }
-      return PARSEDNOTHING;
     },
     parseDebugger: function(){
       // debugger ;
