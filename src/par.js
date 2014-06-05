@@ -32,7 +32,6 @@
   // boolean constants
   var OPTIONAL = true;
   var REQUIRED = false;
-  var NOTFORFUNCTIONEXPRESSION = true;
   var PARSEDSOMETHING = true;
   var PARSEDNOTHING = false;
   var FORFUNCTIONDECL = true;
@@ -201,7 +200,7 @@
 
       if (c === ORD_OPEN_CURLY) { // 33.2%
         tok.next(EXPR);
-        this.parseBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+        this.parseBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
         return PARSEDSOMETHING;
       }
 
@@ -554,7 +553,7 @@
 
       var tok = this.tok;
       tok.next(PUNC);
-      this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+      this.parseCompleteBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
 
       var count = tok.tokenCountAll;
       this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
@@ -577,14 +576,14 @@
         }
 
         tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
-        this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+        this.parseCompleteBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
       }
     },
     parseFinally: function(inFunction, inLoop, inSwitch, labelSet){
       // finally { <stmts> }
 
       if (this.tok.nextPuncIfString('finally')) {
-        this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+        this.parseCompleteBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
       }
     },
     parseDebugger: function(){
@@ -617,14 +616,14 @@
      * Parse the function param list and body
      *
      * @param {number} paramCount Number of expected params, -1/undefined means no requirement. used for getters and setters
-     * @param {boolean} forFunctionDeclaration Are we parsing a function declaration (determines whether we can parse a division next)
+     * @param {boolean} nextExpr Are we parsing a function declaration (determines whether we can parse a division afterwards)
      */
-    parseFunctionRemainder: function(paramCount, forFunctionDeclaration){
+    parseFunctionRemainder: function(paramCount, nextExpr){
       var tok = this.tok;
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
       this.parseParameters(paramCount);
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
-      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
+      this.parseCompleteBlock(nextExpr, INFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
     },
     parseParameters: function(paramCount){
       // [<idntf> [, <idntf>]]
@@ -649,17 +648,16 @@
         tok.throwSyntaxError('Setters have exactly one param');
       }
     },
-    // TOFIX: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
-    parseBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
+    parseBlock: function(nextExpr, inFunction, inLoop, inSwitch, labelSet){
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
       // note: this parsing method is also used for functions. the only case where
       // the closing curly can be followed by a division rather than a regex lit
       // is with a function expression. that's why we needed to make it a parameter
-      this.tok.mustBeNum(ORD_CLOSE_CURLY, notForFunctionExpression);
+      this.tok.mustBeNum(ORD_CLOSE_CURLY, nextExpr);
     },
-    parseCompleteBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
+    parseCompleteBlock: function(nextExpr, inFunction, inLoop, inSwitch, labelSet){
       this.tok.mustBeNum(ORD_OPEN_CURLY, NEXTTOKENCANBEREGEX);
-      this.parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet);
+      this.parseBlock(nextExpr, inFunction, inLoop, inSwitch, labelSet);
     },
     parseSemi: function(){
       var tok = this.tok;
