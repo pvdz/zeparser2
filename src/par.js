@@ -500,13 +500,9 @@
 
       if (!inFunction && !this.options.functionMode) tok.throwSyntaxError('Can only return in a function');
 
-      // TOFIX: I think I can invert this logic structure and just do parseSemi if !last newline.
       tok.next(EXPR);
-      if (tok.lastNewline) this.addAsi();
-      else {
-        this.parseOptionalExpressions();
-        this.parseSemi();
-      }
+      if (!tok.lastNewline) this.parseOptionalExpressions();
+      this.parseSemi();
     },
     parseThrow: function(){
       // throw <exprs> ;
