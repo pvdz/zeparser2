@@ -275,20 +275,6 @@
     // write scripts to construct them. the only way to keep my sanity
 
     /**
-     * Check whether the current token is of string, number,
-     * regex, or identifier type. These are the "value"
-     * token types, short of arrays and objects.
-     *
-     * @return {boolean}
-     */
-    isValue: function(){
-      return (
-        (this.lastType !== PUNCTUATOR) && // fail fast
-        (this.lastType === STRING || this.lastType === NUMBER || this.lastType === IDENTIFIER || this.lastType === REGEX)
-      );
-    },
-
-    /**
      * Parse the next token if the first character
      * of the current starts with a character (as
      * a number) equal to num. Next token is parsed

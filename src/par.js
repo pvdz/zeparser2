@@ -1156,9 +1156,8 @@
     parseObject: function(){
       var tok = this.tok;
       do {
-        // note: __isValue also passes for a REGEX, objlits dont allow this. we need to check extra.
-        // TOFIX: can we perhaps postpone this check till the end? it only fails if there's a syntax error or }
-        if (tok.isValue() && tok.lastType !== REGEX) this.parsePair();
+        var type = tok.lastType;
+        if (type === IDENTIFIER || type === STRING || type === NUMBER) this.parsePair(); // 84% 9% 1% = 94%
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
       // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
