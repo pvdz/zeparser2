@@ -939,8 +939,7 @@
         return NOTASSIGNABLE;
       }
 
-      // TOFIX: I think maybeLabel should just be false here...?
-      return this.parsePrimaryCoreOther(optional, hasNew, maybeLabel);
+      return this.parsePrimaryCoreOther(optional, hasNew);
     },
     parsePrimaryCoreIdentifier: function(hasNew, maybeLabel){
       var tok = this.tok;
@@ -957,9 +956,9 @@
       var assignable = !this.isValueKeyword(c, identifier) ? ASSIGNABLE : NOTASSIGNABLE;
       return this.parsePrimarySuffixes(assignable, hasNew, maybeLabel);
     },
-    parsePrimaryCoreOther: function(optional, hasNew, maybeLabel){
+    parsePrimaryCoreOther: function(optional, hasNew){
       var assignable = this.parsePrimaryValue(optional);
-      return this.parsePrimarySuffixes(assignable, hasNew, maybeLabel);
+      return this.parsePrimarySuffixes(assignable, hasNew, NOTLABEL);
     },
     parsePrimaryValue: function(optional){
       // at this point in the expression parser we will have ruled out anything else.
@@ -980,13 +979,11 @@
       }
 
       if (tok.nextExprIfNum(ORD_OPEN_CURLY)) {
-        // TOFIX: make test for this being non-assignable
         this.parseObject();
         return NOTASSIGNABLE;
       }
 
       if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) {
-        // TOFIX: make test for this being non-assignable
         this.parseArray();
         return NOTASSIGNABLE;
       }
