@@ -40,6 +40,7 @@
   var NEXTTOKENCANBEDIV = false;
   var INLOOP = ' ';
   var NOTINLOOP = '';
+  var EMPTY_LABELSET = '';
   var INSWITCH = true;
   var NOTINSWITCH = false;
   var INFUNCTION = true;
@@ -110,8 +111,6 @@
   var ORD_FWDSLASH = 0x2f;
   var ORD_LT = 0x3c;
   var ORD_GT = 0x3e;
-
-  var EMPTY_LABELSET = '';
 
   var Par = exports.Par = function(input, options){
     this.options = options = options || {};
