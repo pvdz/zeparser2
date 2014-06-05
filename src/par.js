@@ -848,7 +848,7 @@
         }
       }
 
-      return (assignable && count === tok.tokenCountAll);
+      return count === tok.tokenCountAll ? assignable : NOTASSIGNABLE;
     },
 
     /**
@@ -1012,7 +1012,8 @@
           tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
         } else if (c === ORD_DOT) {
-          if (tok.lastType !== PUNCTUATOR) tok.throwSyntaxError('Dot/Number (?) after identifier?'); // #zp-build drop line
+          if (tok.lastType === NUMBER) break; // ASI: foo\n.5 -> [foo][\n][.5]
+          else if (tok.lastType !== PUNCTUATOR) tok.throwSyntaxError('Dot/Number (?) after identifier?'); // #zp-build drop line
           tok.next(PUNC);
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
