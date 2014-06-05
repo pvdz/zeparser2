@@ -4,6 +4,7 @@
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
 // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
+// TOFIX: jit report says some methods use bool and ints. probably assignable.
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
@@ -183,12 +184,11 @@
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional, freshLabels){
       if (this.tok.lastType === IDENTIFIER) {
-        // this might be `false` when encountering `case` or `default` (or `else`?), which are handled elsewhere
-        // TOFIX: would it be terrible if `case` and `default` went recursive here?
-        return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels);
-      } else {
-        return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
+        this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels);
+        return PARSEDSOMETHING;
       }
+      // can be false for close curly and eof
+      return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
     },
     parseNonIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, optional) {
       var tok = this.tok;
@@ -273,7 +273,7 @@
         var c = tok.firstTokenChar;
 
         if (c === ORD_L_T) {
-          if (len !== 4) {
+          if (len !== 4) { // often `this`, only 7% (abs) passes here
             if (value === 'try') return this.parseTry(inFunction, inLoop, inSwitch, labelSet);
             if (value === 'throw') return this.parseThrow();
           }
@@ -292,14 +292,14 @@
           if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
         }
         else if (c === ORD_L_C) {
-          if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
+          if (value === 'case') return this.parseCase();
           if (value === 'continue') return this.parseContinue(inLoop, labelSet);
         }
         else if (c === ORD_L_B) {
           if (value === 'break') return this.parseBreak(inLoop, inSwitch, labelSet);
         }
         else if (c === ORD_L_D) {
-          if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
+          if (value === 'default') return this.parseDefault();
           if (value === 'do') return this.parseDo(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'debugger') return this.parseDebugger();
         }
@@ -314,8 +314,6 @@
 
       // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
       this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet, freshLabels);
-
-      return PARSEDSOMETHING;
     },
     parseStatementHeader: function(){
       var tok = this.tok;
@@ -341,8 +339,6 @@
         }
       } while(tok.nextExprIfNum(ORD_COMMA));
       this.parseSemi();
-
-      return PARSEDSOMETHING;
     },
     parseVarPartNoIn: function(){
       var tok = this.tok;
@@ -376,8 +372,6 @@
         tok.next(EXPR);
         this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
       }
-
-      return PARSEDSOMETHING;
     },
     parseDo: function(inFunction, inSwitch, labelSet, inLoop){
       // do <stmt> while ( <exprs> ) ;
@@ -395,8 +389,6 @@
       if (this.options.requireDoWhileSemi || tok.firstTokenChar === ORD_SEMI) {
         this.parseSemi();
       }
-
-      return PARSEDSOMETHING;
     },
     parseWhile: function(inFunction, inSwitch, labelSet, inLoop){
       // while ( <exprs> ) <stmt>
@@ -404,8 +396,6 @@
       this.tok.next(PUNC);
       this.parseStatementHeader();
       this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
-
-      return PARSEDSOMETHING;
     },
     parseFor: function(inFunction, inSwitch, labelSet, inLoop){
       // for ( <expr-no-in-=> in <exprs> ) <stmt>
@@ -434,8 +424,6 @@
 
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
       this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
-
-      return PARSEDSOMETHING;
     },
     parseForEachHeader: function(){
       // <expr> ; <expr> ) <stmt>
@@ -475,8 +463,6 @@
       // continue without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
 
       this.parseSemi();
-
-      return PARSEDSOMETHING;
     },
     parseBreak: function(inLoop, inSwitch, labelSet){
       // break ;
@@ -502,8 +488,6 @@
       }
 
       this.parseSemi();
-
-      return PARSEDSOMETHING;
     },
     parseReturn: function(inFunction){
       // return ;
@@ -521,8 +505,6 @@
         this.parseOptionalExpressions();
         this.parseSemi();
       }
-
-      return PARSEDSOMETHING;
     },
     parseThrow: function(){
       // throw <exprs> ;
@@ -533,8 +515,6 @@
 
       this.parseExpressions();
       this.parseSemi();
-
-      return PARSEDSOMETHING;
     },
     parseSwitch: function(inFunction, inLoop, labelSet){
       // switch ( <exprs> ) { <switchbody> }
@@ -543,44 +523,29 @@
       tok.next(PUNC);
       this.parseStatementHeader();
       tok.mustBeNum(ORD_OPEN_CURLY, NEXTTOKENCANBEREGEX);
-      this.parseSwitchBody(inFunction, inLoop, INSWITCH, labelSet);
+      
+      var value = tok.getLastValue();
+      var defaults = 0;
+      if (value === 'default') ++defaults;
+      if (value !== 'case' && !defaults && value !== '}') tok.throwSyntaxError('Switch body must begin with case or default or be empty');
+
+      while (this.parseStatement(inFunction, inLoop, INSWITCH, labelSet, OPTIONAL, EMPTY_LABELSET)) {
+        // switches are quite infrequent so this overhead is okay, compared ot the alternatives
+        if (tok.getLastValue() === 'default' && ++defaults > 1) tok.throwSyntaxError('Only one default allowed per switch');
+      }
+
       tok.mustBeNum(ORD_CLOSE_CURLY, NEXTTOKENCANBEREGEX);
-
-      return PARSEDSOMETHING;
     },
-    parseSwitchBody: function(inFunction, inLoop, inSwitch, labelSet){
-      // [<cases>] [<default>] [<cases>]
-
-      // default can go anywhere...
-      this.parseCases(inFunction, inLoop, inSwitch, labelSet);
-      if (this.tok.nextPuncIfString('default')) {
-        this.parseDefault(inFunction, inLoop, inSwitch, labelSet);
-        this.parseCases(inFunction, inLoop, inSwitch, labelSet);
-      }
-    },
-    parseCases: function(inFunction, inLoop, inSwitch, labelSet){
-      // note: since we're inside a switch body and at the start
-      // of a case/default, the only valid tokens would be a
-      // case, default, or the end of the switch. It cannot
-      // validly be anything else. Thus the div flag is void.
-      // The default keyword might no longer be possible either. TOFIX: optimize that.
+    parseCase: function(){
       var tok = this.tok;
-      while (tok.nextPuncIfString('case')) {
-        this.parseCase(inFunction, inLoop, inSwitch, labelSet);
-      }
-    },
-    parseCase: function(inFunction, inLoop, inSwitch, labelSet){
-      // case <value> : <stmts-no-case-default>
+      tok.next(EXPR);
       this.parseExpressions();
-      this.tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
-      this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
+      tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEDIV);
     },
-    parseDefault: function(inFunction, inLoop, inSwitch, labelSet){
-      // default <value> : <stmts-no-case-default>
-
-      // TOFIX: this can be folded into parseCaseRemainder for <x>: statements
-      this.tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
-      this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
+    parseDefault: function(){
+      var tok = this.tok;
+      tok.next(EXPR);
+      tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEDIV);
     },
     parseTry: function(inFunction, inLoop, inSwitch, labelSet){
       // try { <stmts> } catch ( <idntf> ) { <stmts> }
@@ -590,11 +555,11 @@
       this.tok.next(PUNC);
       this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
 
+      // TOFIX: detect this with token count
       var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
       var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
 
-      if (!one && !two) tok.throwSyntaxError('Try must have at least a catch or finally block or both');
-      return PARSEDSOMETHING;
+      if (!one && !two) this.tok.throwSyntaxError('Try must have at least a catch or finally block or both');
     },
     parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
       // catch ( <idntf> ) { <stmts> }
@@ -613,7 +578,6 @@
 
         tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
         this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
-
         return PARSEDSOMETHING;
       }
       return PARSEDNOTHING;
@@ -642,8 +606,6 @@
       this.tok.next(PUNC);
       this.parseStatementHeader();
       this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
-
-      return PARSEDSOMETHING;
     },
     parseFunction: function(forFunctionDeclaration){
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
@@ -657,8 +619,6 @@
         tok.throwSyntaxError('Function declaration requires a name');
       }
       this.parseFunctionRemainder(ANYARGS, forFunctionDeclaration);
-
-      return PARSEDSOMETHING;
     },
     /**
      * Parse the function param list and body
@@ -719,7 +679,7 @@
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
       var tok = this.tok;
-      if (tok.firstTokenChar === ORD_CLOSE_CURLY || (tok.lastNewline) || tok.lastType === EOF) {
+      if (tok.firstTokenChar === ORD_CLOSE_CURLY || tok.lastNewline || tok.lastType === EOF) {
         return this.addAsi();
       }
       return PARSEDNOTHING;
@@ -1052,7 +1012,8 @@
       // label edge case. if any suffix parsed, colon is no longer valid
       var colonIsError = false;
 
-      if (unassignableUntilAfterCall) assignable = false; // for new, must have trailing property _after_ a call
+      // TOFIX: use constant
+      if (unassignableUntilAfterCall) assignable = NOTASSIGNABLE; // for new, must have trailing property _after_ a call
 
       var tok = this.tok;
       while (true) {
@@ -1064,24 +1025,28 @@
           tok.next(EXPR);
           this.parseExpressions(); // required
           tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          if (!unassignableUntilAfterCall) assignable = true; // trailing property
+          // TOFIX: use constant
+          if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
         } else if (c === ORD_DOT) {
           if (tok.lastType !== PUNCTUATOR) tok.throwSyntaxError('Dot/Number (?) after identifier?'); // #zp-build drop line
           tok.next(PUNC);
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          if (!unassignableUntilAfterCall) assignable = true; // trailing property
+          // TOFIX: use constant
+          if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
         } else if (c === ORD_OPEN_PAREN) {
           tok.next(EXPR);
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           unassignableUntilAfterCall = false;
-          assignable = false; // call, only assignable in IE (case ignored)
+          // TOFIX: use constant
+          assignable = NOTASSIGNABLE; // call, only assignable in IE (case ignored)
         } else {
 
           if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
             if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('Postfix increment not allowed here');
             tok.next(PUNC);
-            assignable = false; // ++
+            // TOFIX: use constant
+            assignable = NOTASSIGNABLE; // ++
           }
 
           break;
