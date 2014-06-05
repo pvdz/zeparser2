@@ -592,8 +592,6 @@
 
       this.tok.next(PUNC);
       this.parseSemi();
-
-      return PARSEDSOMETHING;
     },
     parseWith: function(inFunction, inLoop, inSwitch, labelSet){
       // with ( <exprs> ) <stmts>
