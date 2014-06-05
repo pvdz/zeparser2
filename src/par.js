@@ -964,7 +964,7 @@
 
       var tok = this.tok;
 
-      // we know it's going to be a punctuator so we wont use tok.isValue() here
+      // we know it's going to be a punctuator so we wont use tok.isValue here
       var t = tok.lastType;
       if (t === STRING || t === NUMBER || t === REGEX) {
         tok.next(PUNC);
@@ -1001,7 +1001,6 @@
       // label edge case. if any suffix parsed, colon is no longer valid
       var colonIsError = false;
 
-      // TOFIX: use constant
       if (unassignableUntilAfterCall) assignable = NOTASSIGNABLE; // for new, must have trailing property _after_ a call
 
       var tok = this.tok;
@@ -1014,27 +1013,23 @@
           tok.next(EXPR);
           this.parseExpressions(); // required
           tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          // TOFIX: use constant
           if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
         } else if (c === ORD_DOT) {
           if (tok.lastType !== PUNCTUATOR) tok.throwSyntaxError('Dot/Number (?) after identifier?'); // #zp-build drop line
           tok.next(PUNC);
           tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          // TOFIX: use constant
           if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
         } else if (c === ORD_OPEN_PAREN) {
           tok.next(EXPR);
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           unassignableUntilAfterCall = false;
-          // TOFIX: use constant
           assignable = NOTASSIGNABLE; // call, only assignable in IE (case ignored)
         } else {
 
           if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
             if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('Postfix increment not allowed here');
             tok.next(PUNC);
-            // TOFIX: use constant
             assignable = NOTASSIGNABLE; // ++
           }
 
