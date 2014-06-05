@@ -248,9 +248,11 @@
         return PARSEDSOMETHING;
       }
 
-      // TOFIX: is there any case where empty optional does not end with curly close? otherwise we can drop this check.
+      // note: need this check because EOF is always valid at the end of the
+      // program and, I think, will always trigger once, of course.
       if (!optional) tok.throwSyntaxError('Expected more input..');
-      // EOF? i'm not sure happens for any other reason.
+
+      // EOF (I dont think there's any other valid reason?)
       return PARSEDNOTHING;
     },
     parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, freshLabels){
@@ -262,8 +264,6 @@
       var value = tok.getLastValue();
 
       var len = tok.lastLen;
-
-      // TOFIX: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
 
       // yes, this check makes a *huge* difference
       if (len >= 2) {
@@ -764,8 +764,6 @@
 
         if (beforeNonAssignments !== endCount) assignable = NOTASSIGNABLE;
         else if (beforeAssignments !== beforeNonAssignments) assignable = ASSIGNABLEUNLESSGROUPED;
-
-        return assignable;
       }
 
       // return state for parseGroup, to determine whether the group as a whole can be assignment lhs
@@ -952,7 +950,8 @@
       tok.next(PUNC);
 
       // can not assign to keywords, anything else is fine here
-      return this.parsePrimarySuffixes(!this.isValueKeyword(c, identifier), hasNew, maybeLabel);
+      var assignable = !this.isValueKeyword(c, identifier) ? ASSIGNABLE : NOTASSIGNABLE;
+      return this.parsePrimarySuffixes(assignable, hasNew, maybeLabel);
     },
     parsePrimaryCoreOther: function(optional, hasNew, maybeLabel){
       var assignable = this.parsePrimaryValue(optional);
