@@ -208,18 +208,20 @@
     parseNonIdentifierStatementNonCurly: function(c, optional){
       var tok = this.tok;
 
-      if (c === ORD_OPEN_PAREN) { // 0.67%
+      // relative to this function: punc=96%, string=4%, number=1%, rest 0%
+
+      if (c === ORD_OPEN_PAREN) { // 56%
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
 
-      if (c === ORD_SEMI) { // 0.31% empty statement
+      if (c === ORD_SEMI) { // 26% empty statement
         // this shouldnt occur very often, but they still do.
         tok.next(EXPR);
         return PARSEDSOMETHING;
       }
 
-      if (c === ORD_PLUS || c === ORD_MIN) { // 0.06% 0.04%
+      if (c === ORD_PLUS || c === ORD_MIN) { // 5% 3%
         if (tok.getNum(1) === c || tok.lastLen === 1) {
           this.parseExpressionStatement();
           return PARSEDSOMETHING;
@@ -227,14 +229,16 @@
         tok.throwSyntaxError('Statement cannot start with binary op');
       }
 
+      var type = tok.lastType;
+
       // rare
-      if (tok.isValue() || c === ORD_OPEN_SQUARE) {
+      if (type === STRING || c === ORD_OPEN_SQUARE) { // 4% 2%
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
 
       // almost never
-      if (c === ORD_EXCL) { // 0.03% 0.03%
+      if (c === ORD_EXCL) { // 2%
         if (tok.lastLen === 1) {
           this.parseExpressionStatement();
           return PARSEDSOMETHING;
@@ -242,8 +246,8 @@
         tok.throwSyntaxError('Statement cannot start with binary op');
       }
 
-      // almost never
-      if (c === ORD_TILDE) {
+      // now you're just running tests
+      if (type === NUMBER || c === ORD_TILDE || type === REGEX) { // 1% 0% 0%
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
