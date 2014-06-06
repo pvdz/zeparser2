@@ -1024,8 +1024,8 @@
           unassignableUntilAfterCall = false;
           assignable = NOTASSIGNABLE; // call, only assignable in IE (case ignored)
         } else {
-
-          if ((c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
+          // postfix inc/dec are restricted, so no newline allowed here
+          if (!tok.lastNewline && (c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
             if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('Postfix increment not allowed here');
             tok.next(PUNC);
             assignable = NOTASSIGNABLE; // ++

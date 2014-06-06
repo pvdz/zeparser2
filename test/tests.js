@@ -829,6 +829,14 @@ var good = [
   ["({set true(x){}})", [12, 13], "setter name must be valid"],
 
   ["a?'b'.c:d;", 8, "dunno, label related regression thingie"],
+
+  // fuzzer hits
+  ["a\n.1;", [4, 5], "dot that is a number following an identifier"],
+  ["debugger\n/foo/;", [4, 5], "regex after debugger"],
+  ["/foo/\n--x", [3, 6], "dec after regex with asi"],
+  ["/foo/g\n--x", [3, 6], "dec after regex with asi"],
+  ["/foo/\n++x", [3, 6], "inc after regex with asi"],
+  ["/foo/g\n++x", [3, 6], "inc after regex with asi"],
 ];
 
 // these are mainly for the parser, of course...
@@ -1336,6 +1344,10 @@ var bad = [
   ["x--: bar;", "current parser approach for labels might allow this but shouldnt 26"],
 
   ["do x while(x)y", "do-while must have complete statement after do, no asi is applied"],
+
+  // found by fuzzer
+  ["a\n--", "postfix -- is restricted"],
+  ["a\n++", "postfix ++ is restricted"],
 
   // TOFIX: this is currently passing because the unicode is part of the regex
   //["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
