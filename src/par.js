@@ -588,7 +588,7 @@
     parseDebugger: function(){
       // debugger ;
 
-      this.tok.next(PUNC);
+      this.tok.next(EXPR);
       this.parseSemi();
     },
     parseWith: function(inFunction, inLoop, inSwitch, labelSet){
