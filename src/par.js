@@ -294,14 +294,14 @@
           if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
         }
         else if (c === ORD_L_C) {
-          if (value === 'case') return this.parseCase();
+          if (value === 'case') return this.parseCase(inSwitch);
           if (value === 'continue') return this.parseContinue(inLoop, labelSet);
         }
         else if (c === ORD_L_B) {
           if (value === 'break') return this.parseBreak(inLoop, inSwitch, labelSet);
         }
         else if (c === ORD_L_D) {
-          if (value === 'default') return this.parseDefault();
+          if (value === 'default') return this.parseDefault(inSwitch);
           if (value === 'do') return this.parseDo(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'debugger') return this.parseDebugger();
         }
@@ -534,14 +534,16 @@
 
       tok.mustBeNum(ORD_CLOSE_CURLY, NEXTTOKENCANBEREGEX);
     },
-    parseCase: function(){
+    parseCase: function(inSwitch){
       var tok = this.tok;
+      if (!inSwitch) tok.throwSyntaxError('Can only use case in a switch');
       tok.next(EXPR);
       this.parseExpressions();
       tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEDIV);
     },
-    parseDefault: function(){
+    parseDefault: function(inSwitch){
       var tok = this.tok;
+      if (!inSwitch) tok.throwSyntaxError('Can only use default in a switch'); // cant really hit this right now because label checks supersede it
       tok.next(EXPR);
       tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEDIV);
     },

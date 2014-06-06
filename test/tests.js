@@ -1348,6 +1348,7 @@ var bad = [
   // found by fuzzer
   ["a\n--", "postfix -- is restricted"],
   ["a\n++", "postfix ++ is restricted"],
+  ["default:y", "illegal default (no switch)"],
 
   // TOFIX: this is currently passing because the unicode is part of the regex
   //["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
