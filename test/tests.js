@@ -626,7 +626,7 @@ var good = [
   ["while(true)continue", [5, 6], "ASI because of EOF"],
   ["while(true)continue\nx;", [8, 9], "ASI because of newline"],
 
-  ["function f(){return\n;}", [10, 11], "ASI after break with return, ignoring the semi-colon on next line"],
+  ["function f(){return\n;}", 10, "ASI after break with return, ignoring the semi-colon on next line"],
   ["function f(){return\n}", [9, 10], "ASI after break because of }"],
   ["function f(){return}", [8, 9], "ASI after break because of }"],
   ["function f(){return\nx;}", [11, 12], "ASI because of newline"],
@@ -777,8 +777,11 @@ var good = [
   ["a:break a;", 6, "valid label regression"],
   ["a:for(;;)for(;;)continue a;", 16, "second loop discarded loop labels"],
   ["a:for(;;)for(;;)break a;", 16, "should be fine for break either way"],
+  ["a:{switch(1){case 1:break a;}}", 18, "break to outside label"],
+  ["a:{for(;;)break a;}", 13, "break to outside label"],
+  // TOFIX: labels in switches, in front of case/default, how are they scoped?
 
-  ['\xff', [1, 2], "del char is valid unicode identifier (i think...)"],
+  ['\xff', [1, 2], "del char is valid unicode identifier (i think...) it's a y with quotes"],
 
   ["((a=b).c)=d;", 12, "group assignment is non-assignable, but trailing prop fixes that"],
   ["a=((a=b).c)=d;", 14, "group assignment is non-assignable, but trailing prop fixes that 2"],
@@ -824,6 +827,8 @@ var good = [
   ["({set while(x){}})", [12, 13], "setter name must be valid"],
   ["({get false(){}})", [11, 12], "getter name must be valid"],
   ["({set true(x){}})", [12, 13], "setter name must be valid"],
+
+  ["a?'b'.c:d;", 8, "dunno, label related regression thingie"],
 ];
 
 // these are mainly for the parser, of course...
@@ -866,6 +871,8 @@ var bad = [
   ['{a:1,\"b\":2,c:c}', "old test, not sure how this never crashed anything. this is a block, not an objlit"],
 
   ["switch(x){ default: foo; break; case x: break; default: fail; }", "double default"],
+  ["switch(x){ default: break 'foo'; }", "unvalidated break arg"],
+  ["switch(x){ default: continue 'foo'; }", "unvalidated break arg"],
 
   // a few partial tests if incomplete structures
   ['foo/', "make sure this doesnt pass.."],
@@ -1533,6 +1540,10 @@ var optional = [ // for expected: true = pass, false = throw
       ["new Date++;", "`new` operator with postfix increment"],
 
       ["new (A).foo = bar", "invalid assignment because the parens aren't a call"],
+
+      ["[] = 5;", "array is invalid assignee 1"],
+      ["x = [] = y;", "array is invalid assignee 2"],
+      ["x = {} = y;", "object is invalid assignee"],
     ]
   }, {
     optionName: 'requireDoWhileSemi',
