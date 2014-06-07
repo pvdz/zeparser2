@@ -955,7 +955,13 @@
       return this.parsePrimarySuffixes(assignable, hasNew, maybeLabel);
     },
     parsePrimaryCoreOther: function(optional, hasNew){
+      var tok = this.tok;
+      var count = tok.tokenCountAll;
       var assignable = this.parsePrimaryValue(optional);
+      if (count === tok.tokenCountAll) {
+        if (optional) return NOTASSIGNABLE; // prevents `return.foo`
+        tok.throwSyntaxError('Missing required primary'); // TOFIX: find case for this
+      }
       return this.parsePrimarySuffixes(assignable, hasNew, NOTLABEL);
     },
     parsePrimaryValue: function(optional){
