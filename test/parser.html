@@ -70,7 +70,7 @@
           }
 
           try { Function(input); } catch (e) {
-            console.warn('['+i+']['+input+']; cant compile in browser');
+            console.warn('['+i+']['+input.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+']; cant compile in browser');
           }
 
           var crashed = false;
@@ -128,7 +128,7 @@
           }
 
           try { Function(input);
-            console.error('['+i+']['+input+']; _does_ compile in browser');
+            console.error('['+i+']['+input.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+']; _does_ compile in browser');
           } catch (e) {}
 
           var crashed = false;
@@ -207,9 +207,9 @@
             }
 
             try { Function(input);
-              if (!testGroup.browserShouldCompile) console.error('Bad test! ['+i+']['+input+']; did compile in browser');
+              if (!testGroup.browserShouldCompile) console.error('Bad test! ['+i+']['+input.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+']; did compile in browser');
             } catch (e) {
-              if (testGroup.browserShouldCompile) console.error('Bad test! ['+i+']['+input+']; cant compile in browser');
+              if (testGroup.browserShouldCompile) console.error('Bad test! ['+i+']['+input.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+']; cant compile in browser');
             }
 
             var passedWhenFalse = false;
@@ -220,6 +220,7 @@
             try {
               var options = {};
               options[testGroup.optionName] = true;
+              if (testGroup.optionsWhenOn) options = testGroup.optionsWhenOn;
               Par.parse(input, options);
               failed = !testGroup.expectedWhenOn;
               passedWhenTrue = true;
@@ -232,6 +233,7 @@
             try {
               var options = {};
               options[testGroup.optionName] = false;
+              if (testGroup.optionsWhenOff) options = testGroup.optionsWhenOff;
               Par.parse(input, options);
               failed = !testGroup.expectedWhenOff;
               passedWhenFalse = true;
@@ -288,6 +290,7 @@
             try {
               var options = {};
               options[testGroup.optionName] = true;
+              if (testGroup.optionsWhenOn) options = testGroup.optionsWhenOn;
               Par.parse(input, options);
               passedWhenTrue = true;
             } catch (e) {
@@ -357,6 +360,7 @@
             try {
               var options = {};
               options[testGroup.optionName] = false;
+              if (testGroup.optionsWhenOn) options = testGroup.optionsWhenOn;
               Par.parse(input, options);
               passedWhenFalse = true;
             } catch (e) {
