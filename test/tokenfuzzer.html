@@ -2,11 +2,42 @@
 <script src="../src/uni.js"></script>
 <script src="../src/tok.js"></script>
 <script src="../src/par.js"></script>
+
+<h1>Token fuzzer</h1>
+<p>This is a combinatory fuzzer that only randomly concats tokens to produce something that may or may parse as valid JS.</p>
+<p>The primary objective is to trip up my parser and make it throw unexpectedly. The secondary objective is to find actual parser bugs.</p>
+<p>The fuzzer will check the outcome against the browser (by compiling the code with a <code>Function</code>) and report discrepancies.</p>
+<p>You can set up some settings here. Once it starts it runs indefinitely until first problem. Refresh to stop.</p>
+<p>
+  <button onclick="preset('instance newlines strictassigns callsigns incassigns');">Chrome</button>
+  <button onclick="preset('instance regexes strictassigns callsigns incassigns varex');">Firefox</button>
+  <button onclick="preset('keywords unicode regexes callsigns returns labels');">IE</button>
+  <button onclick="preset('instance');">Safari</button>
+</p>
+<p>
+  <label><input id="keywords" type="checkbox"> include ES6 reserved keywords (causes many false positives on chrome/firefox)</label><br>
+  <label><input id="instance" type="checkbox"> scrub number+instanceof and number+in tokens (triggers parser bug in chrome/firefox)</label><br>
+  <label><input id="unicode" type="checkbox"> scrub <code>\u0065</code> in identifiers (triggers parser bug in IE)</label><br>
+  <label><input id="regexes" type="checkbox"> scrub regex flags / squash regex errors (triggers parser bug in firefox/IE)</label><br>
+  <label><input id="newlines" type="checkbox"> scrub <code>\u2028</code> and <code>\u2029</code> (triggers parser bug in chrome)</label><br>
+  <label><input id="incassigns" type="checkbox" checked> include assignment operators (IE has very hairy assignment check rules, many false positives)</label><br>
+  <label><input id="strictassigns" type="checkbox" checked> scan for bad assignment errors (IE/old opera dont do this)</label><br>
+  <label><input id="callsigns" type="checkbox" checked> allow assignments to func calls (IE/chrome/firefox allow to compile this)</label><br>
+  <label><input id="varex" type="checkbox"> ignore regex after var asi (firefox has a bug on this)</label><br>
+  <label><input id="returns" type="checkbox"> remove trailing returns (IE wont compile them)</label><br>
+  <label><input id="labels" type="checkbox"> remove newlines after labels (IE wont compile them)</label><br>
+  <!-- strict regex checks (firefox) -->
+  <input type="button" value="run">
+</p>
+<pre></pre>
+
 <script>
   var tokens = [
     'identifier',
     '$ident',
     '_ident',
+    '$',
+    '_',
     'iden$fier',
     'ident_ier',
     '\\u0065foo',
@@ -32,43 +63,28 @@
     '!=',
     '!==',
     '%',
-    '%=',
     '^',
-    '^=',
     '&',
     '&&',
-    '&=',
     '*',
-    '*=',
     '|',
-    '|=',
     '-',
-    '--',
-    '-=',
     '+',
-    '++',
-    '+=',
     '~',
-    '~=',
     ':',
     ';',
     '<',
     '<=',
     '<<',
-    '<<=',
     '>',
     '>>',
     '>=',
     '>>',
-    '>>=',
     '>>>',
-    '>>>=',
     ',',
     '.',
     '/',
-    '/=',
     '\\',
-    '=',
     '==',
     '===',
     'break',
@@ -97,48 +113,81 @@
     'delete',
     'in',
     'try',
-    'class',
-    'enum',
-    'extends',
-    'super',
-    'const',
-    'export',
-    'import',
   ];
+  var tokensToUse;
   var white = [' ', '\t', '\r', '\n', '\r\n', '\u2028', '\u2029'];
 
+  var includeKeywords = false;
+  var scrubInstanceof = false;
+  var scrubUnicodeEscapes = false;
+  var scrubRegexes = false;
+  var scrubNewlines = false;
+  var strictAssignmentFlag = false;
+  var callAssignmentFlag = false;
+  var ignoreVarRegex = false;
+  var removeTrailingReturn = false;
+  var includeAssignments = false;
+  var removeLabelNewlines = false;
+
+  function preset(list) {
+    'keywords instance unicode regexes newlines strictassigns callsigns incassigns varex returns labels'.split(' ').forEach(function(id){
+      document.querySelector('#'+id).checked = list.indexOf(id) >= 0;
+    });
+  }
+
+  function escaped(code){
+    return code
+      .replace(/[^\w\d \u0020-\u00ff]/g, function(m){
+        var x = m.charCodeAt(0).toString(16);
+        while (x.length < 4) x = '0'+x;
+        return '\\u'+x;
+      });
+  }
+  function newlined(code){
+    return code
+      // replace newlines with a visual "return" char
+      .replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')
+      // replace consecutive newlines with a single one, removing surrounding whitespace if any
+      .replace(/\s*(\u21b5\s*)+/g, '\u21b5')
+      // double quotes to single, because browsers use double quotes making c/p harder, and quote type is very unlikely to be the culprit
+      .replace(/"/g, "'")
+      // tabs to spaces
+      .replace(/\t/g, ' ')
+      // multiple spaces to single
+      .replace(/  +/g, ' ')
+      // change exotic characters into unicode escapes
+      .replace(/[^\w\d \t\u0020-\u00ff\u21b5]/g, function(m){
+        var x = m.charCodeAt(0).toString(16);
+        while (x.length < 4) x = '0'+x;
+        return '\\u'+x;
+      });
+  }
+
   function compiles(code) {
-    var func = null;
+    // remove browser specific quirks
+    code = clean(code);
+
     var err = '';
     try {
-      func = Function(code);
+      Function(code);
     } catch(e) {
-      // chrome doesnt support 2028 2029 very well
-      if (code.indexOf('\u2029') >= 0 || code.indexOf('\u2028') >= 0) {
-        var again = code.replace(/[\u2028\u2029]/g, '\n');
-        try {
-          func = Function(again);
-        } catch (e) {
-          err = e.toString();
-        }
-      } else {
-        err = e.toString();
-      }
+      err = e.toString();
     }
-    if (/^\s*-->>>/.test(code)) err = 'chrome bug', func=null;
-    else if (/(^|\s)const\s/.test(code)) err = 'const', func=null;
-    else if (/\dinstanceof/.test(code)) func = 'digit instanceof', err='';
 
     return err;
   }
   function parse(code) {
+    // remove browser specific quirks (dont like this since it might hide bugs, but it makes verification much faster)
+    code = clean(code);
+
     var err = '';
     try {
       Par.parse(code, {
         functionMode: true, // we'll use `Function` to partially validate anyways
         regexNoClassEscape: false,
-        saveTokens: true,
-        strictAssignmentCheck: true,
+        saveTokens: false,
+        strictAssignmentCheck: strictAssignmentFlag,
+        allowCallAssignment: callAssignmentFlag,
         strictForInCheck: true,
       });
     } catch (e) {
@@ -147,54 +196,146 @@
 
     return err;
   }
-
-  var total = 0;
-  var n = 0;
-  function repeat(){
-
-    var list = [];
-    for (var i = 0; i < 10; ++i) {
-      var len = Math.floor(Math.random() * 10) + 1;
-      var s = '';
-      while (len--) {
-        s += tokens[Math.floor(Math.random() * tokens.length)];
-        while (Math.random() > 0.4) s += white[Math.floor(Math.random() * white.length)];
-      }
-      list.push(s);
+  function clean(code, n){
+    if (!n) n = 0;
+    if (n > 10) {
+      console.log('inifnite loopy', code);
+      throw code;
     }
 
-    document.body.innerHTML = '<pre>'+total+':\n'+(list.join('<hr>'))+'</pre>';
+    var x = window.vvarex = /((?:^|[\u000a\u000d\u2029\u2028])var\s+\w+[^\u000a\u000d\u2029\u2028;]*(?:\s*[\u000a\u000d\u2029\u2028]\s*)+)\//;
 
-    setTimeout(function () {
-      ++total;
-      while (list.length) {
-        var test = list.pop();
-        var testEscaped = test.replace(/[^\w\d \u0020-\u00ff]/g, function(m){
-          var x = m.charCodeAt(0).toString(16);
-          while (x.length < 4) x = '0'+x;
-          return '\\u'+x;
-        });
-        var testNewlined = test.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5').replace(/\s*(\u21b5\s*)+/g, '\u21b5').replace(/[^\w\d \t\u0020-\u00ff\u21b5]/g, function(m){
-          var x = m.charCodeAt(0).toString(16);
-          while (x.length < 4) x = '0'+x;
-          return '\\u'+x;
-        });
+    // chrome doesnt support 2028 2029 very well
+    if (scrubNewlines && (code.indexOf('\u2029') >= 0 || code.indexOf('\u2028') >= 0)) {
+      return clean(code.replace(/[\u2028\u2029]/g, '\n'), n+1);
+    } else if (scrubInstanceof && /\d\.?in(stanceof)?/.test(code)) {
+      return clean(code.replace(/(\d\.?)(in(?:stanceof)?)/g, '$1 $2'), n+1); // chrome bug: number in/instanceof without space
+    } else if (/^\s*-->/m.test(code)) {
+      return clean(code.replace(/^\s*-->/gm, '\n'), n+1); // par doesnt support these html-close-comments yet
+    } else if (/^\s*<!--.*$/m.test(code)) {
+      return clean(code.replace(/^\s*<!--.*$/gm, '\n'), n+1);
+    } else if (scrubRegexes && /\/foo\/(?:[\w$_]|\\u0065)(?:[\d\w$_]||\\u0065)*/.test(code)) {
+      return clean(code.replace(/\/foo\/(?:[\w$_]|\\u0065)(?:[\d\w$_]||\\u0065)*/g, '/bar/g'), n+1); // firefox doesnt allow unknown regex flags so we scrub entire identifiers
+    } else if (/\\u0065/.test(code)) {
+      return clean(code.replace(/\\u0065/g, 'a'), n+1);
+    } else if (ignoreVarRegex && x.test(code)) {
+      return clean(code.replace(x, '$1;/'), n+1); // firefox bug: regex after var statement + asi should be valid
+    } else if (/^\s*return\s*$/.test(code)) {
+      return clean(code + ' x', n + 1); // IE doesnt allow `Function("return")` :s
+    } else if (removeTrailingReturn && /[^w]return\s*$/.test(code)) {
+      return clean(code.replace(/([^w])return\s*$/, '$1')); // IE wont compile a return statement ... in a function
+    } else if (removeLabelNewlines && /[\w$_][\w\d$_]*\s+:/.test(code)) {
+      return clean(code.replace(/([\w$_][\w\d$_]*)\s+:/g, '$1:')); // IE doesnt like newlines between label name and colon
+    }
 
-        var browserError = compiles(test);
-        var parserError = parse(test);
-
-        if ((!browserError) !== (!parserError)) {
-          console.log('browser:',!browserError, 'parser:', !parserError);
-          console.log([testNewlined, browserError || parserError]);
-          console.log([testEscaped]);
-        }
-      }
-
-      if (total < 1000) repeat();
-    }, 1);
-
+    return code;
   }
 
-  repeat();
+  var t = 0;
+  function start() {
+    includeKeywords = document.querySelector('#keywords').checked;
+    scrubInstanceof = document.querySelector('#instance').checked;
+    scrubUnicodeEscapes = document.querySelector('#unicode').checked;
+    scrubRegexes = document.querySelector('#regexes').checked;
+    scrubNewlines = document.querySelector('#newlines').checked;
+    strictAssignmentFlag = document.querySelector('#strictassigns').checked;
+    callAssignmentFlag = document.querySelector('#callsigns').checked;
+    removeTrailingReturn = document.querySelector('#returns').checked;
+    includeAssignments = document.querySelector('#incassigns').checked;
+    removeLabelNewlines = document.querySelector('#labels').checked;
 
+    tokensToUse = tokens.slice(0);
+
+    if (includeKeywords) {
+      // ES6 keywords are okay in some browsers so they could report false positives
+      tokensToUse.push(
+       'class',
+       'enum',
+       'extends',
+       'super',
+       'const',
+       'export',
+       'import'
+      );
+    }
+    if (includeAssignments) {
+      tokensToUse.push(
+        '--',
+        '++',
+        '%=',
+        '^=',
+        '&=',
+        '*=',
+        '|=',
+        '-=',
+        '+=',
+        '~=',
+        '<<=',
+        '>>=',
+        '>>>=',
+        '/=',
+        '='
+      );
+    }
+
+
+    document.querySelector('pre').innerHTML = 'running...';
+    setTimeout(repeat, 100);
+  }
+  function repeat(){
+    var n = 10000;
+    while (--n) {
+      ++t;
+      var len = Math.floor(Math.random() * 10) + 1;
+      var test = '';
+      while (len--) {
+        test += tokensToUse[Math.floor(Math.random() * tokensToUse.length)];
+        var maxws = 5;
+        while (maxws-- && Math.random() > 0.4) test += white[Math.floor(Math.random() * white.length)];
+      }
+
+      var browserError = compiles(test);
+      var parserError = parse(test);
+
+      if (scrubRegexes && browserError.indexOf('regular expression') >= 0) {
+        // ignore: firefox doesnt allow unsupported regex flags
+      } else if (browserError.indexOf('quantifier') >= 0) {
+        // ignore: par doesnt scan for internal regex validity
+      } else if ((!browserError) !== (!parserError)) {
+        // right now it seems more interesting when my parser groks something the browser doesnt
+        if (!parserError) console.warn('browser:', !browserError, 'parser:', !parserError);
+        else console.log('browser:', !browserError, 'parser:', !parserError);
+
+        var testNewlined = newlined(test);
+        var cleanNewlined = newlined(clean(test));
+
+        window.test = clean(test);
+
+        console.log('error:', [newlined(browserError || parserError)]);
+        console.log('real newlined:', [testNewlined]);
+        console.log('real escaped :', [escaped(test)]);
+        console.log('real simple  :', [testNewlined.replace(/\u21b5/g, '\\n')]); // for copy paste, this is usually what i need to verify
+        console.log('clean newlined:', [cleanNewlined]);
+        console.log('clean escaped :', [escaped(clean(test))]);
+        console.log('clean simple  :', [cleanNewlined.replace(/\u21b5/g, '\\n')]); // for copy paste, this is usually what i need to verify
+
+        document.querySelector('pre').innerHTML =
+          'Failed by '+(browserError?'browser':'parser')+':\n' +
+          'Code: '+cleanNewlined.replace(/&/g,'&amp;').replace(/</g, '&lt;')+'\n' +
+          'c/p:  '+cleanNewlined.replace(/\u21b5/g, '\\n').replace(/&/g,'&amp;').replace(/</g, '&lt;')+'\n' +
+          'Error: '+newlined(browserError || parserError).replace(/&/g,'&amp;').replace(/</g, '&lt;')+'\n' +
+          'See console for more details';
+
+        return;
+      }
+
+    }
+
+    document.querySelector('pre').innerHTML = 'running... '+t;
+
+    // allow for refresh
+    setTimeout(repeat, 1000);
+  }
+
+  document.querySelector('[type="button"]').onclick = start;
 </script>
