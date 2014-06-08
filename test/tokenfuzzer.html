@@ -107,6 +107,47 @@
   ];
   var white = [' ', '\t', '\r', '\n', '\r\n', '\u2028', '\u2029'];
 
+  function compiles(code) {
+    var func = null;
+    var err = '';
+    try {
+      func = Function(code);
+    } catch(e) {
+      // chrome doesnt support 2028 2029 very well
+      if (code.indexOf('\u2029') >= 0 || code.indexOf('\u2028') >= 0) {
+        var again = code.replace(/[\u2028\u2029]/g, '\n');
+        try {
+          func = Function(again);
+        } catch (e) {
+          err = e.toString();
+        }
+      } else {
+        err = e.toString();
+      }
+    }
+    if (/^\s*-->>>/.test(code)) err = 'chrome bug', func=null;
+    else if (/(^|\s)const\s/.test(code)) err = 'const', func=null;
+    else if (/\dinstanceof/.test(code)) func = 'digit instanceof', err='';
+
+    return err;
+  }
+  function parse(code) {
+    var err = '';
+    try {
+      Par.parse(code, {
+        functionMode: true, // we'll use `Function` to partially validate anyways
+        regexNoClassEscape: false,
+        saveTokens: true,
+        strictAssignmentCheck: true,
+        strictForInCheck: true,
+      });
+    } catch (e) {
+      err = e.toString();
+    }
+
+    return err;
+  }
+
   var total = 0;
   var n = 0;
   function repeat(){
@@ -127,20 +168,29 @@
     setTimeout(function () {
       ++total;
       while (list.length) {
-        try {
-          new Par(list.pop(), {
-            functionMode: false,
-            regexNoClassEscape: false,
-            saveTokens: true,
-            strictAssignmentCheck: true,
-            strictForInCheck: true,
-          }).run();
-        } catch (e) {
-          // dont care
+        var test = list.pop();
+        var testEscaped = test.replace(/[^\w\d \u0020-\u00ff]/g, function(m){
+          var x = m.charCodeAt(0).toString(16);
+          while (x.length < 4) x = '0'+x;
+          return '\\u'+x;
+        });
+        var testNewlined = test.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5').replace(/[^\w\d \t\u0020-\u00ff\u21b5]/g, function(m){
+          var x = m.charCodeAt(0).toString(16);
+          while (x.length < 4) x = '0'+x;
+          return '\\u'+x;
+        });
+
+        var browserError = compiles(test);
+        var parserError = parse(test);
+
+        if ((!browserError) !== (!parserError)) {
+          console.log('browser:',!browserError, 'parser:', !parserError);
+          console.log([testNewlined, browserError || parserError]);
+          console.log([testEscaped]);
         }
       }
 
-      repeat();
+      if (total < 1000) repeat();
     }, 1);
 
   }
