@@ -122,6 +122,7 @@
     if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
     if (!options.checkAccessorArgs) options.checkAccessorArgs = false;
     if (!options.requireDoWhileSemi) options.requireDoWhileSemi = false;
+    options.allowCallAssignment = options.allowCallAssignment ? ASSIGNABLE : NOTASSIGNABLE;
 
     // `this['tok'] prevents build script mangling :)
     this['tok'] = new Tok(input, this.options);
@@ -151,6 +152,7 @@
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
      * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
+     * @property {number} [options.allowCallAssignment=false] Note that you should pass on a boolean, internally constants are used. Under strictAssignmentCheck or strictForInCheck this still allows `x()=y`, IE legacy crap.
      * @property {boolean} [options.checkAccessorArgs=false] Formally, getters have no arg and setters exactly one. Browsers are more lax in this though.
      * @property {boolean} [options.requireDoWhileSemi=false] Formally the do-while should be terminated by a semi-colon (or asi) but browsers dont enforce this.
      * @property {boolean} [options.neverThrow=false] Dont throw on syntax errors. Will mark the current token an error token and continue parsing. Not yet battle hardened, use at own risk. TOFIX
@@ -1008,6 +1010,7 @@
 
       // label edge case. if any suffix parsed, colon is no longer valid
       var colonIsError = false;
+      var allowCallAssignment = this.options.allowCallAssignment;
 
       if (unassignableUntilAfterCall) assignable = NOTASSIGNABLE; // for new, must have trailing property _after_ a call
 
@@ -1033,7 +1036,7 @@
           this.parseOptionalExpressions();
           tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           unassignableUntilAfterCall = false;
-          assignable = NOTASSIGNABLE; // call, only assignable in IE (case ignored)
+          assignable = allowCallAssignment; // call, only assignable in IE
         } else {
           // postfix inc/dec are restricted, so no newline allowed here
           if (!tok.lastNewline && (c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {

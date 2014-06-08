@@ -150,7 +150,8 @@
       createBlackStream: false,
       regexNoClassEscape: false,
       neverThrow: false,
-      onToken: null
+      onToken: null,
+      allowCallAssignment: false,
     };
 
     if (opt.saveTokens) options.saveTokens = true;
