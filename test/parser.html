@@ -97,12 +97,12 @@
             if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
             if (!hidePasses) debug('<br/>');
             ++ok;
-            test.noRepeat = true;
           } else {
             debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
             debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
             debug('<br/>');
             ++fail;
+            test.noRepeat = true;
           }
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
@@ -292,7 +292,6 @@
               Par.parse(input, options);
               passedWhenTrue = true;
             } catch (e) {
-              passedWhenTrue = false;
               trueFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
             }
 
@@ -302,7 +301,6 @@
               Par.parse(input, options);
               passedWhenFalse = true;
             } catch (e) {
-              passedWhenFalse = false;
               falseFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
             }
 
@@ -314,6 +312,7 @@
               debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
               debug('<br/>');
               ++fail;
+              test.noRepeat = true;
             } else {
               // dont report good ones, they're just dupes at this point
               // also dont count them towards total tests...
@@ -373,6 +372,7 @@
               debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
               debug('<br/>');
               ++fail;
+              test.noRepeat = true;
             } else {
               // dont report good ones, they're just dupes at this point
               // also dont count them towards total tests...
