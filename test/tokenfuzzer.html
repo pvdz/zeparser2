@@ -174,7 +174,7 @@
           while (x.length < 4) x = '0'+x;
           return '\\u'+x;
         });
-        var testNewlined = test.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5').replace(/[^\w\d \t\u0020-\u00ff\u21b5]/g, function(m){
+        var testNewlined = test.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5').replace(/\s*(\u21b5\s*)+/g, '\u21b5').replace(/[^\w\d \t\u0020-\u00ff\u21b5]/g, function(m){
           var x = m.charCodeAt(0).toString(16);
           while (x.length < 4) x = '0'+x;
           return '\\u'+x;
