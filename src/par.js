@@ -932,6 +932,10 @@
           tok.next(EXPR);
           var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
           if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('The rhs of ++ or -- was not assignable');
+        } else {
+          // this is a += or -= token (there's no other possibility left)
+          // I believe it is illegal at this point :)
+          tok.throwSyntaxError('Illegal operator, expecting primary core');
         }
         return NOTASSIGNABLE;
       }
