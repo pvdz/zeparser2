@@ -816,7 +816,7 @@
       while (tok.nextExprIfNum(ORD_COMMA)) {
         // lhs of for-in cant be multiple expressions
         this.parseExpressionNoIn();
-        validForInLhs = false;
+        validForInLhs = NOTASSIGNABLE;
       }
 
       return validForInLhs;
