@@ -1089,7 +1089,6 @@ var bad = [
   ['function f(/foo/){}', "function param names cannot be regex"],
   ['for (var i=0,;;);', "my parser on crack (yeah, this happened to be valid)"],
 
-  ['foo\n<!--\nbar = 5;', "assignment after prefix decr is bad"],
   ['foo</script> <script>bar', "yeah, uh"],
 
   ['1x54', "malformed hex..."],
@@ -1494,6 +1493,8 @@ var bad = [
   ["/a[b", "unclosed class eof"],
   ["/[x]\n/", "make sure class parser does not skip first char after class"],
 
+  ['foo\n<!--\nbar = 5;', "assignment after prefix decr is bad"],
+
   // TOFIX: this is currently passing because the unicode is part of the regex
   //["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 ];
@@ -1557,8 +1558,6 @@ var optional = [ // for expected: true = pass, false = throw
       ["for ((--a) in c);", "lhs parens must wrap single expression 3"],
       ["for ((a--) in c);", "lhs parens must wrap single expression 4"],
 
-      ["for (new a in c);", "new without prop as for-in lhs"],
-      ["for (new a() in c);", "new without prop as for-in lhs"],
       // note: new is valid only in the form that trails a property
       ["for (delete a in c);", "delete without prop as for-in lhs"],
       ["for (delete a.b in c);", "delete with prop as for-in lhs"],
@@ -1600,13 +1599,8 @@ var optional = [ // for expected: true = pass, false = throw
       ["for (typeof a[b] in c);", "typeof with prop as for-in lhs"],
       ["for (typeof a().b in c);", "typeof with prop of call as for-in lhs"],
       ["for (typeof a()[b] in c);", "typeof with dprop of call as for-in lhs"],
-      ["for (new a() in c);", "lhs parens must wrap single expression 5"],
-
-      // note: these do compile but must crash at runtime (unless IE?)
-      ["for (a() in c);", "lhs parens must wrap single expression 5"],
-      ["for (a().b() in c);", "lhs parens must wrap single expression 5"],
-      ["for ((a()) in c);", "lhs parens must wrap single expression 5"],
-      ["for (new a().b() in c);", "new without prop as for-in lhs"],
+      ["for (new a() in c);", "new without prop as for-in lhs"],
+      ["for (new a in c);", "new without prop as for-in lhs"],
     ]
   }, {
     optionName: 'strictAssignmentCheck',
@@ -1678,12 +1672,9 @@ var optional = [ // for expected: true = pass, false = throw
       ["(x++)=b", "assigning to group with non-assignable expression 3"],
       ["(x--)=b", "assigning to group with non-assignable expression 4"],
 
-      ["(x())=b", "assigning to group with non-assignable expression 5"],
-
       ["(a=b.c)=d;", "grouped assignments are always non-assignable"],
       ["a=(a=b.c)=d;", "grouped assignments are always non-assignable 2"],
 
-      ["({a:b}[ohi].iets()++);", "Object Literal With 1 Member, Square Bracket Member Accessor, Dot Member Accessor, Function Call, Postfix Increment"],
       ["new Date++;", "`new` operator with postfix increment"],
 
       ["new (A).foo = bar", "invalid assignment because the parens aren't a call"],
@@ -1698,11 +1689,6 @@ var optional = [ // for expected: true = pass, false = throw
       ["+x = y", "non-assignable possible label statement regression"],
       ["delete x.y = y", "non-assignable possible label statement regression"],
 
-      ["++foo()", "cannot assign to call, so ++ is invalid"],
-      ["--foo()", "cannot assign to call, so -- is invalid"],
-      [".5e05\n<<\ntypeofthrow(\n)++", "invalid post ++"],
-      [".5e05\n<<\ntypeofthrow(\n)--", "invalid post --"],
-
       ["'string'-- &= x;", "dec a string and AND it"],
     ]
   }, {
@@ -1711,14 +1697,12 @@ var optional = [ // for expected: true = pass, false = throw
     optionsWhenOff: {strictForInCheck:true, allowCallAssignment:false},
     expectedWhenOff: false,
     expectedWhenOn: true,
-    browserShouldCompile: false,
+    browserShouldCompile: true,
     cases: [
-//      ["for (new a() in c);", "new without prop as for-in lhs"],
-//      ["for (new a() in c);", "lhs parens must wrap single expression 5"],
       ["for (a() in c);", "lhs parens must wrap single expression 5"],
       ["for (a().b() in c);", "lhs parens must wrap single expression 5"],
       ["for ((a()) in c);", "lhs parens must wrap single expression 5"],
-//      ["for (new a().b() in c);", "new without prop as for-in lhs"],
+      ["for (new a().b() in c);", "new without prop as for-in lhs"],
     ]
   }, {
     optionName: 'allow assignments to func calls (allowCallAssignment)',
@@ -1727,7 +1711,7 @@ var optional = [ // for expected: true = pass, false = throw
     optionValues: [true, true],
     expectedWhenOff: false,
     expectedWhenOn: true,
-    browserShouldCompile: false,
+    browserShouldCompile: true,
     cases: [
       ["x()=b", "assigning to group with non-assignable expression 5"],
       ["(x())=b", "assigning to group with non-assignable expression 5"],
@@ -1738,6 +1722,9 @@ var optional = [ // for expected: true = pass, false = throw
       ["foo()--", "cannot assign to call, so -- is invalid"],
       [".5e05\n<<\ntypeofthrow(\n)++", "invalid post ++"],
       [".5e05\n<<\ntypeofthrow(\n)--", "invalid post --"],
+      ["(x())=b", "assigning to group with non-assignable expression 5"],
+      ["++foo()", "cannot assign to call, so ++ is invalid"],
+      ["--foo()", "cannot assign to call, so -- is invalid"],
     ]
   }, {
     optionName: 'checkAccessorArgs',
