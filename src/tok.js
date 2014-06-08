@@ -883,6 +883,7 @@
     regexBody: function(openParen){
       var input = this.input;
       var len = input.length;
+      // TOFIX: should try to have the regex parser only use pos, not this.pos
       while (this.pos < len) {
         var c = input.charCodeAt(this.pos++);
 
@@ -910,8 +911,8 @@
       var input = this.input;
       var len = input.length;
       var pos = this.pos;
-      // TOFIX: there's no EOF test for regex class. could run in infinite loop.
-      while (this.pos < len) {
+
+      while (true) {
         var c = input.charCodeAt(pos++);
 
         if (c === ORD_CLOSE_SQUARE_5D) {
@@ -928,12 +929,12 @@
               this.throwSyntaxError('Newline can not be escaped in regular expression');
             }
           }
-        } else if (!c || c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1) { // c === ORD_PS || c === ORD_LS
+        } else if (c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1) { // c === ORD_PS || c === ORD_LS
           this.throwSyntaxError('Illegal newline in regex char class');
+        } else if (!c && pos >= len) { // !c can still be \0
+          this.throwSyntaxError('Unterminated regular expression');
         }
       }
-
-      this.throwSyntaxError('Unterminated regular expression at eof');
     },
     regexFlags: function(){
       // we cant use the actual identifier parser because that's assuming the identifier
