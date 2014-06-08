@@ -38,3 +38,16 @@ switch (c) {
   case ORD_L_Z: break;
   default: break;
 }
+
+switch (type) {
+  case STRING: break;
+  case NUMBER: break;
+  case REGEX: break;
+  case PUNCTUATOR: break;
+  case IDENTIFIER: break;
+  case EOF: break;
+  case ASI: break;
+  case ERROR: break;
+  case WHITE: break;
+  default: break;
+}
