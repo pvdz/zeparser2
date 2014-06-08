@@ -4,7 +4,6 @@
 
 // TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
 // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
-// TOFIX: jit report says some methods use bool and ints. probably assignable.
 
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;

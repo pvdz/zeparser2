@@ -893,9 +893,9 @@
             this.throwSyntaxError('Newline can not be escaped in regular expression');
           }
         }
-        else if (c === ORD_OPEN_PAREN_28) this.regexBody(openParen+1);
         else if (c === ORD_FWDSLASH_2F) return;
-        else if (c === ORD_CLOSE_PAREN_29 || c === ORD_FWDSLASH_2F) {
+        else if (c === ORD_OPEN_PAREN_28) this.regexBody(openParen+1);
+        else if (c === ORD_CLOSE_PAREN_29) {
           if (openParen) return;
           throw 'Closing paren without opening paren';
         }
