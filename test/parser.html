@@ -70,8 +70,7 @@
           }
 
           try { Function(input); } catch (e) {
-            console.error('Bad test! ['+i+']['+input+']; cant compile in browser');
-            crashed = e;
+            console.warn('['+i+']['+input+']; cant compile in browser');
           }
 
           var crashed = false;
@@ -81,25 +80,25 @@
           } catch (e) {
             console.error('Crash for', input);
             console.error(e);
-            crashed = e;
+            crashed = e.toString().replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5');
           }
 
           var tcount = par.tok.tokenCountAll -1; // inc asi, ex eof
 
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed.toString() + ')');
-            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
             debug('<br/>');
             ++fail;
             test.noRepeat = true;
           } else if (tcount == outputLen) {
             if (!hidePasses) debug('<span class="green">Test ' + i + ' ok:</span>', desc);
-            if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
             if (!hidePasses) debug('<br/>');
             ++ok;
           } else {
             debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
-            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
             debug('<br/>');
             ++fail;
             test.noRepeat = true;
@@ -129,7 +128,7 @@
           }
 
           try { Function(input);
-            console.error('Bad test! ['+i+']['+input+']; _does_ compile in browser');
+            console.error('['+i+']['+input+']; _does_ compile in browser');
           } catch (e) {}
 
           var crashed = false;
@@ -138,18 +137,18 @@
             par.run();
             console.warn("Did not fail:", desc);
           } catch (e) {
-            var msg = e.toString();
+            var msg = e.toString().replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5');
             crashed = true;
           }
 
           if (crashed) {
             if (!hidePasses) debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc, '<small style="color:#ccc;white-space:nowrap;overflow:hidden;">'+msg+'</small>');
-            if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
             if (!hidePasses) debug('<br/>');
             ++ok;
           } else {
             debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc);
-            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+            debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
             debug('<br/>');
             ++fail;
             test.noRepeat = true;
@@ -175,7 +174,7 @@
             } catch (e) {
               debug(
                 '<b class="red">Unable to parse JS1k demo ['+js1kScripts[j1].id+']:</span> (<textarea>' +
-                  e.toString().replace(/"/g, '&quot;').replace(/</g, '&lt;').slice(e.toString().indexOf('#|#:')+6, -1) +
+                  e.toString().replace(/"/g, '&quot;').replace(/</g, '&lt;').slice(e.toString().indexOf('#|#:')+6, -1).replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') +
                 '</textarea>)'
               );
               debug('<br/>');
@@ -227,7 +226,7 @@
             } catch (e) {
               failed = testGroup.expectedWhenOn;
               passedWhenTrue = false;
-              trueFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+              trueFailMessage = ': <small style="color:#ccc;">'+e.toString().replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+'</small>';
             }
 
             try {
@@ -239,14 +238,14 @@
             } catch (e) {
               failed = testGroup.expectedWhenOff;
               passedWhenFalse = false;
-              falseFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+              falseFailMessage = ': <small style="color:#ccc;">'+e.toString().replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+'</small>';
             }
 
             if (passedWhenTrue !== testGroup.expectedWhenOn || passedWhenFalse !== testGroup.expectedWhenOff) {
               debug('<b class="red">Test ' + j + ' did not properly pass/fail:</span>', desc);
               debug('flag=true:  expect:'+(testGroup.expectedWhenOn?'pass':'fail')+' was:'+(passedWhenTrue?'pass':'fail')+trueFailMessage);
               debug('flag=false: expect:'+(testGroup.expectedWhenOff?'pass':'fail')+' was:'+(passedWhenFalse?'pass':'fail')+falseFailMessage);
-              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
               debug('<br/>');
               ++fail;
               test.noRepeat = true;
@@ -254,7 +253,7 @@
               if (!hidePasses) debug('<span class="green">Test ' + i + ' properly passed and failed:</span>', desc);
               if (!hidePasses) debug('flag=true:  expect:'+(testGroup.expectedWhenOn?'pass':'fail')+' was:'+(passedWhenTrue?'pass':'fail')+trueFailMessage);
               if (!hidePasses) debug('flag=false: expect:'+(testGroup.expectedWhenOff?'pass':'fail')+' was:'+(passedWhenFalse?'pass':'fail')+falseFailMessage);
-              if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              if (!hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
               if (!hidePasses) debug('<br/>');
               ++ok;
             }
@@ -292,7 +291,7 @@
               Par.parse(input, options);
               passedWhenTrue = true;
             } catch (e) {
-              trueFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+              trueFailMessage = ': <small style="color:#ccc;">'+e.toString().replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+'</small>';
             }
 
             try {
@@ -301,7 +300,7 @@
               Par.parse(input, options);
               passedWhenFalse = true;
             } catch (e) {
-              falseFailMessage = ': <small style="color:#ccc;">'+e.toString()+'</small>';
+              falseFailMessage = ': <small style="color:#ccc;">'+e.toString().replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5')+'</small>';
             }
 
             var goodCasePassed = passedWhenTrue && passedWhenFalse;
@@ -309,7 +308,7 @@
               debug('<b class="red">Always good test ' + ogi + ' failed under either flag value:</span>', desc);
               debug('flag=true:  expect:pass, was:'+(passedWhenTrue?'pass':'fail')+trueFailMessage);
               debug('flag=false: expect:pass, was:'+(passedWhenFalse?'pass':'fail')+falseFailMessage);
-              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
               debug('<br/>');
               ++fail;
               test.noRepeat = true;
@@ -369,7 +368,7 @@
               debug('<b class="red">Always bad test ' + ogi + ' passed under either flag value:</span>', desc);
               debug('flag=true:  expect:fail, was:'+(passedWhenTrue?'pass':'fail'));
               debug('flag=false: expect:fail, was:'+(passedWhenFalse?'pass':'fail'));
-              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+              debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5') + '</b>');
               debug('<br/>');
               ++fail;
               test.noRepeat = true;
