@@ -134,6 +134,8 @@
   var ORD_ZWS = 0x200B;
   var ORD_LODASH_5F = 0x5f;
 
+  var NO_PARENS = 0;
+
   /**
    * Tokenizer for JS. After initializing the constructor
    * you can fetch the next tokens by calling tok.next()
@@ -873,12 +875,12 @@
       // /foo(?!foo)bar/
       // /foo\dbar/
       this.pos++;
-      this.regexBody();
+      this.regexBody(NO_PARENS);
       this.regexFlags();
 
       return REGEX;
     },
-    regexBody: function(){
+    regexBody: function(openParen){
       var input = this.input;
       var len = input.length;
       while (this.pos < len) {
@@ -890,8 +892,12 @@
             this.throwSyntaxError('Newline can not be escaped in regular expression');
           }
         }
-        else if (c === ORD_OPEN_PAREN_28) this.regexBody(); // TOFIX: we dont actually validate anything here. should add more regex syntax tests
-        else if (c === ORD_CLOSE_PAREN_29 || c === ORD_FWDSLASH_2F) return;
+        else if (c === ORD_OPEN_PAREN_28) this.regexBody(openParen+1);
+        else if (c === ORD_FWDSLASH_2F) return;
+        else if (c === ORD_CLOSE_PAREN_29 || c === ORD_FWDSLASH_2F) {
+          if (openParen) return;
+          throw 'Closing paren without opening paren';
+        }
         else if (c === ORD_OPEN_SQUARE_5B) this.regexClass();
         else if (c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1 /*c === ORD_PS || c === ORD_LS*/) {
           this.throwSyntaxError('Newline can not be escaped in regular expression ['+c+']');
