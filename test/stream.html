@@ -22,8 +22,8 @@ Another focus point is black and white token indexes.<br>
     assert(token.start, start, desc+': '+index+' ('+Tok[type]+'): start');
     assert(token.stop, stop, desc+': '+index+' ('+Tok[type]+'): stop');
     assert(token.value, value, desc+': '+index+' ('+Tok[type]+'): value');
-    assert(token.white, white, desc+': '+index+' ('+Tok[type]+'): white');
-    assert(token.black, black, desc+': '+index+' ('+Tok[type]+'): black');
+    assert(token.white, white, desc+': '+index+' ('+Tok[type]+'): white-index');
+    assert(token.black, black, desc+': '+index+' ('+Tok[type]+'): black-index');
   }
   function assertCode(desc, code, expect){
     var whites = 0;
@@ -108,4 +108,19 @@ Another focus point is black and white token indexes.<br>
     [PUNCTUATOR, ';', 6, 7, 3],
     [EOF, '', 7, 7, 4]
   ]);
+
+  assertCode('return with newline should not add asi if followed by semi', "function f(){return\n;}", [
+    [IDENTIFIER, 'function', 0, 8, 0],
+    [WHITE, ' ', 8, 9, undefined],
+    [IDENTIFIER, 'f', 9, 10, 1],
+    [PUNCTUATOR, '(', 10, 11, 2],
+    [PUNCTUATOR, ')', 11, 12, 3],
+    [PUNCTUATOR, '{', 12, 13, 4],
+    [IDENTIFIER, 'return', 13, 19, 5],
+    [WHITE, '\n', 19, 20, undefined],
+    [PUNCTUATOR, ';', 20, 21, 6],
+    [PUNCTUATOR, '}', 21, 22, 7],
+    [EOF, '', 22, 22, 8]
+  ]);
+
 </script>
