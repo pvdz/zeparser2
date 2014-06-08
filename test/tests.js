@@ -477,8 +477,8 @@ var good = [
   ["a  ", [3, 4], "Trailing Space Characters"],
   ["a /* something */", [3, 4], "Trailing Block Comment"],
   ["a\n\t// hah", [4, 5], "Trailing Linefeed, Tab, and Line Comment"],
-  ["/abc/de//f", [2, 3], [true, true], "RegExp With Flags, Trailing Line Comment"],
-  ["/abc/de/*f*/\n\t", [4, 5], [true, true, true, true], "RegExp With Flags, Trailing Block Comment, Newline, Tab"],
+  ["/abc/g//f", [2, 3], [true, true], "RegExp With Flags, Trailing Line Comment"],
+  ["/abc/g/*f*/\n\t", [4, 5], [true, true, true, true], "RegExp With Flags, Trailing Block Comment, Newline, Tab"],
 
   // Regression Tests.
   ["for (x;function(){ a\nb };z) x;", [21, 23], "`for` Loop: Test Condition Contains Function Body With No Terminating `;`"],
@@ -837,6 +837,7 @@ var good = [
   ["/foo/g\n--x", [4, 6], [true], "dec after regex with asi"],
   ["/foo/\n++x", [4, 6], [true], "inc after regex with asi"],
   ["/foo/g\n++x", [4, 6], [true], "inc after regex with asi"],
+  [".5+/=>>>=ex/bar/g--;", 7, [false, false, true], "looks like weird op soup but is actually a regex :)"],
 
   // bunch of regex syntax tests (atm there's no actual regex validation)
   ["/foo/", [1, 2], [true], "regex test "],
@@ -1425,6 +1426,9 @@ var bad = [
   ["return=x", "unvalidated optional primary value 2"],
   ["return/x", "unvalidated optional primary value 4"],
   ["/)", "tokenizer saw it as one token"],
+  ["+++=x", "not sure but this is bad"],
+  ["x -= += y", "double compound operator doesnt quite work"],
+  ["delete -= new const5", "dont dec delete"],
 
   // these are basically the same as the regex tests except missing the trailing /
   ["/foo", "botched division test "],
@@ -1516,8 +1520,7 @@ var optional = [ // for expected: true = pass, false = throw
     cases: [
       ["/f[o\\]o/", "class escapes are enabled by default (so this should fail by default)"],
     ]
-  },
-  {
+  }, {
     optionName: 'strictForInCheck',
     expectedWhenOff: true,
     expectedWhenOn: false,
@@ -1604,17 +1607,6 @@ var optional = [ // for expected: true = pass, false = throw
       ["for (a().b() in c);", "lhs parens must wrap single expression 5"],
       ["for ((a()) in c);", "lhs parens must wrap single expression 5"],
       ["for (new a().b() in c);", "new without prop as for-in lhs"],
-    ]
-  }, {
-    optionName: 'checkAccessorArgs',
-    expectedWhenOff: true,
-    expectedWhenOn: false,
-    browserShouldCompile: true,
-    cases: [
-      ['x={get foo(x){}};', "getters have no params"],
-      ['x={get foo(x,y){}};', "getters have no params"],
-      ['x={set foo(){}};', "setters have one param"],
-      ['x={set foo(x,y){}};', "setters have one param"],
     ]
   }, {
     optionName: 'strictAssignmentCheck',
@@ -1705,6 +1697,58 @@ var optional = [ // for expected: true = pass, false = throw
 
       ["+x = y", "non-assignable possible label statement regression"],
       ["delete x.y = y", "non-assignable possible label statement regression"],
+
+      ["++foo()", "cannot assign to call, so ++ is invalid"],
+      ["--foo()", "cannot assign to call, so -- is invalid"],
+      [".5e05\n<<\ntypeofthrow(\n)++", "invalid post ++"],
+      [".5e05\n<<\ntypeofthrow(\n)--", "invalid post --"],
+
+      ["'string'-- &= x;", "dec a string and AND it"],
+    ]
+  }, {
+    optionName: 'allow call in for-in',
+    optionsWhenOn: {strictForInCheck:true, allowCallAssignment:true},
+    optionsWhenOff: {strictForInCheck:true, allowCallAssignment:false},
+    expectedWhenOff: false,
+    expectedWhenOn: true,
+    browserShouldCompile: false,
+    cases: [
+//      ["for (new a() in c);", "new without prop as for-in lhs"],
+//      ["for (new a() in c);", "lhs parens must wrap single expression 5"],
+      ["for (a() in c);", "lhs parens must wrap single expression 5"],
+      ["for (a().b() in c);", "lhs parens must wrap single expression 5"],
+      ["for ((a()) in c);", "lhs parens must wrap single expression 5"],
+//      ["for (new a().b() in c);", "new without prop as for-in lhs"],
+    ]
+  }, {
+    optionName: 'allow assignments to func calls (allowCallAssignment)',
+    optionsWhenOn: {strictAssignmentCheck:true, allowCallAssignment:true},
+    optionsWhenOff: {strictAssignmentCheck:true, allowCallAssignment:false},
+    optionValues: [true, true],
+    expectedWhenOff: false,
+    expectedWhenOn: true,
+    browserShouldCompile: false,
+    cases: [
+      ["x()=b", "assigning to group with non-assignable expression 5"],
+      ["(x())=b", "assigning to group with non-assignable expression 5"],
+      ["({a:b}[ohi].iets()++);", "Object Literal With 1 Member, Square Bracket Member Accessor, Dot Member Accessor, Function Call, Postfix Increment"],
+      ["++foo()", "cannot assign to call, so ++ is invalid"],
+      ["--foo()", "cannot assign to call, so -- is invalid"],
+      ["foo()++", "cannot assign to call, so ++ is invalid"],
+      ["foo()--", "cannot assign to call, so -- is invalid"],
+      [".5e05\n<<\ntypeofthrow(\n)++", "invalid post ++"],
+      [".5e05\n<<\ntypeofthrow(\n)--", "invalid post --"],
+    ]
+  }, {
+    optionName: 'checkAccessorArgs',
+    expectedWhenOff: true,
+    expectedWhenOn: false,
+    browserShouldCompile: true,
+    cases: [
+      ['x={get foo(x){}};', "getters have no params"],
+      ['x={get foo(x,y){}};', "getters have no params"],
+      ['x={set foo(){}};', "setters have one param"],
+      ['x={set foo(x,y){}};', "setters have one param"],
     ]
   }, {
     optionName: 'requireDoWhileSemi',
