@@ -357,7 +357,7 @@
       var tokens = this.tokens;
 
       do {
-        var type = this.nextWhiteToken(expressionStart);
+        var type = this.nextAnyToken(expressionStart);
         if (saveTokens) {
           var token = {type:type, value:this.getLastValue(), start:this.lastOffset, stop:this.pos, white:this.tokenCountAll};
           tokens.push(token);
@@ -378,7 +378,24 @@
       this.lastType = type;
       return type;
     },
-    nextWhiteToken: function(expressionStart){
+    /**
+     * This case is only to prevent `3in x` and `3instanceof x` cases.
+     * The next character must not be an identifier start or decimal digit.
+     * First note: http://es5.github.io/#x7.8.3
+     * Note: numbers at EOF always get an ASI so token count will diff
+     * at least 2 in case of EOF.
+     *
+     * @return {number}
+     */
+    nextWhiteAfterNumber: function(){
+      var count = this.tokenCountAll;
+      var type = this.next(PUNC);
+      if ((type === IDENTIFIER || type === NUMBER) && this.tokenCountAll === count+1) {
+        this.throwSyntaxError('Must be at least one whitespace token between numbers and identifiers or other numbers');
+      }
+      return type;
+    },
+    nextAnyToken: function(expressionStart){
       // note: this is one of the most called functions of zeparser...
 
       // note: the offset might change in the newline+space optim trick, so dont re-use it

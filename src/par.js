@@ -986,8 +986,14 @@
 
       // we know it's going to be a punctuator so we wont use tok.isValue here
       var t = tok.lastType;
-      if (t === STRING || t === NUMBER || t === REGEX) {
+      if (t === STRING || t === REGEX) {
         tok.next(PUNC);
+        return NOTASSIGNABLE;
+      }
+
+      if (t === NUMBER) {
+        // special case: numbers must always be followed by whitespace (or EOF)
+        tok.nextWhiteAfterNumber();
         return NOTASSIGNABLE;
       }
 
