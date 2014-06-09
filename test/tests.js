@@ -61,8 +61,7 @@ var good = [
   ["var x;\nfunction n(abc, def){ }", 17, "Variable, Linefeed, Function Declaration With Multiple Arguments"],
   ["function n(){ \"hello\"; }", 11, "Function Declaration, Body"],
 
-  ["/a/;", 2, [true, false], "RegExp Literal, `;`"],
-  ["/a/b;", 2, [true, true], "RegExp Literal, Flags, `;`"],
+  ["/a/;", 2, [true], "RegExp Literal, `;`"],
   ["++x;", 3, "Unary Increment, Prefix, `;`"],
   [" / /;", 3, [true, true, false], "RegExp, Leading Whitespace, `;`"],
   ["/ / / / /", [5, 6], [true, false, false, false, true], "RegExp Containing One Space, Space, Division, Space, RegExp Containing One Space"],
@@ -502,7 +501,7 @@ var good = [
   ["x === 'y';", 6, "Regression Test, testing single char punctuators before longer ones"],
 
   ["(/'/g, '\\\\\\'') + \"'\";", 11, [false, true], "Regression Test: Confusing Escape Character Sequence"],
-  ["/abc\//no_comment", [3, 4], [true, false, false], "RegExp Followed By Line Comment"],
+  ["/abc//not_a_comment", [3, 4], [true, false, false], "RegExp Followed By division"],
   ["a: b; c;", 8, "ASI Regression Test (failing asi for label being expr statement): Labeled Identifier, `;`, Identifier, `;`"],
   ["var x; function f(){ x; function g(){}}", 23, "Function Declaration Within Function Body"],
   ["while (x) { break }", [11, 12], "ASI: `while` Statement, `break`"],
@@ -837,7 +836,7 @@ var good = [
   ["/foo/g\n--x", [4, 6], [true], "dec after regex with asi"],
   ["/foo/\n++x", [4, 6], [true], "inc after regex with asi"],
   ["/foo/g\n++x", [4, 6], [true], "inc after regex with asi"],
-  [".5+/=>>>=ex/bar/g--;", 7, [false, false, true], "looks like weird op soup but is actually a regex :)"],
+  [".5+/=>>>=ex/g/bar--;", 7, [false, false, true], "looks like weird op soup but is actually a regex :)"],
 
   // bunch of regex syntax tests (atm there's no actual regex validation)
   ["/foo/", [1, 2], [true], "regex test "],
@@ -910,6 +909,17 @@ var good = [
   ["/\0/", [1, 2], [true], "nul in regex class"],
 
   ["foo = 5;", 6, "should always pass"],
+
+  ["/foo/g;", 2, [true], "regex flags must be one of gim 1"],
+  ["/foo/i;", 2, [true], "regex flags must be one of gim 2"],
+  ["/foo/m;", 2, [true], "regex flags must be one of gim 3"],
+  ["/foo/gi;", 2, [true], "regex flags must be one of gim 4"],
+  ["/foo/gm;", 2, [true], "regex flags must be one of gim 5"],
+  ["/foo/mi;", 2, [true], "regex flags must be one of gim 6"],
+  ["/foo/mgi;", 2, [true], "regex flags must be one of gim 7"],
+  ["/foo/\u0069;", 2, [true], "regex flags can be unicode escaped 1"],
+  ["/foo/m\u0067;", 2, [true], "regex flags can be unicode escaped 2"],
+  ["/foo/i\u006dg;", 2, [true], "regex flags can be unicode escaped 3"],
 ];
 
 // these are mainly for the parser, of course...
@@ -1495,6 +1505,10 @@ var bad = [
 
   ['foo\n<!--\nbar = 5;', "assignment after prefix decr is bad"],
 
+  ["3in {}", "numbers must be followed by some whitespace"],
+  ["3instanceof {}", "numbers must be followed by some whitespace"],
+  ["for (3in {});", "for-in in must also be preceeded by whitespace"],
+
   // TOFIX: this is currently passing because the unicode is part of the regex
   //["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
 ];
@@ -1730,7 +1744,7 @@ var optional = [ // for expected: true = pass, false = throw
     optionName: 'checkAccessorArgs',
     expectedWhenOff: true,
     expectedWhenOn: false,
-    browserShouldCompile: true,
+    browserShouldCompile: false,
     cases: [
       ['x={get foo(x){}};', "getters have no params"],
       ['x={get foo(x,y){}};', "getters have no params"],
@@ -1748,6 +1762,23 @@ var optional = [ // for expected: true = pass, false = throw
       ["do {x} while(x) y", "dowhile without semi or asi 3"],
       ["do {x} while(x) /x/", "dowhile-regex without semi or asi 4"],
       ['do{}while(x)/foo/;', "do while expects a semi 5 (parses /foo/ as regex, regardless)"],
+    ]
+  }, {
+    optionName: 'skipRegexFlagCheck',
+    expectedWhenOff: false,
+    expectedWhenOn: true,
+    browserShouldCompile: false,
+    cases: [
+      ["/a/b;", "invalid regexp flags"],
+      ["/foo/x", "regex flags must be one of gim"],
+      ["/foo/\u0065", "regex flags must be one of gim, even escaped"],
+      ["/foo/gg", "regex flags must not repeat 1"],
+      ["/foo/ii", "regex flags must not repeat 2"],
+      ["/foo/mm", "regex flags must not repeat 3"],
+      ["/foo/mim", "regex flags must not repeat 4"],
+      ["/foo/gig", "regex flags must not repeat 5"],
+      ["/foo/igi", "regex flags must not repeat 6"],
+      [".5+/=>>>=ex/bar/g--;", "invalid regexp flags"],
     ]
   }
 ];
