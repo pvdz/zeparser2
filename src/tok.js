@@ -152,6 +152,7 @@
       neverThrow: false,
       onToken: null,
       allowCallAssignment: false,
+      skipRegexFlagCheck: false,
     };
 
     if (opt.saveTokens) options.saveTokens = true;
@@ -159,6 +160,7 @@
     if (opt.regexNoClassEscape) options.regexNoClassEscape = true;
     if (opt.neverThrow) options.neverThrow = true; // warning: not yet battle hardened yet
     if (opt.onToken) options.onToken = opt.onToken;
+    if (opt.skipRegexFlagCheck) options.skipRegexFlagCheck = opt.skipRegexFlagCheck;
 
     this.input = (input||'');
     this.len = this.input.length;
@@ -242,6 +244,7 @@
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      * @property {Function} [options.onToken=null] Call for every token
      * @property {boolean} [options.neverThrow=false] Never throw on syntax errors (use at own risk)
+     * @property {boolean} [options.skipRegexFlagCheck=false] Dont throw for invalid regex flags, this mean anything other than gim or repeated flags.
      */
     options: null,
 
@@ -931,12 +934,71 @@
       }
     },
     regexFlags: function(){
-      // we cant use the actual identifier parser because that's assuming the identifier
-      // starts at the beginning of this token, which is not the case for regular expressions.
-      // so we use the remainder parser, which parses the second up to the rest of the identifier
+      // http://es5.github.io/#x15.10.4.1
+      // "If F contains any character other than "g", "i", or "m", or if it contains the same character more than once, then throw a SyntaxError exception."
+      // flags may be unicode escaped
 
-      --this.pos; // parseIdentifierRest assumes the current char can be consumed, but that's not the case here, so we compensate
-      this.pos = this.parseIdentifierRest();
+      if (this.options.skipRegexFlagCheck) {
+        --this.pos; // parseIdentifierRest assumes the current char can be consumed, but that's not the case here, so we compensate
+        this.pos = this.parseIdentifierRest();
+        return;
+      }
+
+      // okay, we have to actually verify the flags now
+
+      var input = this.input;
+      var pos = this.pos;
+
+      var g = false;
+      var m = false;
+      var i = false;
+
+      var c = input.charCodeAt(pos);
+      while (true) {
+        var backslash = false;
+
+        // check backslash first so we can replace c with the conanical value of the escape
+        if (c === ORD_BACKSLASH_5C) {
+          // only valid here is `\u006` followed by a 7=g 9=i or d=m
+          backslash = true;
+          c = this.regexFlagUniEscape(input, pos+1);
+        }
+
+        if (c === ORD_L_G_67) {
+          if (g) throw 'Illegal duplicate regex flag';
+          g = true;
+        } else if (c === ORD_L_I_69) {
+          if (i) throw 'Illegal duplicate regex flag';
+          i = true;
+        } else if (c === ORD_L_M_6D) {
+          if (m) throw 'Illegal duplicate regex flag';
+          m = true;
+        } else {
+          break;
+        }
+
+        if (backslash) pos += 5;
+        c = input.charCodeAt(++pos);
+      }
+      this.pos = pos;
+    },
+    regexFlagUniEscape: function(input, pos){
+      if (input.charCodeAt(pos) !== ORD_L_U_75 || input.charCodeAt(pos+1) !== ORD_L_0_30 || input.charCodeAt(pos+2) !== ORD_L_0_30 || input.charCodeAt(pos+3) !== ORD_L_6_36) {
+        return 0;
+      }
+
+      var c = input.charCodeAt(pos+4);
+      if (c === ORD_L_7_37) {
+        return ORD_L_G_67;
+      }
+      if (c === ORD_L_9_39) {
+        return ORD_L_I_69;
+      }
+      if (c === ORD_L_D_64) {
+        return ORD_L_M_6D;
+      }
+
+      return 0;
     },
     parseIdentifier: function(){
       this.pos = this.parseIdentifierRest();

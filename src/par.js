@@ -2,7 +2,14 @@
 // file has been post-processed by a build script. If you want to read
 // this file, see https://github.com/qfox/zeparser2
 
-// TOFIX: generate huge benchmark files and derive specific coding styles from them; tabs vs spaces, newline (cr/lf/crlf), minified vs normal, unicode identifiers/jquery/underscore heavy/uppercase, if/else vs &&||, labels usage (build script), etc
+// TOFIX: generate huge benchmark files and derive specific coding styles from them;
+// - tabs vs spaces,
+// - newline (cr/lf/crlf),
+// - minified vs normal,
+// - unicode identifiers/jquery/underscore heavy/uppercase,
+// - if/else vs &&||,
+// - labels usage (build script),
+
 // TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
 
 (function(exports){
@@ -156,6 +163,7 @@
      * @property {boolean} [options.checkAccessorArgs=false] Formally, getters have no arg and setters exactly one. Browsers are more lax in this though.
      * @property {boolean} [options.requireDoWhileSemi=false] Formally the do-while should be terminated by a semi-colon (or asi) but browsers dont enforce this.
      * @property {boolean} [options.neverThrow=false] Dont throw on syntax errors. Will mark the current token an error token and continue parsing. Not yet battle hardened, use at own risk. TOFIX
+     * @property {boolean} [options.skipRegexFlagCheck=false] Dont throw for invalid regex flags, this mean anything other than gim or repeated flags.
      */
     options: null,
 
