@@ -73,7 +73,7 @@
 
             var tokenCount = 0;
             do {
-              var type = tok.nextWhiteToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
+              var type = tok.nextAnyToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
               types.push(type);
             } while (tokenCount < 1000 && type !== Tok.EOF);
 
