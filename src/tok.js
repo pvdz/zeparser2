@@ -4,6 +4,8 @@
   // punctuator occurrence stats: http://qfox.nl/weblog/301
   // token start stats: http://qfox.nl/weblog/302
 
+  // TOFIX: should `/x/y()` and `new /x/y()` be allowed? firefox used to do this, legacy syntax?
+
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
   var WHITE_SPACE = 1;
