@@ -5,148 +5,114 @@
   var this_tok_len =  0;
   var this_tok_pos =  0;
   var this_tok_options =  null;
-  var this_tok_lastStart =  0;
+  var this_tok_lastOffset =  0;
   var this_tok_lastStop =  0;
   var this_tok_lastLen =  0;
   var this_tok_lastType =  0;
-  var this_tok_lastValue =  '';
   var this_tok_lastNewline =  false;
-  var this_tok_nextNum1 =  0;
-  var this_tok_nextNum2 =  0;
+  var this_tok_firstTokenChar =  0;
   var this_tok_tokenCountAll =  0;
+  var this_tok_tokenCountBlack =  0;
   var this_tok_tokens =  null;
   var this_tok_black =  null;
-  function this_tok_isType(t){
-      return this_tok_lastType === t;
-    }
-  function this_tok_isValue(){
-      return (
-        (this_tok_lastType !== 9) &&        (this_tok_lastType === 10 || this_tok_lastType === 7 || this_tok_lastType === 13 || this_tok_lastType === 8)
-      );
-    }
-  function this_tok_isNum(n){
-      return this_tok_getLastNum() === n;
-    }
-  function this_tok_isString(value){
-      return this_tok_getLastValue() === value;
-    }
-  function this_tok_nextPuncIfValue(){
-      var equals = this_tok_isValue();
-      if (equals) this_tok_nextPunc();
-      return equals;
-    }
   function this_tok_nextExprIfNum(num){
-      var equals = this_tok_isNum(num);
-      if (equals) this_tok_nextExpr();
+      var equals = this_tok_firstTokenChar === num;
+      if (equals) this_tok_next(true);
       return equals;
     }
   function this_tok_nextPuncIfString(str){
-      var equals = this_tok_isString(str);
-      if (equals) this_tok_nextPunc();
+      var equals = this_tok_getLastValue() === str;
+      if (equals) this_tok_next(false);
       return equals;
     }
   function this_tok_nextExprIfString(str){
-      var equals = this_tok_isString(str);
-      if (equals) this_tok_nextExpr();
+      var equals = this_tok_getLastValue() === str;
+      if (equals) this_tok_next(true);
       return equals;
     }
   function this_tok_mustBeNum(num, nextIsExpr){
-      if (this_tok_isNum(num)) {
-        this_tok_next(nextIsExpr);
-      } else {
-        throw 'Expected char=' + String.fromCharCode(num) + ' got=' + String.fromCharCode(this_tok_getLastNum()) + '.' + this_tok_syntaxError();
-      }
+      if (this_tok_firstTokenChar === num) return this_tok_next(nextIsExpr);
+      this_tok_throwSyntaxError('Expected char=' + String.fromCharCode(num) + ' ('+num+') got=' + String.fromCharCode(this_tok_firstTokenChar)+' ('+this_tok_firstTokenChar+')');
     }
   function this_tok_mustBeIdentifier(nextIsExpr){
-      if (this_tok_isType(13)) {
-        this_tok_next(nextIsExpr);
-      } else {
-        throw this_tok_syntaxError(13);
-      }
+      if (this_tok_lastType === 13) return this_tok_next(nextIsExpr);
+      this_tok_throwSyntaxError('Expecting current type to be IDENTIFIER but is '+Tok[this_tok_lastType]+' ('+this_tok_lastType+')');
     }
   function this_tok_mustBeString(str, nextIsExpr){
-      if (this_tok_isString(str)) {
-        this_tok_next(nextIsExpr);
-      } else {
-        throw this_tok_syntaxError(str);
-      }
-    }
-  function this_tok_nextExpr(){
-      return this_tok_next(true);
-    }
-  function this_tok_nextPunc(){
-      return this_tok_next(false);
+      if (this_tok_getLastValue() === str) return this_tok_next(nextIsExpr);
+      this_tok_throwSyntaxError('Expecting current value to be ['+str+'] is ['+this_tok_getLastValue()+']');
     }
   function this_tok_next(expressionStart){
       this_tok_lastNewline = false;
 
-      var toStream = this_tok_options.saveTokens;
+      var options = this_tok_options;
+      var saveTokens = options.saveTokens;
+      var onToken = options.onToken;
+      var tokens = this_tok_tokens;
 
       do {
-        var type = this_tok_nextWhiteToken(expressionStart);
-        if (toStream) {
-          var token = {type:type, value:this_tok_getLastValue(), start:this_tok_lastStart, stop:this_tok_pos, white:this_tok_tokens.length};
-          this_tok_tokens.push(token);
+        var type = this_tok_nextAnyToken(expressionStart);
+        if (saveTokens) {
+          var token = {type:type, value:this_tok_getLastValue(), start:this_tok_lastOffset, stop:this_tok_pos, white:this_tok_tokenCountAll};
+          tokens.push(token);
         }
+        if (onToken) {
+          onToken(type, this_tok_getLastValue(), this_tok_lastOffset, this_tok_pos, this_tok_tokenCountAll);
+        }
+        ++this_tok_tokenCountAll;
       } while (type === 18);
 
-      if (toStream && this_tok_options.createBlackStream) {
-        token.black = this_tok_black.length;
-        this_tok_black.push(token);
+      if (saveTokens) {
+        token.black = this_tok_tokenCountBlack++;
+        if (options.createBlackStream) {
+          this_tok_black.push(token);
+        }
       }
 
       this_tok_lastType = type;
       return type;
     }
-  function this_tok_nextWhiteToken(expressionStart){
-      this_tok_lastValue = '';
-
-      ++this_tok_tokenCountAll;
-
-      var start = this_tok_lastStart = this_tok_pos;
-      if (start >= this_tok_len) {
-        this_tok_nextNum1 = 0;
-        return 14;
+  function this_tok_nextWhiteAfterNumber(){
+      var count = this_tok_tokenCountAll;
+      var type = this_tok_next(false);
+      if ((type === 13 || type === 7) && this_tok_tokenCountAll === count+1) {
+        this_tok_throwSyntaxError('Must be at least one whitespace token between numbers and identifiers or other numbers');
       }
+      return type;
+    }
+  function this_tok_nextAnyToken(expressionStart){
+      var fullStart = this_tok_lastOffset = this_tok_pos;
+      var nextChar = this_tok_firstTokenChar = this_tok_input.charCodeAt(fullStart) | 0;
+      if (!nextChar) return 14;      var type = this_tok_nextTokenDeterminator(nextChar, expressionStart);
+      this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - this_tok_lastOffset;
 
-      var nextChar;
-      if (!this_tok_nextNum2 || this_tok_lastLen !== 1) {
-        nextChar = this_tok_nextNum1 = this_tok_input.charCodeAt(start);
-      } else {
-        nextChar = this_tok_nextNum1 = this_tok_nextNum2;
-      }
-      this_tok_nextNum2 = 0;
-
-      var result = this_tok_nextTokenDeterminator(nextChar, expressionStart);
-      this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - start;
-
-      return result;
+      return type;
     }
   function this_tok_nextTokenDeterminator(c, expressionStart) {
       if (c < 0x31) return this_tok_nextTokenDeterminator_a(c, expressionStart);
 
       var b = c & 0xffdf;      if (b >= 0x41 && b <= 0x5a) return this_tok_parseIdentifier();
 
-      if (c > 0x39) return this_tok_nextTokenDeterminator_b(c, expressionStart);
+      if (c > 0x39) return this_tok_nextTokenDeterminator_b(c);
       return this_tok_parseDecimalNumber();
     }
   function this_tok_nextTokenDeterminator_a(c, expressionStart) {
       switch (c) {
-        case 0x20:          return this_tok_parseOneChar(18);
+        case 0x20:          return ++this_tok_pos,(18);
         case 0x2e:
           return this_tok_parseLeadingDot();
         case 0x28:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x29:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x0D:
           return this_tok_parseCR();
         case 0x0A:
-          return this_tok_parseNewline();
+          return this_tok_parseVerifiedNewline(this_tok_pos, 0);
         case 0x2c:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x09:
-          return this_tok_parseOneChar(18);
+          return ++this_tok_pos,(18);
         case 0x22:
           return this_tok_parseDoubleString();
         case 0x2b:
@@ -170,35 +136,35 @@
         case 0x25:
           return this_tok_parseCompoundAssignment();
         case 0x0C:
-          return this_tok_parseOneChar(18);
+          return ++this_tok_pos,(18);
         case 0x0B:
-          return this_tok_parseOneChar(18);
+          return ++this_tok_pos,(18);
         default:
-          throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this_tok_syntaxError();
+          this_tok_throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']');
       }
     }
-  function this_tok_nextTokenDeterminator_b(c, expressionStart) {
+  function this_tok_nextTokenDeterminator_b(c) {
       switch (c) {
         case 0x3b:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x3d:
           return this_tok_parseEqualSigns();
         case 0x7b:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x7d:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x5b:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x5d:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x3a:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x5f:
           return this_tok_parseIdentifier();
         case 0x7c:
           return this_tok_parseSameOrCompound(c);
         case 0x3f:
-          return this_tok_parseOneChar(9);
+          return ++this_tok_pos,(9);
         case 0x3c:
           return this_tok_parseLtgtPunctuator(c);
         case 0x3e:
@@ -208,32 +174,49 @@
         case 0x7e:
           return this_tok_parseCompoundAssignment();
         case 0x2028:
-          return this_tok_parseNewline();
+          return this_tok_parseVerifiedNewline(this_tok_pos, 0);
         case 0x2029:
-          return this_tok_parseNewline();
-        case 0xA0:
-          return this_tok_parseOneChar(18);
-        case 0xFEFF:
-          return this_tok_parseOneChar(18);
+          return this_tok_parseVerifiedNewline(this_tok_pos, 0);
         case 0x5c:
           return this_tok_parseBackslash();
         default:
-          if (c > 127 && uniRegex.test(String.fromCharCode(c))) {
-            return this_tok_parseIdentifier();
-          }
-
-          throw 'Unexpected character in token scanner... fixme! [' + c + ']' + this_tok_syntaxError();
+          return this_tok_parseOtherUnicode(c);
       }
+    }
+  function this_tok_parseOtherUnicode(c){
+      if (this_tok_isExoticWhitespace(c)) return ++this_tok_pos,(18);
+      if (uniRegex.test(String.fromCharCode(c))) return this_tok_parseIdentifier();
+
+      this_tok_throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']');
+    }
+  function this_tok_isExoticWhitespace(c){
+      switch (c) {
+        case 0xA0:
+        case 0xFEFF:
+        case 0x0085:        case 0x1680:
+        case 0x180e:        case 0x2000:
+        case 0x2001:
+        case 0x2002:
+        case 0x2003:
+        case 0x2004:
+        case 0x2005:
+        case 0x2006:
+        case 0x2007:
+        case 0x2008:
+        case 0x2009:
+        case 0x200a:
+        case 0x202f:
+        case 0x205f:
+        case 0x3000:
+          return true;
+      }
+      return false;
     }
   function this_tok_parseBackslash(){
       this_tok_parseAndValidateUnicodeAsIdentifier(this_tok_pos, this_tok_input, true);
       this_tok_pos += 6;
       this_tok_pos = this_tok_parseIdentifierRest();
       return 13;
-    }
-  function this_tok_parseOneChar(type){
-      ++this_tok_pos;
-      return type;
     }
   function this_tok_parseFwdSlash(expressionStart){
       var d = this_tok_input.charCodeAt(this_tok_pos+1);
@@ -242,22 +225,19 @@
       if (expressionStart) return this_tok_parseRegex();
       return this_tok_parseDivPunctuator(d);
     }
-  function this_tok_parseNewline() {
-      return this_tok_verifiedNewline(this_tok_pos);
-    }
   function this_tok_parseCR(){
       var pos = this_tok_pos;
+      var crlf = this_tok_input.charCodeAt(pos+1) === 0x0A ? 1 : 0;
 
-      if (this_tok_input.charCodeAt(pos+1) === 0x0A) ++pos;
-
-      return this_tok_verifiedNewline(pos);
+      return this_tok_parseVerifiedNewline(pos + crlf, crlf);
     }
-  function this_tok_verifiedNewline(pos){
+  function this_tok_parseVerifiedNewline(pos, extraForCrlf){
       this_tok_lastNewline = true;
 
       var input = this_tok_input;
       var tokens = this_tok_tokens;
       var saveTokens = this_tok_options.saveTokens;
+      var onToken = this_tok_options.onToken;
       var count = this_tok_tokenCountAll;
 
       while (true) {
@@ -265,17 +245,22 @@
 
         if (c !== 0x20 && c !== 0x09) break;
 
-        ++count;
         if (saveTokens) {
-          var s = pos-1;
-          tokens.push({type:18, value:input.slice(s, pos), start:s, stop:pos, white:tokens.length});
+          var s = pos-(1+extraForCrlf);
+          var v = input.slice(s, pos);
+          tokens.push({type:18, value:v, start:s, stop:pos, white:count});
         }
+        if (onToken) {
+          var s = pos-(1+extraForCrlf);
+          var v = input.slice(s, pos);
+          onToken(18, v, s, pos, count);
+        }
+
+        extraForCrlf = 0;        ++count;
       }
 
-      this_tok_nextNum2 = c;
       this_tok_tokenCountAll = count;
-      this_tok_lastValue = '';
-      this_tok_lastStart = pos-1;
+      this_tok_lastOffset = pos-(1+extraForCrlf);
       this_tok_pos = pos;
 
       return 18;
@@ -289,8 +274,10 @@
     }
   function this_tok_parseEqualSigns(){
       var len = 1;
-      if (this_tok_input.charCodeAt(this_tok_lastStart+1) === 0x3d) {
-        if (this_tok_input.charCodeAt(this_tok_lastStart+2) === 0x3d) len = 3;
+      var offset = this_tok_lastOffset;
+      var input = this_tok_input;
+      if (input.charCodeAt(offset+1) === 0x3d) {
+        if (input.charCodeAt(offset+2) === 0x3d) len = 3;
         else len = 2;
       }
       this_tok_pos += len;
@@ -298,15 +285,17 @@
     }
   function this_tok_parseLtgtPunctuator(c){
       var len = 1;
-      var d = this_tok_input.charCodeAt(this_tok_lastStart+1);
+      var offset = this_tok_lastOffset;
+      var input = this_tok_input;
+      var d = input.charCodeAt(offset+1);
       if (d === 0x3d) len = 2;
       else if (d === c) {
         len = 2;
-        var e = this_tok_input.charCodeAt(this_tok_lastStart+2);
+        var e = input.charCodeAt(offset+2);
         if (e === 0x3d) len = 3;
         else if (e === c && c !== 0x3c) {
           len = 3;
-          if (this_tok_input.charCodeAt(this_tok_lastStart+3) === 0x3d) len = 4;
+          if (input.charCodeAt(offset+3) === 0x3d) len = 4;
         }
       }
       this_tok_pos += len;
@@ -326,12 +315,10 @@
   function this_tok_parseSingleComment(){
       var pos = this_tok_pos + 1;
       var input = this_tok_input;
-      var len = input.length;
 
-      while (++pos < len) {
-        var c = input.charCodeAt(pos);
-        if (c === 0x0D || c === 0x0A || (c ^ 0x2028) <= 1  ) break;
-      }
+      do {
+        var c = input.charCodeAt(++pos);
+        if (!c || c === 0x0D || c === 0x0A || (c ^ 0x2028) <= 1) break;      } while (true);
 
       this_tok_pos = pos;
 
@@ -341,22 +328,23 @@
   function this_tok_parseMultiComment(){
       var pos = this_tok_pos + 2;
       var input = this_tok_input;
-      var len = input.length;
 
       var noNewline = true;
       var c = 0;
       var d = this_tok_input.charCodeAt(pos);
-      while (pos++ < len) {
+      while (d) {
         c = d;
-        d = input.charCodeAt(pos);
+        d = input.charCodeAt(++pos);
 
-        if (c === 0x2a && d === 0x2f) break;
+        if (c === 0x2a && d === 0x2f) {
+          this_tok_pos = pos+1;
+          if (!noNewline) this_tok_lastNewline = true;
+
+          return 18;
+        }
         if (noNewline) noNewline = !(c === 0x0D || c === 0x0A || (c ^ 0x2028) <= 1);      }
 
-      this_tok_pos = pos+1;
-      if (!noNewline) this_tok_lastNewline = true;
-
-      return 18;
+      this_tok_throwSyntaxError('Unterminated multi line comment found');
     }
   function this_tok_parseSingleString(){
       return this_tok_parseString(0x27);
@@ -367,10 +355,8 @@
   function this_tok_parseString(targetChar){
       var pos = this_tok_pos + 1;
       var input = this_tok_input;
-      var len = input.length;
-      var c = 0;
-      while (pos < len) {
-        c = input.charCodeAt(pos++);
+      do {
+        var c = input.charCodeAt(pos++);
 
         if (c === targetChar) {
           this_tok_pos = pos;
@@ -380,12 +366,12 @@
         if ((c & 8) === 8) {
           if (c === 0x5c) pos = this_tok_parseStringEscape(pos);
           else if ((c & 83) < 3 && (c === 0x0A || c === 0x0D || c === 0x2028 || c === 0x2029)) {
-            throw 'No newlines in strings! ' + this_tok_syntaxError();
+            this_tok_throwSyntaxError('No newlines in strings!');
           }
         }
-      }
+      } while (c);
 
-      throw 'Unterminated string found at '+pos;
+      this_tok_throwSyntaxError('Unterminated string found');
     }
   function this_tok_parseStringEscape(pos){
       var input = this_tok_input;
@@ -393,12 +379,12 @@
 
       if (c === 0x75) {
         if (this_tok_parseUnicodeEscapeBody(pos+1)) pos += 4;
-        else throw 'Invalid unicode escape.'+this_tok_syntaxError();
+        else this_tok_throwSyntaxError('Invalid unicode escape');
       } else if (c === 0x0D) {
         if (input.charCodeAt(pos+1) === 0x0A) ++pos;
       } else if (c === 0x78) {
         if (this_tok_parseHexDigit(input.charCodeAt(pos+1)) && this_tok_parseHexDigit(input.charCodeAt(pos+2))) pos += 2;
-        else throw 'Invalid hex escape.'+this_tok_syntaxError();
+        else this_tok_throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     }
@@ -424,17 +410,16 @@
       } else if (d === 0x2e) {
         this_tok_parseAfterDot(this_tok_pos+2);
       } else if (d <= 0x39 && d >= 0x30) {
-        throw 'Invalid octal literal.'+this_tok_syntaxError();
+        this_tok_throwSyntaxError('Invalid octal literal');
       } else {
         this_tok_pos = this_tok_parseExponent(d, this_tok_pos+1, this_tok_input);
       }
 
       return 7;
     }
-  function this_tok_parseHexNumber(delta){
+  function this_tok_parseHexNumber(){
       var pos = this_tok_pos + 1;
       var input = this_tok_input;
-      var len = input.length;
 
       do var c = input.charCodeAt(++pos);
       while ((c <= 0x39 && c >= 0x30) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
@@ -445,7 +430,6 @@
   function this_tok_parseDecimalNumber(){
       var pos = this_tok_pos;
       var input = this_tok_input;
-      var len = input.length;
 
       do var c = input.charCodeAt(++pos);
       while (c >= 0x30 && c <= 0x39);
@@ -472,7 +456,7 @@
         if (c === 0x2d || c === 0x2b) c = input.charCodeAt(++pos);
 
         if (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
-        else throw 'Missing required digits after exponent.'+this_tok_syntaxError();
+        else this_tok_throwSyntaxError('Missing required digits after exponent');
 
         while (c >= 0x30 && c <= 0x39) c = input.charCodeAt(++pos);
       }
@@ -493,45 +477,100 @@
 
         if (c === 0x5c) {          var d = input.charCodeAt(this_tok_pos++);
           if (d === 0x0A || d === 0x0D || (d ^ 0x2028) <= 1  ) {
-            throw 'Newline can not be escaped in regular expression.'+this_tok_syntaxError();
+            this_tok_throwSyntaxError('Newline can not be escaped in regular expression');
           }
         }
-        else if (c === 0x28) this_tok_regexBody();        else if (c === 0x29 || c === 0x2f) return;
+        else if (c === 0x2f) return;
         else if (c === 0x5b) this_tok_regexClass();
         else if (c === 0x0A || c === 0x0D || (c ^ 0x2028) <= 1  ) {
-          throw 'Newline can not be escaped in regular expression ['+c+'].'+this_tok_syntaxError();
+          this_tok_throwSyntaxError('Newline can not be escaped in regular expression ['+c+']');
         }
       }
 
-      throw 'Unterminated regular expression at eof.'+this_tok_syntaxError();
+      this_tok_throwSyntaxError('Unterminated regular expression at eof');
     }
   function this_tok_regexClass(){
       var input = this_tok_input;
       var len = input.length;
       var pos = this_tok_pos;
-      while (pos < len) {
+
+      while (true) {
         var c = input.charCodeAt(pos++);
 
         if (c === 0x5d) {
           this_tok_pos = pos;
           return;
         }
-        if (c === 0x0A || c === 0x0D || (c ^ 0x2028) <= 1  ) {
-          throw 'Illegal newline in regex char class.'+this_tok_syntaxError();
-        }
-        if (c === 0x5c) {          if (this_tok_options.regexNoClassEscape) {
+
+        if (c === 0x5c) {
+          if (this_tok_options.regexNoClassEscape) {
             var d = input.charCodeAt(pos++);
             if (d === 0x0A || d === 0x0D || (d ^ 0x2028) <= 1  ) {
-              throw 'Newline can not be escaped in regular expression.'+this_tok_syntaxError();
+              this_tok_throwSyntaxError('Newline can not be escaped in regular expression');
             }
           }
+        } else if (c === 0x0A || c === 0x0D || (c ^ 0x2028) <= 1) {          this_tok_throwSyntaxError('Illegal newline in regex char class');
+        } else if (!c && pos >= len) {          this_tok_throwSyntaxError('Unterminated regular expression');
         }
       }
-
-      throw 'Unterminated regular expression at eof.'+this_tok_syntaxError();
     }
   function this_tok_regexFlags(){
-      --this_tok_pos;      this_tok_pos = this_tok_parseIdentifierRest();
+      if (this_tok_options.skipRegexFlagCheck) {
+        --this_tok_pos;        this_tok_pos = this_tok_parseIdentifierRest();
+        return;
+      }
+
+      var input = this_tok_input;
+      var pos = this_tok_pos;
+
+      var g = false;
+      var m = false;
+      var i = false;
+
+      var c = input.charCodeAt(pos);
+      while (true) {
+        var backslash = false;
+
+        if (c === 0x5c) {
+          backslash = true;
+          c = this_tok_regexFlagUniEscape(input, pos+1);
+        }
+
+        if (c === 0x67) {
+          if (g) throw 'Illegal duplicate regex flag';
+          g = true;
+        } else if (c === 0x69) {
+          if (i) throw 'Illegal duplicate regex flag';
+          i = true;
+        } else if (c === 0x6D) {
+          if (m) throw 'Illegal duplicate regex flag';
+          m = true;
+        } else {
+          break;
+        }
+
+        if (backslash) pos += 5;
+        c = input.charCodeAt(++pos);
+      }
+      this_tok_pos = pos;
+    }
+  function this_tok_regexFlagUniEscape(input, pos){
+      if (input.charCodeAt(pos) !== 0x75 || input.charCodeAt(pos+1) !== 0x30 || input.charCodeAt(pos+2) !== 0x30 || input.charCodeAt(pos+3) !== 0x36) {
+        return 0;
+      }
+
+      var c = input.charCodeAt(pos+4);
+      if (c === 0x37) {
+        return 0x67;
+      }
+      if (c === 0x39) {
+        return 0x69;
+      }
+      if (c === 0x64) {
+        return 0x6D;
+      }
+
+      return 0;
     }
   function this_tok_parseIdentifier(){
       this_tok_pos = this_tok_parseIdentifierRest();
@@ -539,8 +578,7 @@
     }
   function this_tok_parseIdentifierRest(){
       var input = this_tok_input;
-      var len = input.length;
-      var start = this_tok_lastStart;
+
       var pos = this_tok_pos + 1;
 
       while (true) {
@@ -586,7 +624,7 @@
           return true;
         }
         if (u >= 0x30 && u <= 0x39) {
-          if (atStart) throw 'Digit not allowed at start of identifier, not even escaped.'+this_tok_syntaxError();
+          if (atStart) this_tok_throwSyntaxError('Digit not allowed at start of identifier, not even escaped');
           return true;
         }
         if (u === 0x5f || u === 0x24) {
@@ -596,60 +634,59 @@
           return true;
         }
 
-        throw 'Encountered \\u escape ('+u+') but the char is not a valid identifier part.'
+        this_tok_throwSyntaxError('Encountered \\u escape ('+u+') but the char is not a valid identifier part');
       }
 
       this_tok_pos = pos;
-      throw 'Unexpected backslash inside identifier.'+this_tok_syntaxError();
+      this_tok_throwSyntaxError('Unexpected backslash inside identifier');
     }
   function this_tok_getLastValue(){
-      return this_tok_lastValue || (this_tok_lastValue = this_tok_input.substring(this_tok_lastStart, this_tok_lastStop));
+      return this_tok_input.substr(this_tok_lastOffset, this_tok_lastLen);
 
-    }
-  function this_tok_getLastNum(){
-      return this_tok_nextNum1;
     }
   function this_tok_getNum(offset){
-      return this_tok_input.charCodeAt(this_tok_lastStart+offset)
+      return this_tok_input.charCodeAt(this_tok_lastOffset+offset);
     }
-  function this_tok_getLastLen(){
-      return this_tok_lastLen;
+  function this_tok_throwSyntaxError(message){
+      if (this_tok_options.neverThrow) {
+        if (this_tok_options.onToken) this_tok_options.onToken.call(null, 16);
+        if (this_tok_options.saveTokens) this_tok_tokens.push({type:16});        return;      }
+      var pos = (this_tok_lastStop === this_tok_pos) ? this_tok_lastOffset : this_tok_pos;
+      var inp = this_tok_input;
+      throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
     }
-  function this_tok_getLastNewline(){
-      return this_tok_lastNewline;
-    }
-  function this_tok_syntaxError(value){
-      var pos = (this_tok_lastStop === this_tok_pos) ? this_tok_lastStart : this_tok_pos;
+  var Tok = exports.Tok = function(input, opt){
+    var options = this_tok_options = {
+      saveToken: false,
+      createBlackStream: false,
+      regexNoClassEscape: false,
+      neverThrow: false,
+      onToken: null,
+      allowCallAssignment: false,
+      skipRegexFlagCheck: false,
+    };
 
-      return (
-        ' A syntax error at pos='+pos+' '+
-        (
-          typeof value !== 'undefined' ?
-            'expected '+(typeof value === 'number' ? 'type='+Tok[value] : 'value=`'+value+'`') +
-            ' is '+(typeof value === 'number' ? Tok[this_tok_lastType] : '`'+this_tok_getLastValue()+'`') + ' '
-            :
-            ''
-        ) +
-        'Search for #|#: `'+this_tok_input.substring(pos-2000, pos)+'#|#'+this_tok_input.substring(pos, pos+2000)+'`'
-      );
-    }
-  var Tok = exports.Tok = function(input, options){
-    this_tok_options = options || {};    this_tok_input = (input||'');
+    if (opt.saveTokens) options.saveTokens = true;
+    if (opt.createBlackStream) options.createBlackStream = true;
+    if (opt.regexNoClassEscape) options.regexNoClassEscape = true;
+    if (opt.neverThrow) options.neverThrow = true;    if (opt.onToken) options.onToken = opt.onToken;
+    if (opt.skipRegexFlagCheck) options.skipRegexFlagCheck = opt.skipRegexFlagCheck;
+
+    this_tok_input = (input||'');
     this_tok_len = this_tok_input.length;
 
     this_tok_pos = 0;
 
-    this_tok_lastStart = 0;
+    this_tok_lastOffset = 0;
     this_tok_lastStop = 0;
     this_tok_lastLen = 0;
     this_tok_lastType = 0;
-    this_tok_lastValue = '';
     this_tok_lastNewline = false;
 
-    this_tok_nextNum1 = 0;
-    this_tok_nextNum2 = 0;
+    this_tok_firstTokenChar = 0;
 
     this_tok_tokenCountAll = 0;
+    this_tok_tokenCountBlack = 0;
 
     if (options.saveTokens) {
       this['tokens'] = this_tok_tokens = [];
@@ -694,30 +731,30 @@
   Tok.WHITE = 18;  var this_par_options =  null;
   var this_par_tok =  null;
   function this_par_run(){
-      this_tok_nextExpr();
-      this_par_parseStatements(false, false, false, '');
+      this_tok_next(true);
+      this_par_parseStatements(false, '', false, '');
 
-      if (this_tok_pos !== this_tok_len || this_tok_lastType !== 14) throw 'Did not complete parsing... '+this_tok_syntaxError();
+      if (this_tok_pos !== this_tok_len || this_tok_lastType !== 14) this_tok_throwSyntaxError('Did not complete parsing..');
 
       return this;
     }
   function this_par_parseStatements(inFunction, inLoop, inSwitch, labelSet){
-      while (!this_tok_isType(14) && this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, true));
+      while (this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, true, ''));
     }
-  function this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, optional){
-      if (this_tok_isType(13)) {
-        return this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
-      } else {
-        return this_par_parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
+  function this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, optional, freshLabels){
+      if (this_tok_lastType === 13) {
+        this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels);
+        return true;
       }
+      return this_par_parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
     }
   function this_par_parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional) {
-      var c = this_tok_getLastNum();
+      var c = this_tok_firstTokenChar;
 
-      if (c === 0x7d) {        if (!optional) throw 'Expected more input...';        return false;
+      if (c === 0x7d) {        if (!optional) this_tok_throwSyntaxError('Expected more input..');        return false;
       }
 
-      if (c === 0x7b) {        this_tok_nextExpr();
+      if (c === 0x7b) {        this_tok_next(true);
         this_par_parseBlock(true, inFunction, inLoop, inSwitch, labelSet);
         return true;
       }
@@ -729,74 +766,86 @@
         return true;
       }
 
-      if (c === 0x3b) {        this_tok_nextExpr();
+      if (c === 0x3b) {        this_tok_next(true);
         return true;
       }
 
-      if (c === 0x2b || c === 0x2d) {        if (this_tok_getNum(1) === c || this_tok_getLastLen() === 1) {
+      if (c === 0x2b || c === 0x2d) {        if (this_tok_getNum(1) === c || this_tok_lastLen === 1) {
           this_par_parseExpressionStatement();
           return true;
         }
-        throw 'Statement cannot start with binary op.'+this_tok_syntaxError();
+        this_tok_throwSyntaxError('Statement cannot start with binary op');
       }
 
-      if (this_tok_isValue() || c === 0x5b) {
-        this_par_parseExpressionStatement();
+      var type = this_tok_lastType;
+
+      if (type === 10 || c === 0x5b) {        this_par_parseExpressionStatement();
         return true;
       }
 
-      if (c === 0x21) {        if (this_tok_getLastLen() === 1) {
+      if (c === 0x21) {        if (this_tok_lastLen === 1) {
           this_par_parseExpressionStatement();
           return true;
         }
-        throw 'Statement cannot start with binary op.'+this_tok_syntaxError();
+        this_tok_throwSyntaxError('Statement cannot start with binary op');
       }
 
-      if (c === 0x7e) {
-        this_par_parseExpressionStatement();
+      if (type === 7 || c === 0x7e || type === 8) {        this_par_parseExpressionStatement();
         return true;
       }
 
-      if (!optional) throw 'Expected more input...';
+      if (!optional) this_tok_throwSyntaxError('Expected more input..');
+
       return false;
     }
-  function this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet){
+  function this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels){
       var value = this_tok_getLastValue();
 
-      var len = this_tok_getLastLen();
+      var len = this_tok_lastLen;
 
-      if (len >= 2 && len <= 8) {
-        var c = this_tok_getLastNum();
+      if (len >= 2) {
+        var c = this_tok_firstTokenChar;
 
         if (c === 0x74) {
-          if (value === 'try') return this_par_parseTry(inFunction, inLoop, inSwitch, labelSet);
-          if (value === 'throw') return this_par_parseThrow();
+          if (len !== 4) {            if (value === 'try') return this_par_parseTry(inFunction, inLoop, inSwitch, labelSet);
+            if (value === 'throw') return this_par_parseThrow();
+          }
         }
-        else if (c === 0x69 && len === 2 && this_tok_getNum(1) === 0x66) return this_par_parseIf(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === 0x76 && value === 'var') return this_par_parseVar();
-        else if (c === 0x72 && value === 'return') return this_par_parseReturn(inFunction, inLoop, inSwitch);
+        else if (c === 0x69) {
+          if (value === 'if') return this_par_parseIf(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === 0x76) {
+          if (value === 'var') return this_par_parseVar();
+        }
+        else if (c === 0x72) {
+          if (value === 'return') return this_par_parseReturn(inFunction);
+        }
         else if (c === 0x66) {
+          if (value === 'for') return this_par_parseFor(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'function') return this_par_parseFunction(true);
-          if (value === 'for') return this_par_parseFor(inFunction, inLoop, inSwitch, labelSet);
         }
         else if (c === 0x63) {
-          if (value === 'continue') return this_par_parseContinue(inFunction, inLoop, inSwitch, labelSet);
-          if (value === 'case') return false;        }
-        else if (c === 0x62 && value === 'break') return this_par_parseBreak(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'case') return this_par_parseCase(inSwitch);
+          if (value === 'continue') return this_par_parseContinue(inLoop, labelSet);
+        }
+        else if (c === 0x62) {
+          if (value === 'break') return this_par_parseBreak(inLoop, inSwitch, labelSet);
+        }
         else if (c === 0x64) {
-          if (value === 'default') return false;          if (len === 2 && this_tok_getNum(1) === 0x6f) return this_par_parseDo(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'default') return this_par_parseDefault(inSwitch);
+          if (value === 'do') return this_par_parseDo(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'debugger') return this_par_parseDebugger();
         }
-        else if (c === 0x73 && value === 'switch') return this_par_parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === 0x73) {
+          if (value === 'switch') return this_par_parseSwitch(inFunction, inLoop, labelSet);
+        }
         else if (c === 0x77) {
-          if (value === 'while') return this_par_parseWhile(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'while') return this_par_parseWhile(inFunction, inSwitch, labelSet, inLoop+freshLabels);
           if (value === 'with') return this_par_parseWith(inFunction, inLoop, inSwitch, labelSet);
         }
       }
 
-      this_par_parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
-
-      return true;
+      this_par_parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet, freshLabels);
     }
   function this_par_parseStatementHeader(){
       this_tok_mustBeNum(0x28, true);
@@ -804,29 +853,27 @@
       this_tok_mustBeNum(0x29, true);
     }
   function this_par_parseVar(){
-      this_tok_nextPunc();
+      this_tok_next(false);
       do {
-        if (this_par_isReservedIdentifier(false)) throw 'Var name is reserved.'+this_tok_syntaxError();
+        if (this_par_isReservedIdentifier(false)) this_tok_throwSyntaxError('Var name is reserved');
         this_tok_mustBeIdentifier(true);
-        if (this_tok_isNum(0x3d) && this_tok_getLastLen() === 1) {
-          this_tok_nextExpr();
+        if (this_tok_firstTokenChar === 0x3d && this_tok_lastLen === 1) {
+          this_tok_next(true);
           this_par_parseExpression();
         }
       } while(this_tok_nextExprIfNum(0x2c));
       this_par_parseSemi();
-
-      return true;
     }
   function this_par_parseVarPartNoIn(){
       var vars = 0;
 
       do {
-        if (this_par_isReservedIdentifier(false)) throw 'Var name is reserved.'+this_tok_syntaxError();
+        if (this_par_isReservedIdentifier(false)) this_tok_throwSyntaxError('Var name ['+this_tok_getLastValue()+'] is reserved');
         this_tok_mustBeIdentifier(true);
         ++vars;
 
-        if (this_tok_isNum(0x3d) && this_tok_getLastLen() === 1) {
-          this_tok_nextExpr();
+        if (this_tok_firstTokenChar === 0x3d && this_tok_lastLen === 1) {
+          this_tok_next(true);
           this_par_parseExpressionNoIn();
         }
 
@@ -835,52 +882,48 @@
       return vars === 1;
     }
   function this_par_parseIf(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();
+      this_tok_next(false);
       this_par_parseStatementHeader();
-      this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+      this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false, '');
 
       if (this_tok_getLastValue() === 'else') {
-        this_tok_nextExpr();
-        this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
+        this_tok_next(true);
+        this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false, '');
       }
-
-      return true;
     }
-  function this_par_parseDo(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextExpr();      this_par_parseStatement(inFunction, true, inSwitch, labelSet, false);
+  function this_par_parseDo(inFunction, inSwitch, labelSet, inLoop){
+      this_tok_next(true);      this_par_parseStatement(inFunction, inLoop || ' ', inSwitch, labelSet, false, '');
       this_tok_mustBeString('while', false);
       this_tok_mustBeNum(0x28, true);
       this_par_parseExpressions();
-      this_tok_mustBeNum(0x29, false);      this_par_parseSemi();
+      this_tok_mustBeNum(0x29, true);
 
-      return true;
+      if (this_par_options.requireDoWhileSemi || this_tok_firstTokenChar === 0x3b) {
+        this_par_parseSemi();
+      }
     }
-  function this_par_parseWhile(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();
+  function this_par_parseWhile(inFunction, inSwitch, labelSet, inLoop){
+      this_tok_next(false);
       this_par_parseStatementHeader();
-      this_par_parseStatement(inFunction, true, inSwitch, labelSet, false);
-
-      return true;
+      this_par_parseStatement(inFunction, inLoop || ' ', inSwitch, labelSet, false, '');
     }
-  function this_par_parseFor(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();      this_tok_mustBeNum(0x28, true);
+  function this_par_parseFor(inFunction, inSwitch, labelSet, inLoop){
+      this_tok_next(false);      this_tok_mustBeNum(0x28, true);
 
       if (this_tok_nextExprIfNum(0x3b)) this_par_parseForEachHeader();      else {
         var validForInLhs;
 
-        if (this_tok_isNum(0x76) && this_tok_nextPuncIfString('var')) validForInLhs = this_par_parseVarPartNoIn();
+        if (this_tok_firstTokenChar === 0x76 && this_tok_nextPuncIfString('var')) validForInLhs = this_par_parseVarPartNoIn();
         else validForInLhs = this_par_parseExpressionsNoIn();
 
         if (this_tok_nextExprIfNum(0x3b)) this_par_parseForEachHeader();
-        else if (this_tok_getLastNum() !== 0x69 || this_tok_getNum(1) !== 0x6e || this_tok_getLastLen() !== 2) throw 'Expected `in` or `;` here...'+this_tok_syntaxError();
-        else if (!validForInLhs && this_par_options.strictForInCheck) throw 'Encountered illegal for-in lhs.'+this_tok_syntaxError();
+        else if (this_tok_firstTokenChar !== 0x69 || this_tok_getNum(1) !== 0x6e || this_tok_lastLen !== 2) this_tok_throwSyntaxError('Expected `in` or `;` here..');
+        else if (!validForInLhs && this_par_options.strictForInCheck) this_tok_throwSyntaxError('Encountered illegal for-in lhs');
         else this_par_parseForInHeader();
       }
 
       this_tok_mustBeNum(0x29, true);
-      this_par_parseStatement(inFunction, true, inSwitch, labelSet, false);
-
-      return true;
+      this_par_parseStatement(inFunction, inLoop || ' ', inSwitch, labelSet, false, '');
     }
   function this_par_parseForEachHeader(){
       this_par_parseOptionalExpressions();
@@ -888,190 +931,162 @@
       this_par_parseOptionalExpressions();
     }
   function this_par_parseForInHeader(){
-      this_tok_nextExpr();      this_par_parseExpressions();
+      this_tok_next(true);      this_par_parseExpressions();
     }
-  function this_par_parseContinue(inFunction, inLoop, inSwitch, labelSet){
-      if (!inLoop) throw 'Can only continue in a loop.'+this_tok_syntaxError();
+  function this_par_parseContinue(inLoop, labelSet){
+      if (!inLoop) this_tok_throwSyntaxError('Can only continue in a loop');
 
-      this_tok_nextPunc();      if (!this_tok_getLastNewline() && this_tok_isType(13)) {
-        this_par_parseLabel(labelSet);
-      }
-
+      var type = this_tok_next(false);      if (type === 13 && !this_tok_lastNewline) {
+        var label = this_tok_getLastValue();
+        if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
+          this_tok_throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']');
+        }
+        if (!inLoop || inLoop.indexOf(' '+label+' ') < 0) {
+          this_tok_throwSyntaxError('Label ['+label+'] is not a valid label for this loop');
+        }
+        this_tok_next(true);      }
       this_par_parseSemi();
-
-      return true;
     }
-  function this_par_parseBreak(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();      if (this_tok_getLastNewline() || !this_tok_isType(13)) {        if (!inLoop && !inSwitch) {
-          throw 'Break without value only in loops or switches.'+this_tok_syntaxError();
+  function this_par_parseBreak(inLoop, inSwitch, labelSet){
+      var type = this_tok_next(false);      if (type !== 13 || this_tok_lastNewline) {
+        if (!inLoop && !inSwitch) {
+          this_tok_throwSyntaxError('Break without value only in loops or switches');
         }
       } else {
-        this_par_parseLabel(labelSet);
-      }
+        var label = this_tok_getLastValue();
+        if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
+          this_tok_throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']');
+        }
+        this_tok_next(true);      }
 
       this_par_parseSemi();
-
-      return true;
     }
-  function this_par_parseLabel(labelSet){
-      var label = this_tok_getLastValue();
-      if (labelSet && labelSet.indexOf(label) >= 0) {
-        this_tok_nextExpr();      } else {
-        throw 'Label ['+label+'] not found in label set ['+labelSet+'].'+this_tok_syntaxError();
-      }
-    }
-  function this_par_parseReturn(inFunction, inLoop, inSwitch){
-      if (!inFunction && !this_par_options.functionMode) throw 'Can only return in a function.'+this_tok_syntaxError('break');
+  function this_par_parseReturn(inFunction){
+      if (!inFunction && !this_par_options.functionMode) this_tok_throwSyntaxError('Can only return in a function');
 
-      this_tok_nextExpr();
-      if (this_tok_getLastNewline()) this_par_addAsi();
-      else {
-        this_par_parseOptionalExpressions();
-        this_par_parseSemi();
-      }
-
-      return true;
+      this_tok_next(true);
+      if (!this_tok_lastNewline) this_par_parseOptionalExpressions();
+      this_par_parseSemi();
     }
   function this_par_parseThrow(){
-      this_tok_nextExpr();
-      if (this_tok_getLastNewline()) {
-        throw 'No newline allowed directly after a throw, ever.'+this_tok_syntaxError();
-      }
+      this_tok_next(true);
+      if (this_tok_lastNewline) this_tok_throwSyntaxError('No newline allowed directly after a throw, ever');
 
       this_par_parseExpressions();
       this_par_parseSemi();
-
-      return true;
     }
-  function this_par_parseSwitch(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();
+  function this_par_parseSwitch(inFunction, inLoop, labelSet){
+      this_tok_next(false);
       this_par_parseStatementHeader();
       this_tok_mustBeNum(0x7b, true);
-      this_par_parseSwitchBody(inFunction, inLoop, true, labelSet);
-      this_tok_mustBeNum(0x7d, true);
 
-      return true;
-    }
-  function this_par_parseSwitchBody(inFunction, inLoop, inSwitch, labelSet){
-      this_par_parseCases(inFunction, inLoop, inSwitch, labelSet);
-      if (this_tok_nextPuncIfString('default')) {
-        this_par_parseDefault(inFunction, inLoop, inSwitch, labelSet);
-        this_par_parseCases(inFunction, inLoop, inSwitch, labelSet);
+      var value = this_tok_getLastValue();
+      var defaults = 0;
+      if (value === 'default') ++defaults;
+      if (value !== 'case' && !defaults && value !== '}') this_tok_throwSyntaxError('Switch body must begin with case or default or be empty');
+
+      while (this_par_parseStatement(inFunction, inLoop, true, labelSet, true, '')) {
+        if (this_tok_getLastValue() === 'default' && ++defaults > 1) this_tok_throwSyntaxError('Only one default allowed per switch');
       }
+
+      this_tok_mustBeNum(0x7d, true);
     }
-  function this_par_parseCases(inFunction, inLoop, inSwitch, labelSet){
-      while (this_tok_nextPuncIfString('case')) {
-        this_par_parseCase(inFunction, inLoop, inSwitch, labelSet);
-      }
-    }
-  function this_par_parseCase(inFunction, inLoop, inSwitch, labelSet){
+  function this_par_parseCase(inSwitch){
+      if (!inSwitch) this_tok_throwSyntaxError('Can only use case in a switch');
+      this_tok_next(true);
       this_par_parseExpressions();
-      this_tok_mustBeNum(0x3a, true);
-      this_par_parseStatements(inFunction, inLoop, inSwitch, labelSet);
+      this_tok_mustBeNum(0x3a, false);
     }
-  function this_par_parseDefault(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_mustBeNum(0x3a, true);
-      this_par_parseStatements(inFunction, inLoop, inSwitch, labelSet);
+  function this_par_parseDefault(inSwitch){
+      if (!inSwitch) this_tok_throwSyntaxError('Can only use default in a switch');      this_tok_next(true);
+      this_tok_mustBeNum(0x3a, false);
     }
   function this_par_parseTry(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();
+      this_tok_next(false);
       this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
 
-      var one = this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet);
-      var two = this_par_parseFinally(inFunction, inLoop, inSwitch, labelSet);
-
-      if (!one && !two) throw 'Try must have at least a catch or finally block or both.'+this_tok_syntaxError();
-      return true;
+      var count = this_tok_tokenCountAll;
+      this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet);
+      this_par_parseFinally(inFunction, inLoop, inSwitch, labelSet);
+      if (count === this_tok_tokenCountAll) this_tok_throwSyntaxError('Try must have at least a catch or finally block or both');
     }
   function this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet){
       if (this_tok_nextPuncIfString('catch')) {
-        this_tok_mustBeNum(0x28, false);
+        var type = this_tok_mustBeNum(0x28, false);
 
-        if (this_tok_isType(13)) {
-          if (this_par_isReservedIdentifier(false)) throw 'Catch scope var name is reserved.'+this_tok_syntaxError();
-          this_tok_nextPunc();
+        if (type === 13) {
+          if (this_par_isReservedIdentifier(false)) this_tok_throwSyntaxError('Catch scope var name is reserved');
+          this_tok_next(false);
         } else {
-          throw 'Missing catch scope variable.'+this_tok_syntaxError();
+          this_tok_throwSyntaxError('Missing catch scope variable');
         }
 
         this_tok_mustBeNum(0x29, false);
         this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
-
-        return true;
       }
-      return false;
     }
   function this_par_parseFinally(inFunction, inLoop, inSwitch, labelSet){
       if (this_tok_nextPuncIfString('finally')) {
         this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet);
-
-        return true;
       }
-      return false;
     }
   function this_par_parseDebugger(){
-      this_tok_nextPunc();
+      this_tok_next(true);
       this_par_parseSemi();
-
-      return true;
     }
   function this_par_parseWith(inFunction, inLoop, inSwitch, labelSet){
-      this_tok_nextPunc();
+      this_tok_next(false);
       this_par_parseStatementHeader();
-      this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false);
-
-      return true;
+      this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false, '');
     }
   function this_par_parseFunction(forFunctionDeclaration){
-      this_tok_nextPunc();      if (this_tok_isType(13)) {        if (this_par_isReservedIdentifier(false)) throw 'Function name ['+this_tok_getLastValue()+'] is reserved.'+this_tok_syntaxError();
-        this_tok_nextPunc();
+      var type = this_tok_next(false);      if (type === 13) {        if (this_par_isReservedIdentifier(false)) this_tok_throwSyntaxError('Function name ['+this_tok_getLastValue()+'] is reserved');
+        this_tok_next(false);
       } else if (forFunctionDeclaration) {
-        throw 'Function declaration requires a name.'+this_tok_syntaxError();
+        this_tok_throwSyntaxError('Function declaration requires a name');
       }
-      this_par_parseFunctionRemainder(-1, forFunctionDeclaration);
-
-      return true;
+      this_par_parseFunctionRemainder(2, forFunctionDeclaration);
     }
-  function this_par_parseFunctionRemainder(paramCount, forFunctionDeclaration){
+  function this_par_parseFunctionRemainder(paramCount, nextExpr){
       this_tok_mustBeNum(0x28, false);
       this_par_parseParameters(paramCount);
       this_tok_mustBeNum(0x29, false);
-      this_par_parseCompleteBlock(forFunctionDeclaration, true, false, false, '');
+      this_par_parseCompleteBlock(nextExpr, true, '', false, '');
     }
   function this_par_parseParameters(paramCount){
-      if (this_tok_isType(13)) {
-        if (paramCount === 0) throw 'Getters have no parameters.'+this_tok_syntaxError();
-        if (this_par_isReservedIdentifier(false)) throw 'Function param name is reserved.'+this_tok_syntaxError();
-        this_tok_nextExpr();
+      if (this_tok_lastType === 13) {
+        if (paramCount === 0) this_tok_throwSyntaxError('Getters have no parameters');
+        if (this_par_isReservedIdentifier(false)) this_tok_throwSyntaxError('Function param name is reserved.');
+        this_tok_next(true);
         while (this_tok_nextExprIfNum(0x2c)) {
-          if (paramCount === 1) throw 'Setters have exactly one param.'+this_tok_syntaxError();
+          if (paramCount === 1) this_tok_throwSyntaxError('Setters have exactly one param');
 
-          if (this_tok_isType(13)) {
-            if (this_par_isReservedIdentifier(false)) throw 'Function param name is reserved.'+this_tok_syntaxError();
-            this_tok_nextPunc();
+          if (this_tok_lastType === 13) {
+            if (this_par_isReservedIdentifier(false)) this_tok_throwSyntaxError('Function param name is reserved');
+            this_tok_next(false);
           } else {
-            throw 'Missing func param name.'+this_tok_syntaxError();
+            this_tok_throwSyntaxError('Missing func param name');
           }
         }
       } else if (paramCount === 1) {
-        throw 'Setters have exactly one param.'+this_tok_syntaxError();
+        this_tok_throwSyntaxError('Setters have exactly one param');
       }
     }
-  function this_par_parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
+  function this_par_parseBlock(nextExpr, inFunction, inLoop, inSwitch, labelSet){
       this_par_parseStatements(inFunction, inLoop, inSwitch, labelSet);
-      this_tok_mustBeNum(0x7d, notForFunctionExpression);
+      this_tok_mustBeNum(0x7d, nextExpr);
     }
-  function this_par_parseCompleteBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
+  function this_par_parseCompleteBlock(nextExpr, inFunction, inLoop, inSwitch, labelSet){
       this_tok_mustBeNum(0x7b, true);
-      this_par_parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet);
+      this_par_parseBlock(nextExpr, inFunction, inLoop, inSwitch, labelSet);
     }
   function this_par_parseSemi(){
       if (this_tok_nextExprIfNum(0x3b)) return 9;
       if (this_par_parseAsi()) return 15;
-      throw 'Unable to parse semi, unable to apply ASI.'+this_tok_syntaxError();
+      this_tok_throwSyntaxError('Unable to parse semi, unable to apply ASI');
     }
   function this_par_parseAsi(){
-      if (this_tok_isNum(0x7d) || (this_tok_getLastNewline() && !this_tok_isType(8)) || this_tok_isType(14)) {
+      if (this_tok_firstTokenChar === 0x7d || this_tok_lastNewline || this_tok_lastType === 14) {
         return this_par_addAsi();
       }
       return false;
@@ -1084,17 +1099,23 @@
       this_par_parseExpressions();
       this_par_parseSemi();
     }
-  function this_par_parseExpressionOrLabel(labelName, inFunction, inLoop, inSwitch, labelSet){
+  function this_par_parseExpressionOrLabel(labelName, inFunction, inLoop, inSwitch, labelSet, freshLabels){
       var identifier = this_tok_getLastValue();
 
       var assignable = this_par_parsePrimaryOrPrefix(false, false, true);
 
+      var count = this_tok_tokenCountAll;
       this_par_parseAssignments(assignable);
       this_par_parseNonAssignments();
 
-      if (this_tok_nextExprIfNum(0x3a)) {
-        if (!assignable) throw 'Label ['+identifier+'] is a reserved keyword.'+this_tok_syntaxError();
-        this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet+' '+labelName, false);
+      if (this_tok_firstTokenChar === 0x3a) {
+        if (this_tok_tokenCountAll !== count) this_tok_throwSyntaxError('Unexpected colon encountered');
+        if (!assignable) this_tok_throwSyntaxError('Label ['+identifier+'] is a reserved keyword');
+        var labelSpaced = labelName + ' ';
+        if (labelSet.indexOf(' ' + labelSpaced) >= 0) this_tok_throwSyntaxError('Label ['+identifier+'] is already defined');
+        this_tok_next(true);
+
+        if (inLoop) inLoop += labelSpaced;        this_par_parseStatement(inFunction, inLoop, inSwitch, (labelSet || ' ')+labelSpaced, false, (freshLabels||' ')+labelSpaced);
       } else {
         if (this_tok_nextExprIfNum(0x2c)) this_par_parseExpressions();
         this_par_parseSemi();
@@ -1114,7 +1135,7 @@
       var groupAssignable = this_par_parseExpression();
       while (this_tok_nextExprIfNum(0x2c)) {
         this_par_parseExpression();
-        groupAssignable = false;
+        groupAssignable = 0;
       }
       return groupAssignable;
     }
@@ -1123,7 +1144,7 @@
 
       var groupAssignable = this_par_parseExpressionOptional();
 
-      if (tokCount === this_tok_tokenCountAll) throw 'Expected to parse an expression, did not find any.'+this_tok_syntaxError();
+      if (tokCount === this_tok_tokenCountAll) this_tok_throwSyntaxError('Expected to parse an expression, did not find any');
 
       return groupAssignable;
     }
@@ -1137,36 +1158,38 @@
         this_par_parseNonAssignments();
         var endCount = this_tok_tokenCountAll;
 
-        assignable = (beforeNonAssignments === endCount) && (beforeAssignments !== beforeNonAssignments || assignable);
+        if (beforeNonAssignments !== endCount) assignable = 0;
+        else if (beforeAssignments !== beforeNonAssignments) assignable = 2;
       }
 
       return assignable;
     }
   function this_par_parseAssignments(assignable){
+      var strictAssign = this_par_options.strictAssignmentCheck;
       while (this_par_isAssignmentOperator()) {
-        if (!assignable && this_par_options.strictAssignmentCheck) throw 'LHS of this assignment is invalid assignee.'+this_tok_syntaxError();
-        this_tok_nextExpr();
+        if (!assignable && strictAssign) this_tok_throwSyntaxError('LHS of this assignment is invalid assignee');
+        this_tok_next(true);
         assignable = this_par_parsePrimary(false);
       }
     }
   function this_par_parseNonAssignments(){
       while (true) {
         if (this_par_isBinaryOperator()) {
-          this_tok_nextExpr();
+          this_tok_next(true);
           this_par_parsePrimary(false);
         }
-        else if (this_tok_isNum(0x3f)) this_par_parseTernary();
+        else if (this_tok_firstTokenChar === 0x3f) this_par_parseTernary();
         else break;
       }
     }
   function this_par_parseTernary(){
-      this_tok_nextExpr();
+      this_tok_next(true);
       this_par_parseExpression();
       this_tok_mustBeNum(0x3a, true);
       this_par_parseExpression();
     }
   function this_par_parseTernaryNoIn(){
-      this_tok_nextExpr();
+      this_tok_next(true);
       this_par_parseExpression();
       this_tok_mustBeNum(0x3a, true);
       this_par_parseExpressionNoIn();
@@ -1175,7 +1198,7 @@
       var validForInLhs = this_par_parseExpressionNoIn();
       while (this_tok_nextExprIfNum(0x2c)) {
         this_par_parseExpressionNoIn();
-        validForInLhs = false;
+        validForInLhs = 0;
       }
 
       return validForInLhs;
@@ -1183,109 +1206,118 @@
   function this_par_parseExpressionNoIn(){
       var assignable = this_par_parsePrimary(false);
       var count = this_tok_tokenCountAll;
-      this_par_parseAssignments(assignable);
-
-      var repeat = true;
+      this_par_parseAssignments(assignable);      var repeat = true;
       while (repeat) {
         if (this_par_isBinaryOperator()) {
-          if (this_tok_getLastNum() === 0x69 && this_tok_getNum(1) === 0x6e && this_tok_getLastLen() === 2) {            repeat = false;
+          if (this_tok_firstTokenChar === 0x69 && this_tok_getNum(1) === 0x6e && this_tok_lastLen === 2) {            repeat = false;
           } else {
-            this_tok_nextExpr();
+            this_tok_next(true);
             this_par_parsePrimary(false);
           }
-        } else if (this_tok_isNum(0x3f)) {
+        } else if (this_tok_firstTokenChar === 0x3f) {
           this_par_parseTernaryNoIn();
         } else {
           repeat = false;
         }
       }
 
-      return (assignable && count === this_tok_tokenCountAll);
+      return count === this_tok_tokenCountAll ? assignable : 0;
     }
   function this_par_parsePrimary(optional){
       return this_par_parsePrimaryOrPrefix(optional, false, false);
     }
   function this_par_parsePrimaryOrPrefix(optional, hasNew, maybeLabel){
-      var len = this_tok_getLastLen();
-      var c = this_tok_getLastNum();
+      var len = this_tok_lastLen;
+      var c = this_tok_firstTokenChar;
 
-      if (this_tok_isType(13)) {
+      if (this_tok_lastType === 13) {
         if (len > 2) {
           if (c === 0x74) {
             if (len === 6 && this_tok_nextExprIfString('typeof')) {
-              if (hasNew) throw 'typeof is illegal right after new.' + this_tok_syntaxError();
+              if (hasNew) this_tok_throwSyntaxError('typeof is illegal right after new');
               this_par_parsePrimaryOrPrefix(false, false, false);
-              return false;
+              return 0;
             }
-          } else if (this_tok_isNum(0x66) && this_tok_isString('function')) {
+          } else if (this_tok_firstTokenChar === 0x66 && this_tok_getLastValue() === 'function') {
               this_par_parseFunction(false);
 
-              return this_par_parsePrimarySuffixes(false, hasNew, false);
+              return this_par_parsePrimarySuffixes(0, hasNew, false);
           } else if (c === 0x6e) {
             if (this_tok_nextExprIfString('new')) {
               return this_par_parsePrimaryOrPrefix(false, true || hasNew, false);
             }
           } else if (c === 0x64) {
             if (len === 6 && this_tok_nextExprIfString('delete')) {
-              if (hasNew) throw 'delete is illegal right after new.'+this_tok_syntaxError();
+              if (hasNew) this_tok_throwSyntaxError('delete is illegal right after new');
               this_par_parsePrimaryOrPrefix(false, false, false);
-              return false;
+              return 0;
             }
           } else if (c === 0x76) {
             if (this_tok_nextExprIfString('void')) {
-              if (hasNew) throw 'void is illegal right after new.'+this_tok_syntaxError();
+              if (hasNew) this_tok_throwSyntaxError('void is illegal right after new');
               this_par_parsePrimaryOrPrefix(false, false, false);
-              return false;
+              return 0;
             }
           }
         }
 
-        return this_par_parsePrimaryCoreIdentifier(optional, hasNew, maybeLabel);
+        return this_par_parsePrimaryCoreIdentifier(hasNew, maybeLabel);
       }
 
-      if ((c === 0x21 || c === 0x7e) && this_tok_getLastLen() === 1) {
-        if (hasNew) throw '! and ~ are illegal right after new.'+this_tok_syntaxError();
-        this_tok_nextExpr();
+      if ((c === 0x21 || c === 0x7e) && this_tok_lastLen === 1) {
+        if (hasNew) this_tok_throwSyntaxError('! and ~ are illegal right after new');
+        this_tok_next(true);
         this_par_parsePrimaryOrPrefix(false, false, false);
-        return false;
+        return 0;
       }
 
       if (c === 0x2d || c === 0x2b) {
-        if (hasNew) throw 'illegal operator right after new.'+this_tok_syntaxError();
-        if (this_tok_getLastLen() === 1) {
-          this_tok_nextExpr();
+        if (hasNew) this_tok_throwSyntaxError('illegal operator right after new');
+        if (this_tok_lastLen === 1) {
+          this_tok_next(true);
           this_par_parsePrimaryOrPrefix(false, false, false);
         } else if (this_tok_getNum(1) === c) {
-          this_tok_nextExpr();
+          this_tok_next(true);
           var assignable = this_par_parsePrimaryOrPrefix(false, false, false);
-          if (!assignable && this_par_options.strictAssignmentCheck) throw 'The rhs of ++ or -- was not assignable.' + this_tok_syntaxError();
+          if (!assignable && this_par_options.strictAssignmentCheck) this_tok_throwSyntaxError('The rhs of ++ or -- was not assignable');
+        } else {
+          this_tok_throwSyntaxError('Illegal operator, expecting primary core');
         }
-        return false;
+        return 0;
       }
 
-      return this_par_parsePrimaryCoreOther(optional, hasNew, maybeLabel);
+      return this_par_parsePrimaryCoreOther(optional, hasNew);
     }
-  function this_par_parsePrimaryCoreIdentifier(optional, hasNew, maybeLabel){
+  function this_par_parsePrimaryCoreIdentifier(hasNew, maybeLabel){
       var identifier = this_tok_getLastValue();
-      var c = this_tok_getLastNum();
+      var c = this_tok_firstTokenChar;
 
       if (maybeLabel ? this_par_isReservedIdentifierSpecial() : this_par_isReservedIdentifier(true)) {
-        throw 'Reserved identifier ['+identifier+'] found in expression.'+this_tok_syntaxError();
+        this_tok_throwSyntaxError('Reserved identifier ['+identifier+'] found in expression');
       }
 
-      this_tok_nextPunc();
+      this_tok_next(false);
 
-      return this_par_parsePrimarySuffixes(!this_par_isValueKeyword(c, identifier), hasNew, maybeLabel);
-    }
-  function this_par_parsePrimaryCoreOther(optional, hasNew, maybeLabel){
-      var assignable = this_par_parsePrimaryValue(optional);
+      var assignable = !this_par_isValueKeyword(c, identifier) ? 1 : 0;
       return this_par_parsePrimarySuffixes(assignable, hasNew, maybeLabel);
+    }
+  function this_par_parsePrimaryCoreOther(optional, hasNew){
+      var count = this_tok_tokenCountAll;
+      var assignable = this_par_parsePrimaryValue(optional);
+      if (count === this_tok_tokenCountAll) {
+        if (optional) return 0;        this_tok_throwSyntaxError('Missing required primary');      }
+      return this_par_parsePrimarySuffixes(assignable, hasNew, false);
     }
   function this_par_parsePrimaryValue(optional){
       var t = this_tok_lastType;
-      if (t === 10 || t === 7 || t === 8) {
-        this_tok_nextPunc();
-        return false;
+      if (t === 10 || t === 8) {
+        this_tok_next(false);
+        return 0;
+      }
+
+      if (t === 7) {
+        this_tok_nextWhiteAfterNumber();
+        return 0;
       }
 
       if (this_tok_nextExprIfNum(0x28)) {
@@ -1294,48 +1326,48 @@
 
       if (this_tok_nextExprIfNum(0x7b)) {
         this_par_parseObject();
-        return false;
+        return 0;
       }
 
       if (this_tok_nextExprIfNum(0x5b)) {
         this_par_parseArray();
-        return false;
+        return 0;
       }
 
-      if (!optional) throw 'Unable to parse required primary value.'+this_tok_syntaxError();
-      return true;
+      if (!optional) this_tok_throwSyntaxError('Unable to parse required primary value');
+      return 1;
     }
   function this_par_parsePrimarySuffixes(assignable, unassignableUntilAfterCall, maybeLabel){
       var colonIsError = false;
+      var allowCallAssignment = this_par_options.allowCallAssignment;
 
-      if (unassignableUntilAfterCall) assignable = false;      while (true) {
-        var c = this_tok_getLastNum();
+      if (unassignableUntilAfterCall) assignable = 0;      while (true) {
+        var c = this_tok_firstTokenChar;
         if (c > 0x2e) {
           if (c !== 0x5b) break;
-          this_tok_nextExpr();
-          this_par_parseExpressions();          this_tok_mustBeNum(0x5d, false);          if (!unassignableUntilAfterCall) assignable = true;        } else if (c === 0x2e) {
-          if (!this_tok_isType(9)) throw 'Dot/Number (?) after identifier?'+this_tok_syntaxError();          this_tok_nextPunc();
-          this_tok_mustBeIdentifier(false);          if (!unassignableUntilAfterCall) assignable = true;        } else if (c === 0x28) {
-          this_tok_nextExpr();
+          this_tok_next(true);
+          this_par_parseExpressions();          this_tok_mustBeNum(0x5d, false);          if (!unassignableUntilAfterCall && !assignable) assignable = 1;        } else if (c === 0x2e) {
+          if (this_tok_lastType === 7) break;          this_tok_next(false);
+          this_tok_mustBeIdentifier(false);          if (!unassignableUntilAfterCall && !assignable) assignable = 1;        } else if (c === 0x28) {
+          this_tok_next(true);
           this_par_parseOptionalExpressions();
           this_tok_mustBeNum(0x29, false);          unassignableUntilAfterCall = false;
-          assignable = false;        } else {
-
-          if ((c === 0x2b || c === 0x2d) && this_tok_getNum(1) === c) {
-            if (!assignable && this_par_options.strictAssignmentCheck) throw 'Postfix increment not allowed here.' + this_tok_syntaxError();
-            this_tok_nextPunc();
-            assignable = false;          }
+          assignable = allowCallAssignment;        } else {
+          if (!this_tok_lastNewline && (c === 0x2b || c === 0x2d) && this_tok_getNum(1) === c) {
+            if (!assignable && this_par_options.strictAssignmentCheck) this_tok_throwSyntaxError('Postfix increment not allowed here');
+            this_tok_next(false);
+            assignable = 0;          }
 
           break;
         }
         colonIsError = true;
       }
-      if (colonIsError && maybeLabel && c === 0x3a) throw 'Invalid label here, I think.'+this_tok_syntaxError();
+      if (colonIsError && maybeLabel && c === 0x3a) this_tok_throwSyntaxError('Invalid label here, I think');
       return assignable;
     }
   function this_par_isAssignmentOperator(){
-      var len = this_tok_getLastLen();
-      var c = this_tok_getLastNum();
+      var len = this_tok_lastLen;
+      var c = this_tok_firstTokenChar;
 
       if (len === 1) return c === 0x3d;
 
@@ -1359,19 +1391,19 @@
       return false;
     }
   function this_par_isBinaryOperator(){
-      var c = this_tok_getLastNum();
-      var len = this_tok_getLastLen();
+      var c = this_tok_firstTokenChar;
+      var len = this_tok_lastLen;
 
       if (c === 0x3b || c === 0x29 || c === 0x2c) return false;      if (len === 1) {
         if (c === 0x5d || c === 0x7d) return false;        return c === 0x2b || c === 0x2a || c === 0x3c || c === 0x2d || c === 0x3e || c === 0x2f || c === 0x26 || c === 0x7c || c === 0x25 || c === 0x5e;
       }
       if (len === 2) {
-        return c === 0x3d || c === 0x21 || c === 0x3c || c === 0x3e || (c === 0x26 && this_tok_getNum(1) === 0x26) || (c === 0x7c && this_tok_getNum(1) === 0x7c) || this_tok_isString('in');
+        return c === 0x3d || c === 0x21 || c === 0x3c || c === 0x3e || (c === 0x26 && this_tok_getNum(1) === 0x26) || (c === 0x7c && this_tok_getNum(1) === 0x7c) || this_tok_getLastValue() === 'in';
       }
       if (len === 3) {
-        return c === 0x3d || c === 0x21 || (c === 0x3e && this_tok_getNum(2) === 0x3e)
+        return c === 0x3d || c === 0x21 || (c === 0x3e && this_tok_getNum(2) === 0x3e);
       }
-      if (len === 10) return this_tok_isString('instanceof');
+      if (len === 10) return this_tok_getLastValue() === 'instanceof';
 
       return false;
     }
@@ -1379,6 +1411,8 @@
       var groupAssignable = this_par_parseExpressions();
 
       this_tok_mustBeNum(0x29, false);
+
+      if (groupAssignable === 2) groupAssignable = 0;
 
       return groupAssignable;
     }
@@ -1388,24 +1422,21 @@
     }
   function this_par_parseObject(){
       do {
-        if (this_tok_isValue() && !this_tok_isType(8)) this_par_parsePair();
-      } while (this_tok_nextExprIfNum(0x2c));      this_tok_mustBeNum(0x7d, false);
+        var type = this_tok_lastType;
+        if (type === 13 || type === 10 || type === 7) this_par_parsePair();      } while (this_tok_nextExprIfNum(0x2c));      this_tok_mustBeNum(0x7d, false);
     }
   function this_par_parsePair(){
-      if (this_tok_isNum(0x67) && this_tok_nextPuncIfString('get')) {
-        if (this_tok_isType(13)) {
-          if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved.'+this_tok_syntaxError();
-          this_tok_nextPunc();
-
-          this_par_parseFunctionRemainder(0, true);
+      if (this_tok_lastLen !== 3) return this_par_parseData();      var c = this_tok_firstTokenChar;
+      if (c === 0x67 && this_tok_nextPuncIfString('get')) {
+        if (this_tok_lastType === 13) {
+          this_tok_next(false);
+          this_par_parseFunctionRemainder(this_par_options.checkAccessorArgs ? 0 : 2, true);
         }
         else this_par_parseDataPart();
-      } else if (this_tok_isNum(0x73) && this_tok_nextPuncIfString('set')) {
-        if (this_tok_isType(13)) {
-          if (this_par_isReservedIdentifier(false)) throw 'Getter name is reserved.'+this_tok_syntaxError();
-          this_tok_nextPunc();
-
-          this_par_parseFunctionRemainder(1, true);
+      } else if (c === 0x73 && this_tok_nextPuncIfString('set')) {
+        if (this_tok_lastType === 13) {
+          this_tok_next(false);
+          this_par_parseFunctionRemainder(this_par_options.checkAccessorArgs ? 1 : 2, true);
         }
         else this_par_parseDataPart();
       } else {
@@ -1413,7 +1444,7 @@
       }
     }
   function this_par_parseData(){
-      this_tok_nextPunc();
+      this_tok_next(false);
       this_par_parseDataPart();
     }
   function this_par_parseDataPart(){
@@ -1422,13 +1453,13 @@
     }
   function this_par_isReservedIdentifierSpecial(){
       var value;
-      var c = this_tok_getLastNum();
+      var c = this_tok_firstTokenChar;
 
       if (
-        c < 0x63 ||        c === 0x74 ||        this_tok_getLastLen() === 1      ) return false;
+        c < 0x63 ||        c === 0x74 ||        this_tok_lastLen === 1      ) return false;
 
       if (c === 0x63) {        var d = this_tok_getNum(1);
-        return (d === 0x6f && this_tok_getLastValue() === 'const') || (d === 0x61 && ((value=this_tok_getLastValue()) === 'catch' || value === 'case')) || (d === 0x6c && this_tok_getLastValue() === 'class')
+        return (d === 0x6f && this_tok_getLastValue() === 'const') || (d === 0x61 && ((value=this_tok_getLastValue()) === 'catch' || value === 'case')) || (d === 0x6c && this_tok_getLastValue() === 'class');
       }
 
       if (c === 0x73) {        return this_tok_getNum(1) === 0x75 && this_tok_getLastValue() === 'super';
@@ -1445,15 +1476,14 @@
       }
 
       if (c === 0x69) {        var d = this_tok_getNum(1);
-        return (d === 0x6e && (this_tok_getLastLen() === 2 || this_tok_getLastValue() === 'instanceof')) || (d === 0x6d && this_tok_getLastValue() === 'import');
+        return (d === 0x6e && (this_tok_lastLen === 2 || this_tok_getLastValue() === 'instanceof')) || (d === 0x6d && this_tok_getLastValue() === 'import');
       }
 
       return false;
     }
   function this_par_isReservedIdentifier(ignoreValues){
-      var value;
-      var c = this_tok_getLastNum();
-      var len = this_tok_getLastLen();
+      var c = this_tok_firstTokenChar;
+      var len = this_tok_lastLen;
 
       if (len === 1) return false;      if (c <= 0x61) return false;      if (len === 4) {        if (c === 0x74) {
           if (ignoreValues) return false;
@@ -1555,9 +1585,11 @@
     if (!options.regexNoClassEscape) options.regexNoClassEscape = false;
     if (!options.strictForInCheck) options.strictForInCheck = false;
     if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
+    if (!options.checkAccessorArgs) options.checkAccessorArgs = false;
+    if (!options.requireDoWhileSemi) options.requireDoWhileSemi = false;
+    options.allowCallAssignment = options.allowCallAssignment ? 1 : 0;
 
     this['tok'] = new Tok(input, this_par_options);
-    if (options.nextToken) this['tok'].nextTokenIfElse_search = options.nextToken;
     this['run'] = this_par_run;  };
 
   Par.updateTok = function(T) {
