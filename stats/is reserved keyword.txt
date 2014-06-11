@@ -1,0 +1,192 @@
+stats are in comments per step.
+this function checks all reserved keywords in sloppy mode.
+optionally you can have it ignore value keywords (this, false, null, true)
+
+isReservedIdentifier: function(ignoreValues){
+      // note that this function will return false most of the time
+      // if it returns true, a syntax error will probably be thrown
+      // in all non-error cases, input token will be an identifier
+
+      // TOFIX: skip statement keywords when checking for label
+      // TOFIX: should ignoreValues also skip `function`?
+
+      // len=1: 36%
+      // len=2: 7%
+      // len=3: 7%
+      // len=4: 24%
+      // len=5: 5%
+      // len=6: 4%
+      // len=7: 3%
+      // len=8: 3%
+      // each len >8 is <=2%, combined: 11%
+
+      // keywords per len (from the 16mb bench file):
+      // 1:
+      // 2: do if in: never happens (could it validly?)
+      // 3: new var for try: never happens (could it validly?)
+      // 4: case else void this with enum true null: 17% [this:15.5%, true:1%, null:1.2%]
+      // 5: break catch while throw class super const false: 1% [false: 1%]
+      // 6: typeof return switch delete export import: never
+      // 7: finally default extends: never
+      // 8: continue debugger function: never
+      // 9:
+      // 10: instanceof: never
+
+      // From the above it's obvious that only value keywords might be found
+      // by this function. anything else is probably an error.
+      // The reason statement keywords are not found here is because that is
+      // handled by a function that specifically scans them.
+
+      var value;
+      var tok = this.tok;
+      var c = tok.getLastNum();
+      var len = tok.getLastLen();
+
+      // a:8%, b:6%, c:6%, d:4%, e:4%, f:3%, g:2%, h:2%, i:4%, j:1%, k:1%, l:2%, m:2%, n:4%, o:2%, p:3%, q:0%, r:2%, s:3%, t:17%, u:1%, v:2%, w:1%, x:1%, y:1%, z:0%, rest:17%
+
+      if (len === 1) return false; // 39%
+
+      // stats after only dropping len=1:
+      // len: 1:0, 2:7%, 3:7%, 4:22%, 5:5%, 6:4%, 7:3%, 8:3%, rest:10%
+      // chr: a:2%, b:2%, c:3%, d:2%, e:2%, f:2%, g:1%, h:1%, i:2%, j:0%, k:1%, l:1%, m:1%, n:3%, o:1%, p:2%, q:0%, r:1%, s:3%, t:16%, u:1%, v:1%, w:1%, x:0%, y:0%, z:0%, rest: 12%
+      // conclusion: len=4 (22%) has a significance. c=t (12%) does too. probably the same step, unfortunately. can probably do the <=a trick here as well
+
+      if (c <= ORD_L_A) return false; // 14%
+
+      // after dropping <=a
+      // 1:0, 2:2%, 3:2%, 4:8%, 5:2%, 6:1%, 7:1%, 8:1%, rest: 3%
+      // a:0, b:1%, c:1%, d:1%, e:1%, f:0%, g:0%, h:0%, i:1%, j:0%, k:0%, l:0%, m:1%, n:1%, o:1%, p:1%, q:0%, s:1%, t:7%, u:0%, v:1%, w:0%, x:0%, y:0%, z:0%, rest:0
+      // so: only c=t and len=4 are standing out, slightly. rest is negligible
+
+      if (len === 4) { // 19%
+        // case else void this with enum true null
+        // relevant character stats per position:
+        // 1: t:14% n:2% (centvw)
+        // 2: h:12% a:1% e:1% o:1% r:1% u:2% (ahilnoru)
+        // 3: i:13% d:1% e:1% l:2% u:1% (ilstu)
+        // 4: s:13% e:3% l:2% t:1% (dehmls)
+
+        // true
+        // this
+        if (c === ORD_L_T) {
+          if (ignoreValues) return false;
+          var value = tok.getLastValue();
+          return (value === 'this' || value === 'true');
+        }
+
+        // null
+        if (c === ORD_L_N) {
+          return !ignoreValues && tok.getLastValue() === 'null';
+        }
+
+        // else
+        // enum
+        if (c === ORD_L_E) {
+          // case else true
+          var value = tok.getLastValue();
+          return (value === 'else' || value === 'enum');
+        }
+
+        // case
+        if (c === ORD_L_C) {
+          return tok.getLastValue() === 'case';
+        }
+
+        if (c < ORD_L_V) return false; // 2.3% (way more than the 0.15% of v and w)
+
+        // void
+        if (c === ORD_L_V) {
+          return tok.getLastValue() === 'void';
+        }
+
+        // with
+        if (c === ORD_L_W) {
+          return tok.getLastValue() === 'with';
+        }
+
+        return false;
+      }
+
+//      bcdefinrstvw
+
+      // 1:0 2:4.6 3:4 4:0 5:4.2 6:3 7:2.7 8:2.2 >8:6.9 = 27.6
+      // a:0 b:1.5 c:2.5 d:1.5 e:1.5 f:2 g:1 h:0.5 i:1.5 j:0.5 k:0.5 l:1 m:1: n:1 o:1.5 p:2: q:0 r:1.5 s:2.5 t:1.5 u:1: v:1 w:0.5 x:0.5 y:0 z:0
+
+      if (len >= 7) { // 11.7%
+
+        // 7: finally default extends: never
+        // 8: continue debugger function: never
+        // 10: instanceof: never
+        // cdefi
+
+        if (c > ORD_L_I) return false; // 6.4%
+
+        if (c === ORD_L_C) { // 1.5%
+          return tok.getLastValue() === 'continue';
+        }
+
+        if (c === ORD_L_D) { // 0.8%
+          var value = tok.getLastValue();
+          return value === 'default' || value === 'debugger';
+        }
+
+        if (c === ORD_L_E) { // 0.8%
+          return tok.getLastValue() === 'extends';
+        }
+
+        if (c === ORD_L_F) { // 0.5%
+          var value = tok.getLastValue();
+          return value === 'finally' || value === 'function';
+        }
+
+        if (c === ORD_L_I) { // 0.7%
+          return tok.getLastValue() === 'instanceof';
+        }
+
+        return false; // 1%
+      }
+
+      // 3: new var for try : 4
+      // 5: break catch while throw class super const false: 4.2
+      // 6: typeof return switch delete export import: never: 3
+
+      if (len === 2) { // 4.6%
+        if (c === ORD_L_I) {
+          var value = tok.getLastValue();
+          return value === 'if' || value === 'in';
+        }
+        if (c === ORD_L_D) return tok.getLastValue() === 'do';
+        return false;
+      }
+
+      if (len === 5) { // 4.2%
+        if (c === ORD_L_F) return !ignoreValues && tok.getLastValue() === 'false';
+        if (c === ORD_L_S) return tok.getLastValue() === 'super';
+        if (c === ORD_L_C) {
+          var value = tok.getLastValue();
+          return value === 'catch' || value === 'class' || value === 'const';
+        }
+        if (c === ORD_L_T) return tok.getLastValue() === 'throw';
+        if (c === ORD_L_B) return tok.getLastValue() === 'break';
+        if (c === ORD_L_W) return tok.getLastValue() === 'while';
+        return false;
+      }
+
+      if (len === 3) { // 4%
+        if (c === ORD_L_N) return tok.getLastValue() === 'new';
+        if (c === ORD_L_V) return tok.getLastValue() === 'var';
+        if (c === ORD_L_T) return tok.getLastValue() === 'try';
+        if (c === ORD_L_F) return tok.getLastValue() === 'for';
+        return false;
+      }
+
+      // 3%
+
+      if (c === ORD_L_S) return tok.getLastValue() === 'switch';
+      if (c === ORD_L_R) return tok.getLastValue() === 'return';
+      if (c === ORD_L_T) return tok.getLastValue() === 'typeof';
+      if (c === ORD_L_I) return tok.getLastValue() === 'import';
+      if (c === ORD_L_E) return tok.getLastValue() === 'export';
+      if (c === ORD_L_D) return tok.getLastValue() === 'delete';
+      return false;
+    }

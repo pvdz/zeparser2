@@ -19,6 +19,8 @@
 		<script src="tests.js"></script>
 		<script>
       new function(){
+        var hidePasses = true;
+
         var out = document.createElement('pre');
         document.body.appendChild(out);
         var debug = function(){
@@ -29,49 +31,82 @@
 
         debug("Running test suite...",good.length,"tests");
         debug(' ');
+
+        var TESTINPUT = 0;
+        var TOKENCOUNT = 1;
+        var LEXERCOUNT = 0;
+        var REGEXHINT = 2;
+        var DESCWITHOUTREGEXHINT = 2;
+        var DESCWITHREGEXHINT = 3;
+
+        var NEWLINESTATE_N = 0;
+        var NEWLINESTATE_R = 1;
+        var NEWLINESTATE_RN = 2;
+        var NEWLINESTATE_PS = 3;
+        var NEWLINESTATE_LS = 4;
+        var NEWLINESTATES = ['\\n', '\\r', '\\r\\n', '\\u2028', '\\u2029'];
+        // note: first is `\n`, we dont need to replace anything for that, so it's `false`
+        var NEWLINEFORSTATE = [false, '\r', '\r\n', '\u2028', '\u2029'];
+
         var start = Date.now();
         var ok = 0;
         var fail = 0;
+        var newlineState = NEWLINESTATE_N;
         for (var i=0; i<good.length; ++i) {
+          var currentNewline = NEWLINEFORSTATE[newlineState];
           var test = good[i];
-          var input = test[0];
-          var outputLen = test[1].length ? test[1][0] : test[1];
-          var regexHints = test[3] ? test[2] : []; // if flags, then len=4
-          var desc = test[3] || test[2];
+          var input = test[TESTINPUT];
+          var outputLen = test[TOKENCOUNT].length ? test[TOKENCOUNT][LEXERCOUNT] : test[TOKENCOUNT];
+          var regexHints = test[DESCWITHREGEXHINT] ? test[REGEXHINT] : []; // if flags, then len=4
+          var desc = test[DESCWITHREGEXHINT] || test[DESCWITHOUTREGEXHINT];
+          var errorThrown = false;
+
+          // test all valid newlines
+          if (currentNewline) {
+            input = input.replace(/\n/g, currentNewline);
+            desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+          }
 
           try {
-            var found = 0;
             var types = [];
             var tok = new Tok(input, {});
 
-            var protect = 1000;
+            var tokenCount = 0;
             do {
-              var type = tok.nextWhiteToken(regexHints[found]);
+              var type = tok.nextAnyToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
               types.push(type);
-              ++found;
-            } while (--protect && type !== Tok.EOF);
-            --found;
+            } while (tokenCount < 1000 && type !== Tok.EOF);
 
           } catch (e) {
-            var errorThrown = e.toString();
+            errorThrown = e.toString();
             console.error('Crash for', input);
             console.error(e);
           }
+          tokenCount += tok.tokenCountAll; // add tokens counted by newline+whitespace trick
 
+          var found = tokenCount - 1; // -eof
+
+          var passed = false;
           if (errorThrown) {
-            debug('<b class="red">Test failed:</span>',desc,'('+errorThrown+')'),console.log(desc, tok);
+            debug('<b class="red">Test failed:</b>',desc,'<span class="red">('+errorThrown+')</span>'),console.log(desc, tok);
             ++fail;
           } else if (found == outputLen) {
-            debug('<span class="green">Test '+i+' ok:</span>',desc);
+            if (!hidePasses) debug('<span class="green">Test '+i+' ok:</span>',desc);
             ++ok;
+            passed = true;
           } else {
-            debug('<b class="red">Test failed:</span>',desc,'(found',found,'expected',outputLen+')'),console.log(desc, tok);
+            debug('<b class="red">Test failed:</b>',desc,'<span class="red">(found',found,'expected',outputLen+')</span>'),console.log(desc, tok);
             ++fail;
           }
-          if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
-          debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
-          debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
-          debug('<br/>');
+          if (!passed || !hidePasses) if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
+          if (!passed || !hidePasses) debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
+          if (!passed || !hidePasses) debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
+          if (!passed || !hidePasses) debug('<br/>');
+
+          // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0 && passed);
+          if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+          else newlineState = NEWLINESTATE_N;
         }
         debug("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
         console.log("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);

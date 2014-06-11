@@ -1,0 +1,126 @@
+Tightly check values of each token for a small number of tests.<br>
+Very tedious work so not doing this for every test, but there are a few things we must check beyond the general case.<br>
+One example is to make sure that the whitespace optimization doesn't screw me over.<br>
+Another focus point is black and white token indexes.<br>
+
+<script src="../src/uni.js"></script>
+<script src="../src/tok.js"></script>
+<script src="../src/par.js"></script>
+<script>
+  var NUMBER = 7;
+  var REGEX = 8;
+  var PUNCTUATOR = 9;
+  var STRING = 10;
+  var IDENTIFIER = 13;
+  var EOF = 14;
+  var ASI = 15;
+  var WHITE = 18;
+
+  function assert(a,b,c){ if (a!==b) throw new Error(c+' (found: '+a+' expected: '+b+')'); }
+  function assertToken(desc, token, index, type, value, start, stop, white, black){
+    assert(token.type, type, desc+': '+index+' ('+Tok[type]+'): type');
+    assert(token.start, start, desc+': '+index+' ('+Tok[type]+'): start');
+    assert(token.stop, stop, desc+': '+index+' ('+Tok[type]+'): stop');
+    assert(token.value, value, desc+': '+index+' ('+Tok[type]+'): value');
+    assert(token.white, white, desc+': '+index+' ('+Tok[type]+'): white-index');
+    assert(token.black, black, desc+': '+index+' ('+Tok[type]+'): black-index');
+  }
+  function assertCode(desc, code, expect){
+    var whites = 0;
+    var blacks = 0;
+    function onToken(type, value, start, stop, white) {
+      assertToken('(onToken) '+desc, {
+        type:type,
+        value:value,
+        start:start,
+        stop:stop,
+        white:white,
+        black: (type !== WHITE ? blacks++ : undefined)
+      }, whites, expect[whites][0], expect[whites][1], expect[whites][2], expect[whites][3], whites, expect[whites][4]);
+
+      ++whites
+    }
+
+    var tokens = Par.parse(code, {saveTokens: true, onToken:onToken}).tok.tokens;
+    console.log(desc+':', tokens);
+    expect.forEach(function(arr, i){
+      assertToken(desc, tokens[i], i, arr[0], arr[1], arr[2], arr[3], i, arr[4]);
+    });
+
+    // do it again with just onToken
+    whites = 0;
+    blacks = 0;
+    Par.parse(code, {saveTokens: false, onToken:onToken}).tok.tokens;
+  }
+
+  assertCode('base', "foo ;", [
+    [IDENTIFIER, 'foo', 0, 3, 0],
+    [WHITE, ' ', 3, 4, undefined],
+    [PUNCTUATOR, ';', 4, 5, 1],
+    [EOF, '', 5, 5, 2]
+  ]);
+
+  assertCode('newline without space', "a;\nb;", [
+    [IDENTIFIER, 'a', 0, 1, 0],
+    [PUNCTUATOR, ';', 1, 2, 1],
+    [WHITE, '\n', 2, 3, undefined],
+    [IDENTIFIER, 'b', 3, 4, 2],
+    [PUNCTUATOR, ';', 4, 5, 3],
+    [EOF, '', 5, 5, 4]
+  ]);
+
+  assertCode('crlf without space', "a;\r\nb;", [
+    [IDENTIFIER, 'a', 0, 1, 0],
+    [PUNCTUATOR, ';', 1, 2, 1],
+    [WHITE, '\r\n', 2, 4, undefined],
+    [IDENTIFIER, 'b', 4, 5, 2],
+    [PUNCTUATOR, ';', 5, 6, 3],
+    [EOF, '', 6, 6, 4]
+  ]);
+
+  assertCode('newline and space', "a;\n b;", [
+    [IDENTIFIER, 'a', 0, 1, 0],
+    [PUNCTUATOR, ';', 1, 2, 1],
+    [WHITE, '\n', 2, 3, undefined],
+    [WHITE, ' ', 3, 4, undefined],
+    [IDENTIFIER, 'b', 4, 5, 2],
+    [PUNCTUATOR, ';', 5, 6, 3],
+    [EOF, '', 6, 6, 4]
+  ]);
+
+  assertCode('crlf with space', "a;\r\n b;", [
+    [IDENTIFIER, 'a', 0, 1, 0],
+    [PUNCTUATOR, ';', 1, 2, 1],
+    [WHITE, '\r\n', 2, 4, undefined],
+    [WHITE, ' ', 4, 5, undefined],
+    [IDENTIFIER, 'b', 5, 6, 2],
+    [PUNCTUATOR, ';', 6, 7, 3],
+    [EOF, '', 7, 7, 4]
+  ]);
+
+  assertCode('newline and space and tab', "a;\n \tb;", [
+    [IDENTIFIER, 'a', 0, 1, 0],
+    [PUNCTUATOR, ';', 1, 2, 1],
+    [WHITE, '\n', 2, 3, undefined],
+    [WHITE, ' ', 3, 4, undefined],
+    [WHITE, '\t', 4, 5, undefined],
+    [IDENTIFIER, 'b', 5, 6, 2],
+    [PUNCTUATOR, ';', 6, 7, 3],
+    [EOF, '', 7, 7, 4]
+  ]);
+
+  assertCode('return with newline should not add asi if followed by semi', "function f(){return\n;}", [
+    [IDENTIFIER, 'function', 0, 8, 0],
+    [WHITE, ' ', 8, 9, undefined],
+    [IDENTIFIER, 'f', 9, 10, 1],
+    [PUNCTUATOR, '(', 10, 11, 2],
+    [PUNCTUATOR, ')', 11, 12, 3],
+    [PUNCTUATOR, '{', 12, 13, 4],
+    [IDENTIFIER, 'return', 13, 19, 5],
+    [WHITE, '\n', 19, 20, undefined],
+    [PUNCTUATOR, ';', 20, 21, 6],
+    [PUNCTUATOR, '}', 21, 22, 7],
+    [EOF, '', 22, 22, 8]
+  ]);
+
+</script>

@@ -18,16 +18,29 @@
     <script src="../src/tok.js"></script>
     <script src="../src/par.js"></script>
     <script>
-      var s = '(function(exports){\nvar a=b=/x/;\n})(typeof exports === \'object\' ? exports : window);';
-      console.log("parsing: ", s);
+      var s = "this.x = a;";
+      console.warn("Parsing:", [s]);
 
-      console.log(Par.parse(
-        s,
-        {
-          functionMode: false,
-          regexNoClassEscape: false,
-        }
-      ));
+      var p = new Par(s, {
+        functionMode: false,
+        regexNoClassEscape: false,
+        saveTokens: true,
+        strictAssignmentCheck: true,
+        strictForInCheck: true,
+      });
 
-      console.log('Parsed ok.');
+      try {
+        p.run();
+        console.log('Parsed ok.');
+      } finally {
+        console.log('window.p:',p);
+        console.log('window.p.tok.tokens:',p.tok.tokens);
+        console.log(p.tok.tokens.map(function(t){
+          var c = t.value.charCodeAt(0);
+          if (t.value.length === 1 && (c <= 20 || c >= 127)) return Tok[t.type]+'[\\x'+(c<16?0:'')+c.toString(16)+'].'+ t.value.length;
+          return Tok[t.type]+'['+ t.value+'].'+ t.value.length;
+        }));
+        console.log('tokenCountAll:', p.tok.tokenCountAll);
+//        console.log('tost:',tost());
+      }
     </script>

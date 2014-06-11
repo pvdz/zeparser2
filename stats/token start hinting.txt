@@ -1,0 +1,78 @@
+ 801418 primary or unary prefix
+ 603818 primary suffix or primary end
+ 554269 -+[( or primary end
+ 466847 statement start
+ 389792 identifier
+ 376105 :-+[( or primary end
+ 248916 semi or start of statement
+ 128990 comma or expression stop or statement start
+ 127959 operator
+  85711 , or ]
+  64443 must have some whitespace, must be identifier
+  64443 , or ; or statement start
+  57788 = or , or ; or statement start
+  55133 , or )
+  52235 object key name
+  50130 must be {
+  49225 :
+  47626 must be identifier or )
+  47602 must be identifier or (
+  46594 (
+  46570 )
+  44717 else or statement start
+  35690 unary or primary
+  34978 expression start or ; or statement start
+  24356 must be identifier
+  17254 must be (
+   7730 must be )
+   6943 either expression, var keyword, or ;
+   6691 either ; or `in`
+   6655 = or , or ;
+   5851 must be ;
+   4778 case or default or }
+   4060 must be :
+   2742 semi or statement start or identifier
+    887 must be catch or finally
+    787 finally or statement start
+    700 must be expression start
+    482 identifier or colon
+    112 must be while
+     24 , or }
+
+
+-+[( or primary end: { ignored:0 parsed:1158087 punctuator:1154599 .:271438 ,:105421 ;:171472 =:85954 ):146260 (:142552 }:40467 ||:9940 [:40518 ]:37340 ===:6047 ==:9548 &&:10994 !=:3746 identifier:3488 ?:6032 ::6914 --:434 >:3004 <:7111 ++:6682 +:16390 !==:2271 -:6430 %:286 +=:1426 /:1556 *:9521 >=:1246 <=:795 &:908 -=:448 *=:275 /=:48 ^:121 >>>:51 |:317 >>:311 |=:97 &=:43 <<:172 %=:6 ^=:6 >>=:1 }
+primary or unary prefix: { ignored:38374 parsed:763044 identifier:511223 regex:2183 string:79107 number:75994 punctuator:94537 {:13578 ):34130 !:11725 [:9611 ]:3564 -:4132 (:16391 ++:810 --:202 +:94 ;:17 ~:108 ,:175 }
+statement start: { ignored:35365 parsed:431482 identifier:288851 punctuator:142549 (:990 {:51360 }:89544 ++:90 !:37 --:56 [:38 ;:432 string:70 number:11 -:2 eof:1 }
+identifier: { ignored:0 parsed:455022 identifier:455022 }
+:-+[( or primary end: { ignored:0 parsed:376105 punctuator:375813 identifier:292 }
+semi or start of statement: { ignored:248734 parsed:182 punctuator:179 identifier:3 }
+comma or expression stop or statement start: { ignored:128990 parsed:0 }
+operator: { ignored:119834 parsed:0 }
+(: { ignored:0 parsed:63848 punctuator:63848 (:63848 }
+= or , or ; or statement start: { ignored:0 parsed:57788 punctuator:57780 identifier:8 }
+, or ): { ignored:0 parsed:55133 punctuator:55133 ,:23569 ):31564 }
+:: { ignored:4116 parsed:49169 punctuator:49169 }
+, or ]: { ignored:52235 parsed:0 }
+object key name: { ignored:0 parsed:52235 punctuator:2986 identifier:44075 string:4697 number:477 }
+{: { ignored:0 parsed:50130 punctuator:50130 }
+identifier or ): { ignored:0 parsed:47626 punctuator:16062 identifier:31564 }
+identifier or (: { ignored:0 parsed:47602 punctuator:38078 identifier:9524 }
+else or statement start: { ignored:266 parsed:44451 identifier:32747 punctuator:11704 }
+unary or primary: { ignored:0 parsed:35690 identifier:30144 number:3465 punctuator:2034 string:7 regex:40 }
+expression start or ; or statement start: { ignored:0 parsed:34978 identifier:27806 punctuator:4960 string:1372 number:825 regex:15 }
+identifier or , or ): { ignored:0 parsed:23569 identifier:23569 }
+operator or ;: { ignored:8125 parsed:0 }
+): { ignored:6943 parsed:787 punctuator:787 }
+either expression, var keyword, or ;: { ignored:0 parsed:6943 identifier:6691 punctuator:252 }
+= or , or ;: { ignored:0 parsed:6655 punctuator:5846 identifier:809 }
+case or default or }: { ignored:4060 parsed:718 identifier:718 }
+semi or statement start or identifier: { ignored:0 parsed:2742 punctuator:2672 identifier:70 }
+catch or finally: { ignored:0 parsed:887 identifier:887 }
+finally or statement start: { ignored:0 parsed:787 punctuator:362 identifier:425 }
+expression start: { ignored:0 parsed:700 string:121 identifier:560 punctuator:19 }
+identifier or colon: { ignored:0 parsed:482 punctuator:458 identifier:24 }
+while: { ignored:0 parsed:112 identifier:112 }
+, or }: { ignored:0 parsed:24 punctuator:24 }
+
+
+

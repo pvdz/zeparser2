@@ -1,6 +1,17 @@
 // If you see magic numbers and bools all over the place, it means this
 // file has been post-processed by a build script. If you want to read
 // this file, see https://github.com/qfox/zeparser2
+
+// TOFIX: generate huge benchmark files and derive specific coding styles from them;
+// - tabs vs spaces,
+// - newline (cr/lf/crlf),
+// - minified vs normal,
+// - unicode identifiers/jquery/underscore heavy/uppercase,
+// - if/else vs &&||,
+// - labels usage (build script),
+
+// TOFIX: `(c|1) === ORD_LS_2029` or `(c ^ ORD_PS_2028) <= 1` or `c === ORD_PS || c === ORD_LS`?
+
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
 
@@ -24,32 +35,36 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE, LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
-  // extra assignment and for-in checks
-  var NOPARSE = 0;
-  var NONASSIGNEE = 1; // invalid lhs for assignments
-  var NONFORIN = 2; // comma, assignment, non-assignee
-  var ASSIGNEE = 4;
-  var NEITHER = NONASSIGNEE | NONFORIN;
-  var ISLABEL = 8;
-
   // boolean constants
   var OPTIONAL = true;
   var REQUIRED = false;
-  var NOTFORFUNCTIONEXPRESSION = true;
   var PARSEDSOMETHING = true;
   var PARSEDNOTHING = false;
   var FORFUNCTIONDECL = true;
   var NOTFORFUNCTIONDECL = false;
   var NEXTTOKENCANBEREGEX = true;
   var NEXTTOKENCANBEDIV = false;
-  var INLOOP = true;
-  var NOTINLOOP = false;
+  var INLOOP = ' ';
+  var NOTINLOOP = '';
+  var EMPTY_LABELSET = '';
   var INSWITCH = true;
   var NOTINSWITCH = false;
   var INFUNCTION = true;
   var NOTINFUNCTION = false;
   var IGNOREVALUES = true;
   var DONTIGNOREVALUES = false;
+  var HASNEW = true;
+  var HASNONEW = false;
+  var NOTASSIGNABLE = 0;
+  var ASSIGNABLE = 1;
+  var ASSIGNABLEUNLESSGROUPED = 2;
+  var MAYBELABEL = true;
+  var NOTLABEL = false;
+  var EXPR = true;
+  var PUNC = false;
+  var NOARGS = 0;
+  var ONEARG = 1;
+  var ANYARGS = 2;
 
   var ORD_L_A = 0x61;
   var ORD_L_B = 0x62;
@@ -60,10 +75,13 @@
   var ORD_L_G = 0x67;
   var ORD_L_H = 0x68;
   var ORD_L_I = 0x69;
+  var ORD_L_J = 0x6a;
+  var ORD_L_K = 0x6b;
   var ORD_L_L = 0x6c;
   var ORD_L_M = 0x6d;
   var ORD_L_N = 0x6e;
   var ORD_L_O = 0x6f;
+  var ORD_L_P = 0x70;
   var ORD_L_Q = 0x71;
   var ORD_L_R = 0x72;
   var ORD_L_S = 0x73;
@@ -73,6 +91,7 @@
   var ORD_L_W = 0x77;
   var ORD_L_X = 0x78;
   var ORD_L_Y = 0x79;
+  var ORD_L_Z = 0x7a;
 
   var ORD_OPEN_CURLY = 0x7b;
   var ORD_CLOSE_CURLY = 0x7d;
@@ -108,15 +127,23 @@
     if (!options.regexNoClassEscape) options.regexNoClassEscape = false;
     if (!options.strictForInCheck) options.strictForInCheck = false;
     if (!options.strictAssignmentCheck) options.strictAssignmentCheck = false;
+    if (!options.checkAccessorArgs) options.checkAccessorArgs = false;
+    if (!options.requireDoWhileSemi) options.requireDoWhileSemi = false;
+    options.allowCallAssignment = options.allowCallAssignment ? ASSIGNABLE : NOTASSIGNABLE;
 
     // `this['tok'] prevents build script mangling :)
     this['tok'] = new Tok(input, this.options);
     this['run'] = this.run; // used in Par.parse
   };
 
-  exports.Par.parse = function(input, options){
+  Par.updateTok = function(T) {
+    Tok = T;
+  };
+
+  Par.parse = function(input, options){
     var par = new Par(input, options);
     par.run();
+
     return par;
   };
 
@@ -128,10 +155,15 @@
      * @property {boolean} [options.saveTokens=false] Make the tokenizer put all found tokens in .tokens
      * @property {boolean} [options.createBlackStream=false] Requires saveTokens, put black tokens in .black
      * @property {boolean} [options.functionMode=false] In function mode, `return` is allowed in global space
-//     * @property {boolean} [options.scriptMode=false] (TODO, #12)
+//     * @property {boolean} [options.scriptMode=false] (TOFIX, #12)
      * @property {boolean} [options.regexNoClassEscape=false] Don't interpret backslash in regex class as escape
      * @property {boolean} [options.strictForInCheck=false] Reject the lhs for a `for` if it's technically bad (not superseded by strict assignment option)
      * @property {boolean} [options.strictAssignmentCheck=false] Reject the lhs for assignments if it can't be correct at runtime (does not supersede for-in option)
+     * @property {number} [options.allowCallAssignment=false] Note that you should pass on a boolean, internally constants are used. Under strictAssignmentCheck or strictForInCheck this still allows `x()=y`, IE legacy crap.
+     * @property {boolean} [options.checkAccessorArgs=false] Formally, getters have no arg and setters exactly one. Browsers are more lax in this though.
+     * @property {boolean} [options.requireDoWhileSemi=false] Formally the do-while should be terminated by a semi-colon (or asi) but browsers dont enforce this.
+     * @property {boolean} [options.neverThrow=false] Dont throw on syntax errors. Will mark the current token an error token and continue parsing. Not yet battle hardened, use at own risk. TOFIX
+     * @property {boolean} [options.skipRegexFlagCheck=false] Dont throw for invalid regex flags, this mean anything other than gim or repeated flags.
      */
     options: null,
 
@@ -143,10 +175,11 @@
     run: function(){
       var tok = this.tok;
       // prepare
-      tok.nextExpr();
+      tok.next(EXPR);
       // go!
-      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, []);
-      if (tok.pos !== tok.len) throw 'Did not complete parsing... '+tok.syntaxError();
+      this.parseStatements(NOTINFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
+
+      if (tok.pos !== tok.len || tok.lastType !== EOF) tok.throwSyntaxError('Did not complete parsing..');
 
       return this;
     },
@@ -154,43 +187,88 @@
     parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
       // note: statements are optional, this function might not parse anything
-      while (!tok.isType(EOF) && this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL));
+      while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL, EMPTY_LABELSET));
     },
-    parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional){
+    parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional, freshLabels){
+      if (this.tok.lastType === IDENTIFIER) {
+        this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels);
+        return PARSEDSOMETHING;
+      }
+      // can be false for close curly and eof
+      return this.parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional);
+    },
+    parseNonIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, optional) {
       var tok = this.tok;
-      if (tok.isType(IDENTIFIER)) {
-        // dont "just" return true. case and default still return false
-        return this.parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet);
+      var c = tok.firstTokenChar;
+
+      if (c === ORD_CLOSE_CURLY) { // 65.6%
+        if (!optional) tok.throwSyntaxError('Expected more input..'); // {if(x)}
+        return PARSEDNOTHING;
       }
 
-      var c = tok.getLastNum();
-
-      if (c === ORD_OPEN_CURLY) {
-        tok.nextExpr();
-        this.parseBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+      if (c === ORD_OPEN_CURLY) { // 33.2%
+        tok.next(EXPR);
+        this.parseBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
         return PARSEDSOMETHING;
       }
 
-      if (c === ORD_OPEN_PAREN || c === ORD_OPEN_SQUARE || c === ORD_TILDE || c === ORD_PLUS || c === ORD_MIN || c === ORD_EXCL) {
+      return this.parseNonIdentifierStatementNonCurly(c, optional);
+    },
+    parseNonIdentifierStatementNonCurly: function(c, optional){
+      var tok = this.tok;
+
+      // relative to this function: punc=96%, string=4%, number=1%, rest 0%
+
+      if (c === ORD_OPEN_PAREN) { // 56%
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
 
-      if (c === ORD_SEMI) { // empty statement
+      if (c === ORD_SEMI) { // 26% empty statement
         // this shouldnt occur very often, but they still do.
-        tok.nextExpr();
+        tok.next(EXPR);
         return PARSEDSOMETHING;
       }
 
-      if (tok.isValue()) {
+      if (c === ORD_PLUS || c === ORD_MIN) { // 5% 3%
+        if (tok.getNum(1) === c || tok.lastLen === 1) {
+          this.parseExpressionStatement();
+          return PARSEDSOMETHING;
+        }
+        tok.throwSyntaxError('Statement cannot start with binary op');
+      }
+
+      var type = tok.lastType;
+
+      // rare
+      if (type === STRING || c === ORD_OPEN_SQUARE) { // 4% 2%
         this.parseExpressionStatement();
         return PARSEDSOMETHING;
       }
 
-      if (!optional) throw 'Expected more input...';
+      // almost never
+      if (c === ORD_EXCL) { // 2%
+        if (tok.lastLen === 1) {
+          this.parseExpressionStatement();
+          return PARSEDSOMETHING;
+        }
+        tok.throwSyntaxError('Statement cannot start with binary op');
+      }
+
+      // now you're just running tests
+      if (type === NUMBER || c === ORD_TILDE || type === REGEX) { // 1% 0% 0%
+        this.parseExpressionStatement();
+        return PARSEDSOMETHING;
+      }
+
+      // note: need this check because EOF is always valid at the end of the
+      // program and, I think, will always trigger once, of course.
+      if (!optional) tok.throwSyntaxError('Expected more input..');
+
+      // EOF (I dont think there's any other valid reason?)
       return PARSEDNOTHING;
     },
-    parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet){
+    parseIdentifierStatement: function(inFunction, inLoop, inSwitch, labelSet, freshLabels){
       var tok = this.tok;
 
       // The current token is an identifier. Either its value will be
@@ -198,50 +276,55 @@
       // parseExpressionOrLabel function. So we can just get it now.
       var value = tok.getLastValue();
 
-      // track whether this token was parsed. if not, do parseExpressionOrLabel at the end
-      var startCount = tok.tokenCountAll;
-
       var len = tok.lastLen;
 
-      // TODO: could add identifier check to conditionally call parseExpressionOrLabel vs parseExpression
-
       // yes, this check makes a *huge* difference
-      if (len >= 2 && len <= 8) {
+      if (len >= 2) {
         // bcdfirstvw, not in that order.
-        var c = tok.getLastNum();
+        var c = tok.firstTokenChar;
 
         if (c === ORD_L_T) {
-          if (value === 'try') this.parseTry(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'throw') this.parseThrow();
+          if (len !== 4) { // often `this`, only 7% (abs) passes here
+            if (value === 'try') return this.parseTry(inFunction, inLoop, inSwitch, labelSet);
+            if (value === 'throw') return this.parseThrow();
+          }
         }
-        else if (c === ORD_L_I && len === 2 && tok.getLastNum2() === ORD_L_F) this.parseIf(inFunction, inLoop, inSwitch, labelSet);
-        else if (c === ORD_L_V && value === 'var') this.parseVar();
-        else if (c === ORD_L_R && value === 'return') this.parseReturn(inFunction, inLoop, inSwitch);
+        else if (c === ORD_L_I) {
+          if (value === 'if') return this.parseIf(inFunction, inLoop, inSwitch, labelSet);
+        }
+        else if (c === ORD_L_V) {
+          if (value === 'var') return this.parseVar();
+        }
+        else if (c === ORD_L_R) {
+          if (value === 'return') return this.parseReturn(inFunction);
+        }
         else if (c === ORD_L_F) {
-          if (value === 'function') this.parseFunction(FORFUNCTIONDECL);
-          else if (value === 'for') this.parseFor(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'for') return this.parseFor(inFunction, inSwitch, labelSet, inLoop+freshLabels);
+          if (value === 'function') return this.parseFunction(FORFUNCTIONDECL);
         }
         else if (c === ORD_L_C) {
-          if (value === 'continue') this.parseContinue(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'case') return PARSEDNOTHING; // case is handled elsewhere
+          if (value === 'case') return this.parseCase(inSwitch);
+          if (value === 'continue') return this.parseContinue(inLoop, labelSet);
         }
-        else if (c === ORD_L_B && value === 'break') this.parseBreak(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_B) {
+          if (value === 'break') return this.parseBreak(inLoop, inSwitch, labelSet);
+        }
         else if (c === ORD_L_D) {
-          if (value === 'default') return PARSEDNOTHING; // default is handled elsewhere
-          else if (len === 2 && tok.getLastNum2() === ORD_L_O) this.parseDo(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'debugger') this.parseDebugger();
+          if (value === 'default') return this.parseDefault(inSwitch);
+          if (value === 'do') return this.parseDo(inFunction, inSwitch, labelSet, inLoop+freshLabels);
+          if (value === 'debugger') return this.parseDebugger();
         }
-        else if (c === ORD_L_S && value === 'switch') this.parseSwitch(inFunction, inLoop, inSwitch, labelSet);
+        else if (c === ORD_L_S) {
+          if (value === 'switch') return this.parseSwitch(inFunction, inLoop, labelSet);
+        }
         else if (c === ORD_L_W) {
-          if (value === 'while') this.parseWhile(inFunction, inLoop, inSwitch, labelSet);
-          else if (value === 'with') this.parseWith(inFunction, inLoop, inSwitch, labelSet);
+          if (value === 'while') return this.parseWhile(inFunction, inSwitch, labelSet, inLoop+freshLabels);
+          if (value === 'with') return this.parseWith(inFunction, inLoop, inSwitch, labelSet);
         }
       }
 
       // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
-      if (tok.tokenCountAll === startCount) this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet);
-
-      return PARSEDSOMETHING;
+      this.parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet, freshLabels);
     },
     parseStatementHeader: function(){
       var tok = this.tok;
@@ -257,99 +340,101 @@
       // - ,foo=bar
 
       var tok = this.tok;
-      tok.nextPunc();
+      tok.next(PUNC);
       do {
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
-        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX); // TOFIX: can never be regex nor div. does that matter?
-        if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
-          tok.nextExpr();
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name is reserved');
+        tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
+        if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
+          tok.next(EXPR);
           this.parseExpression();
         }
       } while(tok.nextExprIfNum(ORD_COMMA));
       this.parseSemi();
     },
     parseVarPartNoIn: function(){
-      var state = NOPARSE;
       var tok = this.tok;
+      var vars = 0;
 
       do {
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'var name is reserved';
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name ['+tok.getLastValue()+'] is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
+        ++vars;
 
-        if (tok.isNum(ORD_IS) && tok.lastLen === 1) {
-          tok.nextExpr();
+        if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
+          tok.next(EXPR);
           this.parseExpressionNoIn();
         }
-      } while(tok.nextExprIfNum(ORD_COMMA) && (state = NONFORIN));
 
-      return state;
+      } while(tok.nextExprIfNum(ORD_COMMA));
+
+      return vars === 1;
     },
     parseIf: function(inFunction, inLoop, inSwitch, labelSet){
       // if (<exprs>) <stmt>
       // if (<exprs>) <stmt> else <stmt>
 
-      this.tok.nextPunc();
-      this.parseStatementHeader();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
-
-      this.parseElse(inFunction, inLoop, inSwitch, labelSet);
-    },
-    parseElse: function(inFunction, inLoop, inSwitch, labelSet){
-      // else <stmt>;
-
       var tok = this.tok;
+
+      tok.next(PUNC);
+      this.parseStatementHeader();
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
+
       if (tok.getLastValue() === 'else') {
-        tok.nextExpr();
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
+        tok.next(EXPR);
+        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
       }
     },
-    parseDo: function(inFunction, inLoop, inSwitch, labelSet){
+    parseDo: function(inFunction, inSwitch, labelSet, inLoop){
       // do <stmt> while ( <exprs> ) ;
 
       var tok = this.tok;
-      tok.nextExpr(); // do
-      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+
+      tok.next(EXPR); // do
+      this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
       tok.mustBeString('while', NEXTTOKENCANBEDIV);
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
       this.parseExpressions();
-      tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); //no regex following because it's either semi or newline without asi if a forward slash follows it
-      this.parseSemi();
+      tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
+
+      // spec requires the semi but browsers made it optional
+      if (this.options.requireDoWhileSemi || tok.firstTokenChar === ORD_SEMI) {
+        this.parseSemi();
+      }
     },
-    parseWhile: function(inFunction, inLoop, inSwitch, labelSet){
+    parseWhile: function(inFunction, inSwitch, labelSet, inLoop){
       // while ( <exprs> ) <stmt>
 
-      this.tok.nextPunc();
+      this.tok.next(PUNC);
       this.parseStatementHeader();
-      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
     },
-    parseFor: function(inFunction, inLoop, inSwitch, labelSet){
+    parseFor: function(inFunction, inSwitch, labelSet, inLoop){
       // for ( <expr-no-in-=> in <exprs> ) <stmt>
       // for ( var <idntf> in <exprs> ) <stmt>
       // for ( var <idntf> = <expr-no-in> in <exprs> ) <stmt>
       // for ( <expr-no-in> ; <expr> ; <expr> ) <stmt>
 
-      var state = NOPARSE;
-
       var tok = this.tok;
-      tok.nextPunc(); // for
+      tok.next(PUNC); // for
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEREGEX);
 
       if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader(); // empty first expression in for-each
       else {
+        var validForInLhs;
 
-        if (tok.isNum(ORD_L_V) && tok.nextPuncIfString('var')) state = this.parseVarPartNoIn();
+        if (tok.firstTokenChar === ORD_L_V && tok.nextPuncIfString('var')) validForInLhs = this.parseVarPartNoIn();
         // expression_s_ because it might be regular for-loop...
         // (though if it isn't, it can't have more than one expr)
-        else state = this.parseExpressionsNoIn();
+        else validForInLhs = this.parseExpressionsNoIn();
 
         if (tok.nextExprIfNum(ORD_SEMI)) this.parseForEachHeader();
-        else if (tok.getLastNum() !== ORD_L_I || tok.getLastNum2() !== ORD_L_N || tok.lastLen !== 2) throw 'Expected `in` or `;` here... '+tok.syntaxError();
-        else if (state && this.options.strictForInCheck) throw 'Encountered illegal for-in lhs. '+tok.syntaxError();
+        else if (tok.firstTokenChar !== ORD_L_I || tok.getNum(1) !== ORD_L_N || tok.lastLen !== 2) tok.throwSyntaxError('Expected `in` or `;` here..');
+        else if (!validForInLhs && this.options.strictForInCheck) tok.throwSyntaxError('Encountered illegal for-in lhs');
         else this.parseForInHeader();
       }
 
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEREGEX);
-      this.parseStatement(inFunction, INLOOP, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop || INLOOP, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
     },
     parseForEachHeader: function(){
       // <expr> ; <expr> ) <stmt>
@@ -362,251 +447,240 @@
       // in <exprs> ) <stmt>
 
       var tok = this.tok;
-      tok.nextExpr(); // `in` validated by `parseFor`
+      tok.next(EXPR); // `in` validated by `parseFor`
       this.parseExpressions();
     },
-    parseContinue: function(inFunction, inLoop, inSwitch, labelSet){
+    parseContinue: function(inLoop, labelSet){
       // continue ;
       // continue <idntf> ;
       // newline right after keyword = asi
 
       var tok = this.tok;
 
-      if (!inLoop) throw 'Can only continue in a loop. '+tok.syntaxError();
+      if (!inLoop) tok.throwSyntaxError('Can only continue in a loop');
 
-      tok.nextPunc(); // token after continue cannot be a regex, either way.
+      var type = tok.next(PUNC); // token after continue cannot be a regex, either way.
 
-      if (!tok.lastNewline && tok.isType(IDENTIFIER)) {
-        this.parseLabel(labelSet);
+      if (type === IDENTIFIER && !tok.lastNewline) {
+        var label = tok.getLastValue();
+        if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
+          tok.throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']');
+        }
+        if (!inLoop || inLoop.indexOf(' '+label+' ') < 0) {
+          tok.throwSyntaxError('Label ['+label+'] is not a valid label for this loop');
+        }
+        tok.next(EXPR); // label (already validated)
       }
+      // continue without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
 
       this.parseSemi();
     },
-    parseBreak: function(inFunction, inLoop, inSwitch, labelSet){
+    parseBreak: function(inLoop, inSwitch, labelSet){
       // break ;
       // break <idntf> ;
       // break \n <idntf> ;
       // newline right after keyword = asi
 
       var tok = this.tok;
-      tok.nextPunc(); // token after break cannot be a regex, either way.
+      var type = tok.next(PUNC); // token after break cannot be a regex, either way.
 
-      if (tok.lastNewline || !tok.isType(IDENTIFIER)) { // no label after break?
+      if (type !== IDENTIFIER || tok.lastNewline) {
+        // break without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
         if (!inLoop && !inSwitch) {
           // break without label
-          throw 'Break without value only in loops or switches. '+tok.syntaxError();
+          tok.throwSyntaxError('Break without value only in loops or switches');
         }
       } else {
-        this.parseLabel(labelSet);
+        var label = tok.getLastValue();
+        if (!labelSet || labelSet.indexOf(' '+label+' ') < 0) {
+          tok.throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']');
+        }
+        tok.next(EXPR); // label (already validated)
       }
 
       this.parseSemi();
     },
-    parseLabel: function(labelSet){
-      var tok = this.tok;
-      // next tag must be an identifier
-      var label = tok.getLastValue();
-      if (labelSet.indexOf(label) >= 0) {
-        tok.nextExpr(); // label (already validated)
-      } else {
-        throw 'Label ['+label+'] not found in label set. '+tok.syntaxError();
-      }
-    },
-    parseReturn: function(inFunction, inLoop, inSwitch){
+    parseReturn: function(inFunction){
       // return ;
       // return <exprs> ;
       // newline right after keyword = asi
 
       var tok = this.tok;
 
-      if (!inFunction && !this.options.functionMode) throw 'Can only return in a function '+tok.syntaxError('break');
+      if (!inFunction && !this.options.functionMode) tok.throwSyntaxError('Can only return in a function');
 
-      tok.nextExpr();
-      if (tok.lastNewline) this.addAsi();
-      else {
-        this.parseOptionalExpressions();
-        this.parseSemi();
-      }
+      tok.next(EXPR);
+      if (!tok.lastNewline) this.parseOptionalExpressions();
+      this.parseSemi();
     },
     parseThrow: function(){
       // throw <exprs> ;
 
       var tok = this.tok;
-      tok.nextExpr();
-      if (tok.lastNewline) {
-        throw 'No newline allowed directly after a throw, ever. '+tok.syntaxError();
-      } else {
-        this.parseExpressions();
-        this.parseSemi();
-      }
+      tok.next(EXPR);
+      if (tok.lastNewline) tok.throwSyntaxError('No newline allowed directly after a throw, ever');
+
+      this.parseExpressions();
+      this.parseSemi();
     },
-    parseSwitch: function(inFunction, inLoop, inSwitch, labelSet){
+    parseSwitch: function(inFunction, inLoop, labelSet){
       // switch ( <exprs> ) { <switchbody> }
 
       var tok = this.tok;
-      tok.nextPunc();
+      tok.next(PUNC);
       this.parseStatementHeader();
       tok.mustBeNum(ORD_OPEN_CURLY, NEXTTOKENCANBEREGEX);
-      this.parseSwitchBody(inFunction, inLoop, INSWITCH, labelSet);
+
+      var value = tok.getLastValue();
+      var defaults = 0;
+      if (value === 'default') ++defaults;
+      if (value !== 'case' && !defaults && value !== '}') tok.throwSyntaxError('Switch body must begin with case or default or be empty');
+
+      while (this.parseStatement(inFunction, inLoop, INSWITCH, labelSet, OPTIONAL, EMPTY_LABELSET)) {
+        // switches are quite infrequent so this overhead is okay, compared ot the alternatives
+        if (tok.getLastValue() === 'default' && ++defaults > 1) tok.throwSyntaxError('Only one default allowed per switch');
+      }
+
       tok.mustBeNum(ORD_CLOSE_CURLY, NEXTTOKENCANBEREGEX);
     },
-    parseSwitchBody: function(inFunction, inLoop, inSwitch, labelSet){
-      // [<cases>] [<default>] [<cases>]
-
-      // default can go anywhere...
-      this.parseCases(inFunction, inLoop, inSwitch, labelSet);
-      if (this.tok.nextPuncIfString('default')) {
-        this.parseDefault(inFunction, inLoop, inSwitch, labelSet);
-        this.parseCases(inFunction, inLoop, inSwitch, labelSet);
-      }
-    },
-    parseCases: function(inFunction, inLoop, inSwitch, labelSet){
+    parseCase: function(inSwitch){
       var tok = this.tok;
-      while (tok.nextPuncIfString('case')) {
-        this.parseCase(inFunction, inLoop, inSwitch, labelSet);
-      }
-    },
-    parseCase: function(inFunction, inLoop, inSwitch, labelSet){
-      // case <value> : <stmts-no-case-default>
+      if (!inSwitch) tok.throwSyntaxError('Can only use case in a switch');
+      tok.next(EXPR);
       this.parseExpressions();
-      this.tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
-      this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
+      tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEDIV);
     },
-    parseDefault: function(inFunction, inLoop, inSwitch, labelSet){
-      // default <value> : <stmts-no-case-default>
-      this.tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
-      this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
+    parseDefault: function(inSwitch){
+      var tok = this.tok;
+      if (!inSwitch) tok.throwSyntaxError('Can only use default in a switch'); // cant really hit this right now because label checks supersede it
+      tok.next(EXPR);
+      tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEDIV);
     },
     parseTry: function(inFunction, inLoop, inSwitch, labelSet){
       // try { <stmts> } catch ( <idntf> ) { <stmts> }
       // try { <stmts> } finally { <stmts> }
       // try { <stmts> } catch ( <idntf> ) { <stmts> } finally { <stmts> }
 
-      this.tok.nextPunc();
-      this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
+      var tok = this.tok;
+      tok.next(PUNC);
+      this.parseCompleteBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
 
-      var one = this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
-      var two = this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
-
-      if (!one && !two) throw 'Try must have at least a catch or finally block or both: '+this.tok.debug();
+      var count = tok.tokenCountAll;
+      this.parseCatch(inFunction, inLoop, inSwitch, labelSet);
+      this.parseFinally(inFunction, inLoop, inSwitch, labelSet);
+      if (count === tok.tokenCountAll) this.tok.throwSyntaxError('Try must have at least a catch or finally block or both');
     },
     parseCatch: function(inFunction, inLoop, inSwitch, labelSet){
       // catch ( <idntf> ) { <stmts> }
 
       var tok = this.tok;
       if (tok.nextPuncIfString('catch')) {
-        tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
+        var type = tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
 
         // catch var
-        if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Catch scope var name is reserved';
-          tok.nextPunc();
+        if (type === IDENTIFIER) {
+          if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Catch scope var name is reserved');
+          tok.next(PUNC);
         } else {
-          throw 'Missing catch scope variable';
+          tok.throwSyntaxError('Missing catch scope variable');
         }
 
         tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
-        this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
-
-        return PARSEDSOMETHING;
+        this.parseCompleteBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
       }
-      return PARSEDNOTHING;
     },
     parseFinally: function(inFunction, inLoop, inSwitch, labelSet){
       // finally { <stmts> }
 
       if (this.tok.nextPuncIfString('finally')) {
-        this.parseCompleteBlock(NOTFORFUNCTIONEXPRESSION, inFunction, inLoop, inSwitch, labelSet);
-
-        return PARSEDSOMETHING;
+        this.parseCompleteBlock(NEXTTOKENCANBEREGEX, inFunction, inLoop, inSwitch, labelSet);
       }
-      return PARSEDNOTHING;
     },
     parseDebugger: function(){
       // debugger ;
 
-      this.tok.nextPunc();
+      this.tok.next(EXPR);
       this.parseSemi();
     },
     parseWith: function(inFunction, inLoop, inSwitch, labelSet){
       // with ( <exprs> ) <stmts>
 
-      this.tok.nextPunc();
+      this.tok.next(PUNC);
       this.parseStatementHeader();
-      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
+      this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED, EMPTY_LABELSET);
     },
     parseFunction: function(forFunctionDeclaration){
       // function [<idntf>] ( [<param>[,<param>..] ) { <stmts> }
 
       var tok = this.tok;
-      tok.nextPunc(); // 'function'
-      if (tok.isType(IDENTIFIER)) { // name
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'function name is reserved';
-        tok.nextPunc();
+      var type = tok.next(PUNC); // 'function'
+      if (type === IDENTIFIER) { // name
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function name ['+this.tok.getLastValue()+'] is reserved');
+        tok.next(PUNC);
       } else if (forFunctionDeclaration) {
-        throw 'function declaration name is required';
+        tok.throwSyntaxError('Function declaration requires a name');
       }
-      this.parseFunctionRemainder(-1, forFunctionDeclaration);
+      this.parseFunctionRemainder(ANYARGS, forFunctionDeclaration);
     },
     /**
      * Parse the function param list and body
      *
      * @param {number} paramCount Number of expected params, -1/undefined means no requirement. used for getters and setters
-     * @param {boolean} forFunctionDeclaration Are we parsing a function declaration (determines whether we can parse a division next)
+     * @param {boolean} nextExpr Are we parsing a function declaration (determines whether we can parse a division afterwards)
      */
-    parseFunctionRemainder: function(paramCount, forFunctionDeclaration){
+    parseFunctionRemainder: function(paramCount, nextExpr){
       var tok = this.tok;
       tok.mustBeNum(ORD_OPEN_PAREN, NEXTTOKENCANBEDIV);
       this.parseParameters(paramCount);
       tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
-      this.parseCompleteBlock(forFunctionDeclaration, INFUNCTION, NOTINLOOP, NOTINSWITCH, []);
+      this.parseCompleteBlock(nextExpr, INFUNCTION, NOTINLOOP, NOTINSWITCH, EMPTY_LABELSET);
     },
     parseParameters: function(paramCount){
       // [<idntf> [, <idntf>]]
       var tok = this.tok;
-      if (tok.isType(IDENTIFIER)) {
-        if (paramCount === 0) throw 'Getters have no parameters';
-        if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved';
-        tok.nextExpr();
+      if (tok.lastType === IDENTIFIER) {
+        if (paramCount === NOARGS) tok.throwSyntaxError('Getters have no parameters');
+        if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function param name is reserved.');
+        tok.next(EXPR);
         // there are only two valid next tokens; either a comma or a closing paren
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (paramCount === 1) throw 'Setters have exactly one param';
+          if (paramCount === ONEARG) tok.throwSyntaxError('Setters have exactly one param');
 
           // param name
-          if (tok.isType(IDENTIFIER)) {
-            if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Function param name is reserved';
-            tok.nextPunc();
+          if (tok.lastType === IDENTIFIER) {
+            if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function param name is reserved');
+            tok.next(PUNC);
           } else {
-            throw 'Missing func param name';
+            tok.throwSyntaxError('Missing func param name');
           }
         }
       } else if (paramCount === 1) {
-        throw 'Setters have exactly one param';
+        tok.throwSyntaxError('Setters have exactly one param');
       }
     },
-    // TODO: rename `notForFunctionExpression` to indicate `firstTokenAfterFunctionCanBeRegex / Div` instead, flush through all callers
-    parseBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
+    parseBlock: function(nextExpr, inFunction, inLoop, inSwitch, labelSet){
       this.parseStatements(inFunction, inLoop, inSwitch, labelSet);
       // note: this parsing method is also used for functions. the only case where
       // the closing curly can be followed by a division rather than a regex lit
       // is with a function expression. that's why we needed to make it a parameter
-      this.tok.mustBeNum(ORD_CLOSE_CURLY, notForFunctionExpression);
+      this.tok.mustBeNum(ORD_CLOSE_CURLY, nextExpr);
     },
-    parseCompleteBlock: function(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet){
+    parseCompleteBlock: function(nextExpr, inFunction, inLoop, inSwitch, labelSet){
       this.tok.mustBeNum(ORD_OPEN_CURLY, NEXTTOKENCANBEREGEX);
-      this.parseBlock(notForFunctionExpression, inFunction, inLoop, inSwitch, labelSet);
+      this.parseBlock(nextExpr, inFunction, inLoop, inSwitch, labelSet);
     },
     parseSemi: function(){
-      if (this.tok.nextExprIfNum(ORD_SEMI)) return PUNCTUATOR;
+      var tok = this.tok;
+      if (tok.nextExprIfNum(ORD_SEMI)) return PUNCTUATOR;
       if (this.parseAsi()) return ASI;
-      throw 'Unable to parse semi, unable to apply ASI. '+this.tok.syntaxError();
+      tok.throwSyntaxError('Unable to parse semi, unable to apply ASI');
     },
     parseAsi: function(){
       // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 
       var tok = this.tok;
-      if (tok.isNum(ORD_CLOSE_CURLY) || (tok.lastNewline && !tok.isType(REGEX)) || tok.isType(EOF)) {
+      if (tok.firstTokenChar === ORD_CLOSE_CURLY || tok.lastNewline || tok.lastType === EOF) {
         return this.addAsi();
       }
       return PARSEDNOTHING;
@@ -620,41 +694,37 @@
       this.parseExpressions();
       this.parseSemi();
     },
-    parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet){
-      // this method is only called at the start of
-      // a statement that starts with an identifier.
+    parseExpressionOrLabel: function(labelName, inFunction, inLoop, inSwitch, labelSet, freshLabels){
+      // this method is only called at the start of a statement that starts
+      // with an identifier that is neither `function` nor a statement keyword
 
-      // ugly but mandatory label check
-      // if this is a label, the parsePrimary parser
-      // will have bailed when seeing the colon.
-      var state = this.parsePrimaryOrLabel(labelName);
-      if (state & ISLABEL) {
+      var tok = this.tok;
 
-        // the label will have been checked for being a reserved keyword
-        // except for the value keywords. so we need to do that here.
-        // no need to check for function, because that cant occur here.
-        // note that it's pretty rare for the parser to reach this
-        // place, so i dont feel it's very important to take the uber
-        // optimized route. simple string comparisons will suffice.
-        // note that this is already confirmed to be used as a label so
-        // if any of these checks match, an error will be thrown.
-        if (this.isValueKeyword(labelName)) {
-          throw 'Reserved identifier found in label. '+this.tok.syntaxError();
-        }
+      // store value of identifier for label validation below.
+      var identifier = tok.getLastValue();
 
-        labelSet.push(labelName);
-        this.parseStatement(inFunction, inLoop, inSwitch, labelSet, REQUIRED);
-        labelSet.pop();
+      // this will stop before consuming the colon, if any.
+      var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, MAYBELABEL);
 
+      var count = tok.tokenCountAll;
+      this.parseAssignments(assignable);
+      // note: no need for grouped assignment check here (we cannot be in a group right now)
+      this.parseNonAssignments();
+
+      if (tok.firstTokenChar === ORD_COLON) {
+        if (tok.tokenCountAll !== count) tok.throwSyntaxError('Unexpected colon encountered');
+        if (!assignable) tok.throwSyntaxError('Label ['+identifier+'] is a reserved keyword');
+        var labelSpaced = labelName + ' ';
+        if (labelSet.indexOf(' ' + labelSpaced) >= 0) tok.throwSyntaxError('Label ['+identifier+'] is already defined');
+        tok.next(EXPR);
+
+        if (inLoop) inLoop += labelSpaced; // these are the only valid jump targets for `continue`
+        this.parseStatement(inFunction, inLoop, inSwitch, (labelSet || ' ')+labelSpaced, REQUIRED, (freshLabels||' ')+labelSpaced);
       } else {
-
-        // TOFIX: add test case where this fails; `state & NONASSIGNEE` needs parenthesis
-        this.parseAssignments(state & NONASSIGNEE > 0);
-        this.parseNonAssignments();
-
-        if (this.tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
+        if (tok.nextExprIfNum(ORD_COMMA)) this.parseExpressions();
         this.parseSemi();
       }
+
     },
     parseOptionalExpressions: function(){
       var tok = this.tok;
@@ -667,77 +737,83 @@
       }
     },
     parseExpressions: function(){
-      var nonAssignee = this.parseExpression();
+      // track for parseGroup, if this expression is wrapped, is it still assignable?
+      var groupAssignable = this.parseExpression();
       var tok = this.tok;
       while (tok.nextExprIfNum(ORD_COMMA)) {
         this.parseExpression();
-        // not sure, but if the expression was not an assignment, it's probably irrelevant
-        // except in the case of a group, in which case it becomes an invalid assignee, so:
-        nonAssignee = true;
+        groupAssignable = NOTASSIGNABLE;
       }
-      return nonAssignee;
+      return groupAssignable;
     },
     parseExpression: function(){
       var tok = this.tok;
       var tokCount = tok.tokenCountAll;
 
-      var nonAssignee = this.parseExpressionOptional();
+      // track for parseGroup whether this expression still assignable when
+      var groupAssignable = this.parseExpressionOptional();
 
       // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
-      if (tokCount === tok.tokenCountAll) throw 'Expected to parse an expression, did not find any';
+      if (tokCount === tok.tokenCountAll) tok.throwSyntaxError('Expected to parse an expression, did not find any');
 
-      return nonAssignee;
+      return groupAssignable;
     },
     parseExpressionOptional: function(){
-      var nonAssignee = this.parsePrimary(OPTIONAL);
-      // if there was no assignment, state will be the same.
-      nonAssignee = this.parseAssignments(nonAssignee) !== 0;
-
-      // any binary operator is illegal as assignee and illegal as for-in lhs
-      if (this.parseNonAssignments()) nonAssignee = true;
-
-      return nonAssignee;
-    },
-    parseAssignments: function(nonAssignee){
-      // assignment ops are allowed until the first non-assignment binary op
-      var nonForIn = NOPARSE;
       var tok = this.tok;
-      while (this.isAssignmentOperator()) {
-        if (nonAssignee && this.options.strictAssignmentCheck) throw 'LHS is invalid assignee';
-        // any assignment means not a for-in per definition
-        tok.nextExpr();
-        nonAssignee = this.parsePrimary(REQUIRED);
-        nonForIn = NONFORIN; // always
+      var count = tok.tokenCountAll;
+      var assignable = this.parsePrimary(OPTIONAL);
+      var beforeAssignments = tok.tokenCountAll;
+      if (count !== beforeAssignments) {
+        this.parseAssignments(assignable);
+        var beforeNonAssignments = tok.tokenCountAll;
+        this.parseNonAssignments();
+        var endCount = tok.tokenCountAll;
+
+        // if there was a non-assign binary op, the whole thing is nonassign
+        // if there were only assign ops, the whole thing is assignable unless grouped
+        // if there were no binary ops, the whole thing is whatever the primary was
+
+        if (beforeNonAssignments !== endCount) assignable = NOTASSIGNABLE;
+        else if (beforeAssignments !== beforeNonAssignments) assignable = ASSIGNABLEUNLESSGROUPED;
       }
 
-      return (nonAssignee ? NONASSIGNEE : NOPARSE) | nonForIn;
+      // return state for parseGroup, to determine whether the group as a whole can be assignment lhs
+      // the group needs to know about the prim expr AND any binary ops (inc assignments).
+      return assignable;
+    },
+    parseAssignments: function(assignable){
+      // assignment ops are allowed until the first non-assignment binary op
+      var tok = this.tok;
+      var strictAssign = this.options.strictAssignmentCheck;
+      while (this.isAssignmentOperator()) {
+        if (!assignable && strictAssign) tok.throwSyntaxError('LHS of this assignment is invalid assignee');
+        // any assignment means not a for-in per definition
+        tok.next(EXPR);
+        assignable = this.parsePrimary(REQUIRED);
+      }
     },
     parseNonAssignments: function(){
-      var parsed = PARSEDNOTHING;
       var tok = this.tok;
       // keep parsing non-assignment binary/ternary ops
       while (true) {
         if (this.isBinaryOperator()) {
-          tok.nextExpr();
+          tok.next(EXPR);
           this.parsePrimary(REQUIRED);
         }
-        else if (tok.isNum(ORD_QMARK)) this.parseTernary();
+        else if (tok.firstTokenChar === ORD_QMARK) this.parseTernary();
         else break;
-        // any binary is a non-for-in
-        parsed = PARSEDSOMETHING;
       }
-      return parsed;
     },
     parseTernary: function(){
       var tok = this.tok;
-      tok.nextExpr();
+      tok.next(EXPR);
       this.parseExpression();
       tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
       this.parseExpression();
     },
     parseTernaryNoIn: function(){
       var tok = this.tok;
-      tok.nextExpr();
+      tok.next(EXPR);
       this.parseExpression();
       tok.mustBeNum(ORD_COLON, NEXTTOKENCANBEREGEX);
       this.parseExpressionNoIn();
@@ -745,20 +821,22 @@
     parseExpressionsNoIn: function(){
       var tok = this.tok;
 
-      var state = this.parseExpressionNoIn();
+      var validForInLhs = this.parseExpressionNoIn();
       while (tok.nextExprIfNum(ORD_COMMA)) {
         // lhs of for-in cant be multiple expressions
-        state = this.parseExpressionNoIn() | NONFORIN;
+        this.parseExpressionNoIn();
+        validForInLhs = NOTASSIGNABLE;
       }
 
-      return state;
+      return validForInLhs;
     },
     parseExpressionNoIn: function(){
-      var nonAssignee = this.parsePrimary(REQUIRED);
-
-      var state = this.parseAssignments(nonAssignee);
-
+      var assignable = this.parsePrimary(REQUIRED);
       var tok = this.tok;
+
+      var count = tok.tokenCountAll;
+      this.parseAssignments(assignable); // any assignment is illegal in for-in, with and without group. no need to check here.
+
       // keep parsing non-assignment binary/ternary ops unless `in`
       var repeat = true;
       while (repeat) {
@@ -768,193 +846,225 @@
           // will check for a primary. it's therefore more likely that an getLastNum will
           // save time because it would cache the charCodeAt for the other token if
           // it failed the check
-          if (tok.getLastNum() === ORD_L_I && tok.getLastNum2() === ORD_L_N && tok.lastLen === 2) { // in
+          if (tok.firstTokenChar === ORD_L_I && tok.getNum(1) === ORD_L_N && tok.lastLen === 2) { // in
             repeat = false;
           } else {
-            tok.nextExpr();
-            // (seems this should be a required part...)
+            tok.next(EXPR);
             this.parsePrimary(REQUIRED);
-            state = NEITHER;
           }
-        } else if (tok.isNum(ORD_QMARK)) {
+        } else if (tok.firstTokenChar === ORD_QMARK) {
           this.parseTernaryNoIn();
-          state = NEITHER; // the lhs of a for-in cannot contain a ternary operator
         } else {
           repeat = false;
         }
       }
 
-      return state; // example:`for (x+b++ in y);`
+      return count === tok.tokenCountAll ? assignable : NOTASSIGNABLE;
     },
+
     /**
-     * Parse the "primary" expression value. This is like the root
-     * value for any expression. Could be a number, string,
-     * identifier, etc. The primary can have a prefix (like unary
-     * operators) and suffixes (++, --) but they are parsed elsewhere.
+     * Parse a primary value including any prefix operators but without any
+     * of the binary or postfix operators.
      *
-     * @return {boolean}
+     * @return {boolean} Is entire primary (prefix+core+suffix) assignable?
      */
     parsePrimary: function(optional){
-      // parses parts of an expression without any binary operators
-      var nonAssignee = false;
-      var parsedUnary = this.parseUnary(); // no unary can be valid in the lhs of an assignment
-
-      var tok = this.tok;
-      if (tok.isType(IDENTIFIER)) {
-        var identifier = tok.getLastValue();
-        if (tok.isNum(ORD_L_F) && identifier === 'function') {
-          this.parseFunction(NOTFORFUNCTIONDECL);
-          nonAssignee = true;
-        } else {
-          if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression';
-          tok.nextPunc();
-          // any non-keyword identifier can be assigned to
-          if (!nonAssignee && this.isValueKeyword(identifier)) nonAssignee = true;
-        }
-      } else {
-        nonAssignee = this.parsePrimaryValue(optional && !parsedUnary);
-      }
-
-      var suffixNonAssignee = this.parsePrimarySuffixes();
-      if (suffixNonAssignee === ASSIGNEE) nonAssignee = true;
-      else if (suffixNonAssignee === NONASSIGNEE) nonAssignee = true;
-      else if (suffixNonAssignee === NOPARSE && parsedUnary) nonAssignee = true;
-
-      return nonAssignee;
+      return this.parsePrimaryOrPrefix(optional, HASNONEW, NOTLABEL);
     },
-    parsePrimaryOrLabel: function(labelName){
-      // note: this function is only executed for statements that start
-      //       with an identifier . the function keyword will already
-      //       have been filtered out by the main statement start
-      //       parsing method. So we dont have to check for the function
-      //       keyword here; it cant occur.
+    parsePrimaryOrPrefix: function(optional, hasNew, maybeLabel){
+//      len:
+//      1=387k
+//      4=196k (this=126k)
+//      3=68k
+//      8=67k
+//      2=60k
+//
+//      type:
+//      13=741k
+//      9=102k
+//      10:81k
+//      7=80k
+
       var tok = this.tok;
+      var len = tok.lastLen;
+      var c = tok.firstTokenChar;
 
-      var state = NOPARSE;
+      if (tok.lastType === IDENTIFIER) {
+        if (len > 2) {
+          if (c === ORD_L_T) {
+            if (len === 6 && tok.nextExprIfString('typeof')) {
+              if (hasNew) tok.throwSyntaxError('typeof is illegal right after new');
+              this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+              return NOTASSIGNABLE;
+            }
+          } else if (tok.firstTokenChar === ORD_L_F && tok.getLastValue() === 'function') {
+              this.parseFunction(NOTFORFUNCTIONDECL);
 
-      // if we parse any unary, we wont have to check for label
-      var hasPrefix = this.parseUnary();
-
-      // simple shortcut: this function is only called if (at
-      // the time of calling) the next token was an identifier.
-      // if parseUnary returns true, we wont know what the type
-      // of the next token is. otherwise it must still be identifier!
-      if (!hasPrefix || tok.isType(IDENTIFIER)) {
-        // in fact... we dont have to check for any of the statement
-        // identifiers (break, return, if) because parseIdentifierStatement
-        // will already have ensured a different code path in that case!
-        // TOFIX: check how often this is called and whether it's worth investigating...
-        if (this.isReservedIdentifier(IGNOREVALUES)) throw 'Reserved identifier found in expression. '+tok.syntaxError();
-
-        tok.nextPunc();
-
-        // now's the time... you just ticked off an identifier, check the current token for being a colon!
-        // (quick check first: if there was a unary operator, this cant be a label)
-        if (!hasPrefix) {
-          if (tok.nextExprIfNum(ORD_COLON)) return ISLABEL;
+              // can never assign to function directly
+              return this.parsePrimarySuffixes(NOTASSIGNABLE, hasNew, NOTLABEL);
+          } else if (c === ORD_L_N) {
+            if (tok.nextExprIfString('new')) {
+              // new is actually assignable if it has a trailing property AND at least one paren pair
+              return this.parsePrimaryOrPrefix(REQUIRED, HASNEW || hasNew, NOTLABEL);
+            }
+          } else if (c === ORD_L_D) {
+            if (len === 6 && tok.nextExprIfString('delete')) {
+              if (hasNew) tok.throwSyntaxError('delete is illegal right after new');
+              this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+              return NOTASSIGNABLE;
+            }
+          } else if (c === ORD_L_V) {
+            if (tok.nextExprIfString('void')) {
+              if (hasNew) tok.throwSyntaxError('void is illegal right after new');
+              this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+              return NOTASSIGNABLE;
+            }
+          }
         }
-        if (hasPrefix || this.isValueKeyword(labelName)) state = NONASSIGNEE;
-      } else {
-        if (this.parsePrimaryValue(REQUIRED) || hasPrefix) state = NONASSIGNEE;
+
+        return this.parsePrimaryCoreIdentifier(hasNew, maybeLabel);
       }
 
-      var suffixState = this.parsePrimarySuffixes();
-      if (suffixState & ASSIGNEE) state = NOPARSE;
-      else if (suffixState & NONASSIGNEE) state = NONASSIGNEE;
+      if ((c === ORD_EXCL || c === ORD_TILDE) && tok.lastLen === 1) {
+        if (hasNew) tok.throwSyntaxError('! and ~ are illegal right after new');
+        tok.next(EXPR);
+        this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+        return NOTASSIGNABLE;
+      }
 
-      return state;
+      if (c === ORD_MIN || c === ORD_PLUS) {
+        if (hasNew) tok.throwSyntaxError('illegal operator right after new');
+        // have to verify len anyways, for += and -= case
+        if (tok.lastLen === 1) {
+          tok.next(EXPR);
+          this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+        } else if (tok.getNum(1) === c) {
+          tok.next(EXPR);
+          var assignable = this.parsePrimaryOrPrefix(REQUIRED, HASNONEW, NOTLABEL);
+          if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('The rhs of ++ or -- was not assignable');
+        } else {
+          // this is a += or -= token (there's no other possibility left)
+          // I believe it is illegal at this point :)
+          tok.throwSyntaxError('Illegal operator, expecting primary core');
+        }
+        return NOTASSIGNABLE;
+      }
+
+      return this.parsePrimaryCoreOther(optional, hasNew);
+    },
+    parsePrimaryCoreIdentifier: function(hasNew, maybeLabel){
+      var tok = this.tok;
+      var identifier = tok.getLastValue();
+      var c = tok.firstTokenChar;
+
+      if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
+        tok.throwSyntaxError('Reserved identifier ['+identifier+'] found in expression');
+      }
+
+      tok.next(PUNC);
+
+      // can not assign to keywords, anything else is fine here
+      var assignable = !this.isValueKeyword(c, identifier) ? ASSIGNABLE : NOTASSIGNABLE;
+      return this.parsePrimarySuffixes(assignable, hasNew, maybeLabel);
+    },
+    parsePrimaryCoreOther: function(optional, hasNew){
+      var tok = this.tok;
+      var count = tok.tokenCountAll;
+      var assignable = this.parsePrimaryValue(optional);
+      if (count === tok.tokenCountAll) {
+        if (optional) return NOTASSIGNABLE; // prevents `return.foo`
+        tok.throwSyntaxError('Missing required primary'); // TOFIX: find case for this
+      }
+      return this.parsePrimarySuffixes(assignable, hasNew, NOTLABEL);
     },
     parsePrimaryValue: function(optional){
-      // at this point in the expression parser we will
-      // have ruled out anything else. the next token(s) must
-      // be some kind of expression value...
+      // at this point in the expression parser we will have ruled out anything else.
+      // the next token(s) must be some kind of non-identifier expression value...
+      // returns whether the entire thing is assignable
 
-      var nonAssignee = false;
       var tok = this.tok;
-      if (tok.nextPuncIfValue()) {
-        nonAssignee = true;
-      } else {
-        if (tok.nextExprIfNum(ORD_OPEN_PAREN)) nonAssignee = this.parseGroup();
-        else if (tok.nextExprIfNum(ORD_OPEN_CURLY)) this.parseObject();
-        else if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) this.parseArray();
-        else if (!optional) throw 'Unable to parse required primary value';
+
+      // we know it's going to be a punctuator so we wont use tok.isValue here
+      var t = tok.lastType;
+      if (t === STRING || t === REGEX) {
+        tok.next(PUNC);
+        return NOTASSIGNABLE;
       }
 
-      return nonAssignee;
-    },
-    parseUnary: function(){
-      var parsed = PARSEDNOTHING;
-      var tok = this.tok;
-      while (!tok.isType(EOF) && this.testUnary()) {
-        tok.nextExpr();
-        parsed = PARSEDSOMETHING;
+      if (t === NUMBER) {
+        // special case: numbers must always be followed by whitespace (or EOF)
+        tok.nextWhiteAfterNumber();
+        return NOTASSIGNABLE;
       }
-      return parsed; // return bool to determine possibility of label
+
+      if (tok.nextExprIfNum(ORD_OPEN_PAREN)) {
+        return this.parseGroup();
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_CURLY)) {
+        this.parseObject();
+        return NOTASSIGNABLE;
+      }
+
+      if (tok.nextExprIfNum(ORD_OPEN_SQUARE)) {
+        this.parseArray();
+        return NOTASSIGNABLE;
+      }
+
+      if (!optional) tok.throwSyntaxError('Unable to parse required primary value');
+      // if the primary was optional but not found, the return value here is irrelevant
+      return ASSIGNABLE;
     },
-    testUnary: function(){
-      // this method works under the assumption that the current token is
-      // part of the set of valid tokens for js. So we don't have to check
-      // for string lengths unless we need to disambiguate optional chars
-
-      var tok = this.tok;
-      var c = tok.getLastNum();
-
-      if (c === ORD_L_T) return tok.getLastValue() === 'typeof';
-      else if (c === ORD_L_N) return tok.getLastValue() === 'new';
-      else if (c === ORD_L_D) return tok.getLastValue() === 'delete';
-      else if (c === ORD_EXCL) return true;
-      else if (c === ORD_L_V) return tok.getLastValue() === 'void';
-      else if (c === ORD_MIN) return (tok.lastLen === 1 || (tok.getLastNum2() === ORD_MIN));
-      else if (c === ORD_PLUS) return (tok.lastLen === 1 || (tok.getLastNum2() === ORD_PLUS));
-      else if (c === ORD_TILDE) return true;
-
-      return false;
-    },
-    parsePrimarySuffixes: function(){
+    parsePrimarySuffixes: function(assignable, unassignableUntilAfterCall, maybeLabel){
       // --
       // ++
       // .<idntf>
       // [<exprs>]
       // (<exprs>)
 
-      var nonAssignee = NOPARSE;
+      // label edge case. if any suffix parsed, colon is no longer valid
+      var colonIsError = false;
+      var allowCallAssignment = this.options.allowCallAssignment;
 
-      // TODO: the order of these checks doesn't appear to be optimal (numbers first?)
+      if (unassignableUntilAfterCall) assignable = NOTASSIGNABLE; // for new, must have trailing property _after_ a call
+
       var tok = this.tok;
-      var repeat = true;
-      while (repeat) {
-        var c = tok.getLastNum();
-        // need tokenizer to check for a punctuator because it could never be a regex (foo.bar, we're at the dot between)
-        if (c === ORD_DOT) {
-          if (!tok.isType(PUNCTUATOR)) throw 'Number (?) after identifier?';
-          tok.nextPunc();
-          tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = ASSIGNEE; // property name can be assigned to (for-in lhs)
-        } else if (c === ORD_OPEN_PAREN) {
-          tok.nextExpr();
-          this.parseOptionalExpressions();
-          tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = NONASSIGNEE; // call cannot be assigned to (for-in lhs) (ok, there's an IE case, but let's ignore that...)
-        } else if (c === ORD_OPEN_SQUARE) {
-          tok.nextExpr();
+      while (true) {
+        // see c frequency stats in /stats/primary suffix start.txt
+        var c = tok.firstTokenChar;
+        if (c > 0x2e) {
+          // only c>0x2e relevant is OPEN_SQUARE
+          if (c !== ORD_OPEN_SQUARE) break;
+          tok.next(EXPR);
           this.parseExpressions(); // required
           tok.mustBeNum(ORD_CLOSE_SQUARE, NEXTTOKENCANBEDIV); // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-          nonAssignee = ASSIGNEE; // dynamic property can be assigned to (for-in lhs), expressions for-in state are ignored
-        } else if (c === ORD_PLUS && tok.getLastNum2() === ORD_PLUS) {
-          tok.nextPunc();
-          // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
-          nonAssignee = NONASSIGNEE; // cannot assign to foo++
-          repeat = false;
-        } else if (c === ORD_MIN &&  tok.getLastNum2() === ORD_MIN) {
-          tok.nextPunc();
-          // postfix unary operator lhs cannot have trailing property/call because it must be a LeftHandSideExpression
-          nonAssignee = NONASSIGNEE; // cannot assign to foo--
-          repeat = false;
+          if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
+        } else if (c === ORD_DOT) {
+          if (tok.lastType === NUMBER) break; // ASI: foo\n.5 -> [foo][\n][.5]
+          else if (tok.lastType !== PUNCTUATOR) tok.throwSyntaxError('Dot/Number (?) after identifier?'); // #zp-build drop line
+          tok.next(PUNC);
+          tok.mustBeIdentifier(NEXTTOKENCANBEDIV); // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          if (!unassignableUntilAfterCall && !assignable) assignable = ASSIGNABLE; // trailing property
+        } else if (c === ORD_OPEN_PAREN) {
+          tok.next(EXPR);
+          this.parseOptionalExpressions();
+          tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV); // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+          unassignableUntilAfterCall = false;
+          assignable = allowCallAssignment; // call, only assignable in IE
         } else {
-          repeat = false;
+          // postfix inc/dec are restricted, so no newline allowed here
+          if (!tok.lastNewline && (c === ORD_PLUS || c === ORD_MIN) && tok.getNum(1) === c) {
+            if (!assignable && this.options.strictAssignmentCheck) tok.throwSyntaxError('Postfix increment not allowed here');
+            tok.next(PUNC);
+            assignable = NOTASSIGNABLE; // ++
+          }
+
+          break;
         }
+        colonIsError = true;
       }
-      return nonAssignee;
+      if (colonIsError && maybeLabel && c === ORD_COLON) tok.throwSyntaxError('Invalid label here, I think');
+      return assignable;
     },
     isAssignmentOperator: function(){
       // includes any "compound" operators
@@ -965,120 +1075,96 @@
 
       var tok = this.tok;
       var len = tok.lastLen;
+      var c = tok.firstTokenChar;
 
-      if (len === 1) return tok.getLastNum() === ORD_IS;
+      if (len === 1) return c === ORD_IS;
 
-      else if (len === 2) {
-        if (tok.getLastNum2() !== ORD_IS) return false;
-        var c = tok.getLastNum();
-        return (
-          c === ORD_PLUS ||
-          c === ORD_MIN ||
+      if (len === 2) {
+        // if a token, which must be valid at this point has the equal sign
+        // as second char and length 2 there is a white list and black list
+        // of possible options;
+        // good: += -= *= |= &= ^= /= ~=
+        // bad: == >= <= !=
+        // the danger here is testing becomes very hard because it doesnt
+        // see the difference between assignment op and nonassign binary op
+        // the gain is minimal since compound ops dont occur very often
+
+        return ((
+            c === ORD_PLUS ||
+            c === ORD_MIN ||
+            c === ORD_OR ||
+            c === ORD_AND ||
+            c === ORD_FWDSLASH
+          ) && (tok.getNum(1) === ORD_IS)) ||
           c === ORD_STAR ||
-          c === ORD_OR ||
-          c === ORD_AND ||
           c === ORD_PERCENT ||
-          c === ORD_XOR ||
-          c === ORD_FWDSLASH
-        );
+          c === ORD_XOR;
       }
 
-      else {
-        // these <<= >>= >>>= cases are very rare
-        if (len === 3 && tok.getLastNum() === ORD_LT) {
-          return (tok.getLastNum2() === ORD_LT && tok.getLastNum3() === ORD_IS); // <<=
-        }
-        else if (tok.getLastNum() === ORD_GT) {
-          return ((tok.getLastNum2() === ORD_GT) && (
-            (len === 4 && tok.getLastNum3() === ORD_GT && tok.getLastNum4() === ORD_IS) || // >>>=
-            (len === 3 && tok.getLastNum3() === ORD_IS) // >>=
-          ));
-        }
-      }
+      // these <<= >>= >>>= cases are very rare
+
+      // valid tokens starting with < are: < <= << <<= only len=3 is what we want here
+      if (c === ORD_LT) return len === 3;
+
+      // valid tokens starting with > are: > >> >= >>= >>> >>>=, we only look for >>= and >>>=
+      if (c === ORD_GT) return (len === 4 || (len === 3 && tok.getNum(2) === ORD_IS));
 
       return false;
     },
     isBinaryOperator: function(){
-      // non-assignment binary operator
+      // _non-assignment binary operator
 
       // this method works under the assumption that the current token is
-      // part of the set of valid _tokens_ for js. So we don't have to check
-      // for string lengths unless we need to disambiguate optional chars
-      // and we dont need to worry about validation. the operator is either
-      // going to be a punctuator, `in`, or `instanceof`. But note that the
-      // token might still be a completely unrelated (error) kind of token.
-      // We will parse it in such a way that the error condition is always
-      // the longest path, though.
+      // part of the set of valid _tokens_ for js. That means we only have
+      // to do extra checks for a token to disambiguate other valid tokens,
+      // usually to eliminate assignments.
+
+      // if the input token is not a punctuator or identifier (-> in/instanceof)
+      // the code will result in an error.
+      // identifier happens about 0.5% of the time
+      // punctuator is 99.5%
+
+      // len=1: 93%
+      // len=2: 5%
+      // len=3: 1%
+      // len>3: nearly 1%
+
+      // function returns false in 86% of the calls
 
       var tok = this.tok;
-      var c = tok.getLastNum();
+      var c = tok.firstTokenChar;
+      var len = tok.lastLen;
 
-      // so we have a valid  token, checking for binary ops is simple now except
-      // that we have to make sure it's not an (compound) assignment!
-
-      // About 80% of the calls to this method result in none of the ifs
-      // even matching. The times the method returns `false` is even bigger.
-      // To this end, we preliminary check a few cases so we can jump quicker.
-
-      // (most frequent, for 27% 23% and 20% of the times this method is
-      // called, c will be one of them (simple expression enders)
-      if (c === ORD_CLOSE_PAREN || c === ORD_SEMI || c === ORD_COMMA) return false;
-
-      // quite frequent (more than any other single if below it) are } (8%)
-      // and ] (7%). Maybe I'll remove this in the future. The overhead may
-      // not be worth the gains. Hard to tell... :)
-      else if (c === ORD_CLOSE_SQUARE || c === ORD_CLOSE_CURLY) return false;
-
-      // if len is more than 1, it's either a compound assignment (+=) or a unary op (++)
-      else if (c === ORD_PLUS) return (tok.lastLen === 1);
-
-      // === !==
-      else if (c === ORD_IS || c === ORD_EXCL) return (tok.getLastNum2() === ORD_IS && (tok.lastLen === 2 || tok.getLastNum3() === ORD_IS));
-
-      // & &&
-      else if (c === ORD_AND) return (tok.lastLen === 1 || tok.getLastNum2() === ORD_AND);
-
-      // | ||
-      else if (c === ORD_OR) return (tok.lastLen === 1 || tok.getLastNum2() === ORD_OR);
-
-      else if (c === ORD_LT) {
-        if (tok.lastLen === 1) return true;
-        var d = tok.getLastNum2();
-        // the len check prevents <<= (which is an assignment)
-        return ((d === ORD_LT && tok.lastLen === 2) || d === ORD_IS); // << <=
+      if (c === ORD_SEMI || c === ORD_CLOSE_PAREN || c === ORD_COMMA) return false; // expression enders: 26% 24% 20%
+      if (len === 1) {
+        if (c === ORD_CLOSE_SQUARE || c === ORD_CLOSE_CURLY) return false; // expression/statement enders: 7% 6%
+        return c === ORD_PLUS || c === ORD_STAR || c === ORD_LT || c === ORD_MIN || c === ORD_GT || c === ORD_FWDSLASH || c === ORD_AND || c === ORD_OR || c === ORD_PERCENT || c === ORD_XOR;
       }
-
-      // if len is more than 1, it's a compound assignment (*=)
-      else if (c === ORD_STAR) return (tok.lastLen === 1);
-
-      else if (c === ORD_GT) {
-        var len = tok.lastLen;
-        if (len === 1) return true;
-        var d = tok.getLastNum2();
-        // the len checks prevent >>= and >>>= (which are assignments)
-        return (d === ORD_IS || (len === 2 && d === ORD_GT) || (len === 3 && tok.getLastNum3() === ORD_GT)); // >= >> >>>
+      if (len === 2) {
+        return c === ORD_IS || c === ORD_EXCL || c === ORD_LT || c === ORD_GT || (c === ORD_AND && tok.getNum(1) === ORD_AND) || (c === ORD_OR && tok.getNum(1) === ORD_OR) || tok.getLastValue() === 'in';
       }
-
-      // if len is more than 1, it's a compound assignment (%=, ^=, /=, -=)
-      else if (c === ORD_PERCENT || c === ORD_XOR || c === ORD_FWDSLASH || c === ORD_MIN) return (tok.lastLen === 1);
-
-      // if not punctuator, it could still be `in` or `instanceof`...
-      else if (c === ORD_L_I) return ((tok.lastLen === 2 && tok.getLastNum2() === ORD_L_N) || (tok.lastLen === 10 && tok.getLastValue() === 'instanceof'));
+      if (len === 3) {
+        return c === ORD_IS || c === ORD_EXCL || (c === ORD_GT && tok.getNum(2) === ORD_GT);
+      }
+      if (len === 10) return tok.getLastValue() === 'instanceof';
 
       // not a (non-assignment) binary operator
       return false;
     },
 
     parseGroup: function(){
-      // the expressions are required. nonassignable if:
+      // the expressions is required, the group is nonassignable if:
       // - wraps multiple expressions
       // - if the single expression is nonassignable
       // - if it wraps an assignment
-      var nonAssignee = this.parseExpressions();
+      var groupAssignable = this.parseExpressions();
+
       // groups cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
       this.tok.mustBeNum(ORD_CLOSE_PAREN, NEXTTOKENCANBEDIV);
 
-      return nonAssignee;
+      if (groupAssignable === ASSIGNABLEUNLESSGROUPED) groupAssignable = NOTASSIGNABLE;
+
+      return groupAssignable;
     },
     parseArray: function(){
       var tok = this.tok;
@@ -1092,9 +1178,8 @@
     parseObject: function(){
       var tok = this.tok;
       do {
-        // object literal keys can be most values, but not regex literal.
-        // since that's an error, it's unlikely you'll ever see that triggered.
-        if (tok.isValue() && !tok.isType(REGEX)) this.parsePair();
+        var type = tok.lastType;
+        if (type === IDENTIFIER || type === STRING || type === NUMBER) this.parsePair(); // 84% 9% 1% = 94%
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
       // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
@@ -1102,20 +1187,20 @@
     },
     parsePair: function(){
       var tok = this.tok;
-      if (tok.isNum(ORD_L_G) && tok.nextPuncIfString('get')) {
-        if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved';
-          tok.nextPunc();
 
-          this.parseFunctionRemainder(0, FORFUNCTIONDECL);
+      if (tok.lastLen !== 3) return this.parseData(); // 92%
+
+      var c = tok.firstTokenChar;
+      if (c === ORD_L_G && tok.nextPuncIfString('get')) {
+        if (tok.lastType === IDENTIFIER) {
+          tok.next(PUNC);
+          this.parseFunctionRemainder(this.options.checkAccessorArgs ? NOARGS : ANYARGS, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
-      } else if (tok.isNum(ORD_L_S) && tok.nextPuncIfString('set')) {
-        if (tok.isType(IDENTIFIER)) {
-          if (this.isReservedIdentifier(DONTIGNOREVALUES)) throw 'Getter name is reserved';
-          tok.nextPunc();
-
-          this.parseFunctionRemainder(1, FORFUNCTIONDECL);
+      } else if (c === ORD_L_S && tok.nextPuncIfString('set')) {
+        if (tok.lastType === IDENTIFIER) {
+          tok.next(PUNC);
+          this.parseFunctionRemainder(this.options.checkAccessorArgs ? ONEARG : ANYARGS, FORFUNCTIONDECL);
         }
         else this.parseDataPart();
       } else {
@@ -1123,7 +1208,7 @@
       }
     },
     parseData: function(){
-      this.tok.nextPunc();
+      this.tok.next(PUNC);
       this.parseDataPart();
     },
     parseDataPart: function(){
@@ -1131,9 +1216,70 @@
       this.parseExpression();
     },
 
+    isReservedIdentifierSpecial: function(){
+      // Same as isReservedIdentifier but without the statement
+      // keywords, value keywords and unary operators because
+      // they'll be valid at this point. This check is specific
+      // to the expression or label parsing func.
+
+      // Note that none of these checks should pass.
+      // This function returns 100% false. Let's be quick about it.
+
+      var value;
+      var tok = this.tok;
+      var c = tok.firstTokenChar;
+
+      // stats:
+      // len: 1:26%, 2:6%, 3:6%, 4:34%, 5:5%, 6:5%, 7:3%, 8:3%
+      // chr: a:5%, b:4%, c:5%, d:3%, e:3%, f:1%, g:2%, h:1%, i:1%, j:1%, k:1%, l:1%, m:2%, n:2%, o:1%, p:2%, q:0%, r:2%, s:2%, t:30%, u:1%, v:1%, w:1%, x:0%, y:0%, z:0%, rest: 28%
+      // so: len=1 and c=t and c as non-lowercase-letter should exit early
+
+      if (
+        c < ORD_L_C || // 38%
+        c === ORD_L_T || // 30%
+        tok.lastLen === 1 // 14%
+      ) return false;
+
+      // stats now:
+      // len: 1:0, 2:3%, 3:2%, 4:3%, 5:2%, 6:2%, 7:2%, 8:1%, >8:4%
+      // chr: a:0, b:0, c:2%, d:1%, e:1%, f:1%, g:1%, h:1%, i:1%, j:0%, k:0%, l:1%, m:1%, n:1%, o:1%, p:2%, q:0%, r:1%, s:2%, t:0, u:0%, v:1%, w:0%, x:0%, y:0%, z:0%, rest:0
+      // so: meh. note: no rest because capitals and such are already discarded with the <c check. same goes for _ and $.
+
+      // rest true: 9%, false: 11%?
+
+      if (c === ORD_L_C) { // 2.5%
+        var d = tok.getNum(1);
+        return (d === ORD_L_O && tok.getLastValue() === 'const') || (d === ORD_L_A && ((value=tok.getLastValue()) === 'catch' || value === 'case')) || (d === ORD_L_L && tok.getLastValue() === 'class');
+      }
+
+      if (c === ORD_L_S) { // 1.8%
+        return tok.getNum(1) === ORD_L_U && tok.getLastValue() === 'super';
+      }
+
+      if (c === ORD_L_D) { // 1.5%
+        return tok.getNum(1) === ORD_L_E && tok.getLastValue() === 'default';
+      }
+
+      if (c === ORD_L_E) { // 1.1%
+        var d = tok.getNum(1);
+        return (d === ORD_L_L && tok.getLastValue() === 'else') || (d === ORD_L_N && tok.getLastValue() === 'enum') || (d === ORD_L_X && ((value=tok.getLastValue()) === 'export' || value === 'extends'));
+      }
+
+      if (c === ORD_L_F) { // 0.8%
+        return tok.getNum(1) === ORD_L_I && tok.getLastValue() === 'finally';
+      }
+
+      if (c === ORD_L_I) { // 0.8%
+        var d = tok.getNum(1);
+        return (d === ORD_L_N && (tok.lastLen === 2 || tok.getLastValue() === 'instanceof')) || (d === ORD_L_M && tok.getLastValue() === 'import');
+      }
+
+      return false;
+    },
+
     /**
      * Return whether the current token is a reserved identifier or not.
-     * Presumably only called on identifiers. If the passed on boolean is
+     * Presumably only called on identifiers. If the boolean arg is
      * true, the keywords [true, false, this, function, null] are ignored
      * for this check. This will be the case when parsing expression vars.
      * See also this.isValueKeyword
@@ -1142,134 +1288,196 @@
      * @return {boolean}
      */
     isReservedIdentifier: function(ignoreValues){
-      // note that this function will return false most of the time
-      // if it returns true, a syntax error will probably be thrown
+      // Note that this function will return false most of the time
+      // If it returns true a syntax error will probably be thrown.
+      // In all non-error cases input token will be an identifier
 
-      // TOFIX: skip statement keywords when checking for label
+      // len=1: 36%
+      // len=2: 7%
+      // len=3: 7%
+      // len=4: 24%
+      // len=5: 5%
+      // len=6: 4%
+      // len=7: 3%
+      // len=8: 3%
+      // each len >8 is <=2%, combined: 11%
+
+      // keywords per len (from the 16mb bench file):
+      // 1:
+      // 2: do if in: never happens (could it validly?)
+      // 3: new var for try: never happens (could it validly?)
+      // 4: case else void this with enum true null: 17% [this:15.5%, true:1%, null:1.2%]
+      // 5: break catch while throw class super const false: 1% [false: 1%]
+      // 6: typeof return switch delete export import: never
+      // 7: finally default extends: never
+      // 8: continue debugger function: never
+      // 9:
+      // 10: instanceof: never
+
+      // From the above it's obvious that only value keywords might be found
+      // by this function. anything else is probably an error.
+      // The reason statement keywords are not found here is because that is
+      // handled by a function that specifically scans them.
 
       var tok = this.tok;
+      var c = tok.firstTokenChar;
+      var len = tok.lastLen;
 
-      if (tok.lastLen > 1) {
-        var c = tok.getLastNum();
-        if (c >= ORD_L_A && c <= ORD_L_W) {
-          if (c < ORD_L_G || c > ORD_L_Q) {
-            if (c === ORD_L_T) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_H) {
-                var id = tok.getLastValue();
-                if (id === 'this') return !ignoreValues;
-                return id === 'throw';
-              } else if (d === ORD_L_R) {
-                var id = tok.getLastValue();
-                if (id === 'true') return !ignoreValues;
-                if (id === 'try') return true;
-              } else if (d === ORD_L_Y) {
-                return tok.getLastValue() === 'typeof';
-              }
-            } else if (c === ORD_L_S) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_W) {
-                return tok.getLastValue() === 'switch';
-              } else if (d === ORD_L_U) {
-                return tok.getLastValue() === 'super';
-              } else {
-                return false;
-              }
-            } else if (c === ORD_L_F) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_A) {
-                if (ignoreValues) return false;
-                return tok.getLastValue() === 'false';
-              } else if (d === ORD_L_U) {
-                // this is an ignoreValues case as well, but can never be triggered
-                // rationale: this function is only called with ignoreValues true
-                // when checking a label. labels are first words of statements. if
-                // function is the first word of a statement, it will never branch
-                // to parsing an identifier expression statement. and never get here.
-                return tok.getLastValue() === 'function';
-              } else if (d === ORD_L_O) {
-                return tok.getLastValue() === 'for';
-              } else if (d === ORD_L_I) {
-                return tok.getLastValue() === 'finally';
-              }
-            } else if (c === ORD_L_D) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_O) {
-                return tok.lastLen === 2; // do
-              } else if (d === ORD_L_E) {
-                var id = tok.getLastValue();
-                return id === 'debugger' || id === 'default' || id === 'delete';
-              }
-            } else if (c === ORD_L_E) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_L) {
-                return tok.getLastValue() === 'else';
-              } else if (d === ORD_L_N) {
-                return tok.getLastValue() === 'enum';
-              } else if (d === ORD_L_X) {
-                var id = tok.getLastValue();
-                return id === 'export' || id === 'extends';
-              }
-            } else if (c === ORD_L_B) {
-              return tok.getLastNum2() === ORD_L_R && tok.getLastValue() === 'break';
-            } else if (c === ORD_L_C) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_A) {
-                var id = tok.getLastValue();
-                return id === 'case' || id === 'catch';
-              } else if (d === ORD_L_O) {
-                var id = tok.getLastValue();
-                return id === 'continue' || id === 'const';
-              } else if (d === ORD_L_L) {
-                return tok.getLastValue() === 'class';
-              }
-            } else if (c === ORD_L_R) {
-              if (tok.getLastNum2() === ORD_L_E) {
-                return tok.getLastValue() === 'return';
-              }
-            } else if (c === ORD_L_V) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_A) {
-                return tok.getLastValue() === 'var';
-              } else if (d === ORD_L_O) {
-                return tok.getLastValue() === 'void';
-              }
-            } else if (c === ORD_L_W) {
-              var d = tok.getLastNum2();
-              if (d === ORD_L_H) {
-                return tok.getLastValue() === 'while';
-              } else if (d === ORD_L_I) {
-                return tok.getLastValue() === 'with';
-              }
-            }
-          // we checked for b-f and r-w, but must not forget
-          // to check n and i:
-          } else if (c === ORD_L_N) {
-            var d = tok.getLastNum2();
-            if (d === ORD_L_U) {
-              if (ignoreValues) return false;
-              return tok.getLastValue() === 'null';
-            } else if (d === ORD_L_E) {
-              return tok.getLastValue() === 'new';
-            }
-          } else if (c === ORD_L_I) {
-            var d = tok.getLastNum2();
-            if (d === ORD_L_N) {
-              return tok.lastLen === 2 || tok.getLastValue() === 'instanceof'; // 'in'
-            } else if (d === ORD_L_F) {
-              return tok.lastLen === 2; // 'if'
-            } else if (d === ORD_L_M) {
-              return tok.getLastValue() === 'import';
-            }
-          }
+      // a:8%, b:6%, c:6%, d:4%, e:4%, f:3%, g:2%, h:2%, i:4%, j:1%, k:1%, l:2%, m:2%, n:4%, o:2%, p:3%, q:0%, r:2%, s:3%, t:17%, u:1%, v:2%, w:1%, x:1%, y:1%, z:0%, rest:17%
+
+      if (len === 1) return false; // 39%
+
+      // stats after only dropping len=1:
+      // len: 1:0, 2:7%, 3:7%, 4:22%, 5:5%, 6:4%, 7:3%, 8:3%, rest:10%
+      // chr: a:2%, b:2%, c:3%, d:2%, e:2%, f:2%, g:1%, h:1%, i:2%, j:0%, k:1%, l:1%, m:1%, n:3%, o:1%, p:2%, q:0%, r:1%, s:3%, t:16%, u:1%, v:1%, w:1%, x:0%, y:0%, z:0%, rest: 12%
+      // conclusion: len=4 (22%) has a significance. c=t (12%) does too. probably the same step, unfortunately. can probably do the <=a trick here as well
+
+      if (c <= ORD_L_A) return false; // 14%
+
+      // after dropping <=a
+      // 1:0, 2:2%, 3:2%, 4:8%, 5:2%, 6:1%, 7:1%, 8:1%, rest: 3%
+      // a:0, b:1%, c:1%, d:1%, e:1%, f:0%, g:0%, h:0%, i:1%, j:0%, k:0%, l:0%, m:1%, n:1%, o:1%, p:1%, q:0%, s:1%, t:7%, u:0%, v:1%, w:0%, x:0%, y:0%, z:0%, rest:0
+      // so: only c=t and len=4 are standing out, slightly. rest is negligible
+
+      if (len === 4) { // 19%
+        // case else void this with enum true null
+        // relevant character stats per position:
+        // 1: t:14% n:2% (centvw)
+        // 2: h:12% a:1% e:1% o:1% r:1% u:2% (ahilnoru)
+        // 3: i:13% d:1% e:1% l:2% u:1% (ilstu)
+        // 4: s:13% e:3% l:2% t:1% (dehmls)
+
+        // true
+        // this
+        if (c === ORD_L_T) {
+          if (ignoreValues) return false;
+          var value = tok.getLastValue();
+          return (value === 'this' || value === 'true');
         }
+
+        // null
+        if (c === ORD_L_N) {
+          return !ignoreValues && tok.getLastValue() === 'null';
+        }
+
+        // else
+        // enum
+        if (c === ORD_L_E) {
+          // case else true
+          var value = tok.getLastValue();
+          return (value === 'else' || value === 'enum');
+        }
+
+        // case
+        if (c === ORD_L_C) {
+          return tok.getLastValue() === 'case';
+        }
+
+        if (c < ORD_L_V) return false; // 2.3% (way more than the 0.15% of v and w)
+
+        // void
+        if (c === ORD_L_V) {
+          return !ignoreValues && tok.getLastValue() === 'void';
+        }
+
+        // with
+        if (c === ORD_L_W) {
+          return tok.getLastValue() === 'with';
+        }
+
+        return false;
       }
 
+//      bcdefinrstvw
+
+      // 1:0 2:4.6 3:4 4:0 5:4.2 6:3 7:2.7 8:2.2 >8:6.9 = 27.6
+      // a:0 b:1.5 c:2.5 d:1.5 e:1.5 f:2 g:1 h:0.5 i:1.5 j:0.5 k:0.5 l:1 m:1: n:1 o:1.5 p:2: q:0 r:1.5 s:2.5 t:1.5 u:1: v:1 w:0.5 x:0.5 y:0 z:0
+
+      if (len >= 7) { // 11.7%
+
+        // 7: finally default extends: never
+        // 8: continue debugger function: never
+        // 10: instanceof: never
+        // cdefi
+
+        if (c > ORD_L_I) return false; // 6.4%
+
+        if (c === ORD_L_C) { // 1.5%
+          return tok.getLastValue() === 'continue';
+        }
+
+        if (c === ORD_L_D) { // 0.8%
+          var value = tok.getLastValue();
+          return value === 'default' || value === 'debugger';
+        }
+
+        if (c === ORD_L_E) { // 0.8%
+          return tok.getLastValue() === 'extends';
+        }
+
+        if (c === ORD_L_F) { // 0.5%
+          var value = tok.getLastValue();
+          return value === 'finally' || value === 'function';
+        }
+
+        if (c === ORD_L_I) { // 0.7%
+          return tok.getLastValue() === 'instanceof';
+        }
+
+        return false; // 1%
+      }
+
+      // 3: new var for try : 4
+      // 5: break catch while throw class super const false: 4.2
+      // 6: typeof return switch delete export import: never: 3
+
+      if (len === 2) { // 4.6%
+        if (c === ORD_L_I) {
+          var value = tok.getLastValue();
+          return value === 'if' || value === 'in';
+        }
+        if (c === ORD_L_D) return tok.getLastValue() === 'do';
+        return false;
+      }
+
+      if (len === 5) { // 4.2%
+        if (c === ORD_L_F) return !ignoreValues && tok.getLastValue() === 'false';
+        if (c === ORD_L_S) return tok.getLastValue() === 'super';
+        if (c === ORD_L_C) {
+          var value = tok.getLastValue();
+          return value === 'catch' || value === 'class' || value === 'const';
+        }
+        if (c === ORD_L_T) return tok.getLastValue() === 'throw';
+        if (c === ORD_L_B) return tok.getLastValue() === 'break';
+        if (c === ORD_L_W) return tok.getLastValue() === 'while';
+        return false;
+      }
+
+      if (len === 3) { // 4%
+        if (c === ORD_L_N) return !ignoreValues && tok.getLastValue() === 'new';
+        if (c === ORD_L_V) return tok.getLastValue() === 'var';
+        if (c === ORD_L_T) return tok.getLastValue() === 'try';
+        if (c === ORD_L_F) return tok.getLastValue() === 'for';
+        return false;
+      }
+
+      // 3%
+
+      if (c === ORD_L_S) return tok.getLastValue() === 'switch';
+      if (c === ORD_L_R) return tok.getLastValue() === 'return';
+      if (c === ORD_L_T) return !ignoreValues && tok.getLastValue() === 'typeof';
+      if (c === ORD_L_I) return tok.getLastValue() === 'import';
+      if (c === ORD_L_E) return tok.getLastValue() === 'export';
+      if (c === ORD_L_D) return !ignoreValues && tok.getLastValue() === 'delete';
       return false;
     },
 
-    isValueKeyword: function(word){
-      return word === 'true' || word === 'false' || word === 'this' || word === 'null';
+    isValueKeyword: function(c, word){
+      if (word.length === 4) {
+        if (c === ORD_L_T) return word === 'this' || word === 'true';
+        return c === ORD_L_N && word === 'null';
+      }
+      return c === ORD_L_F && word.length === 5 && word === 'false';
     },
   };
 
