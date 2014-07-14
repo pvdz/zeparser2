@@ -1,12 +1,31 @@
-Tightly check values of each token for a small number of tests.<br>
-Very tedious work so not doing this for every test, but there are a few things we must check beyond the general case.<br>
-One example is to make sure that the whitespace optimization doesn't screw me over.<br>
-Another focus point is black and white token indexes.<br>
+<p>Tightly check values of each token for a small number of tests.</p>
+<p>Very tedious work so not doing this for every test, but there are a few things we must check beyond the general case.</p>
+<p>One example is to make sure that the whitespace optimization doesn't screw me over.</p>
+<p>Another focus point is black and white token indexes.</p>
+<p id="result">Running...</p>
 
-<script src="../src/uni.js"></script>
-<script src="../src/tok.js"></script>
-<script src="../src/par.js"></script>
 <script>
+  // ensure Par is loaded
+
+  Par = parent.Par; // use Par from parent frame
+  if (!Par) {
+    console.warn('strict-token-tests.html: no parent.Par found, loading own Par');
+    [
+      '../src/uni.js',
+      '../src/tok.js',
+      '../src/par.js',
+//          '../build/zp.js',
+//          '../build/zps.js',
+    ].forEach(function(url){
+      // write it to load the script sync, easier than any other workaround. </lazy>
+      document.write('<script src="'+url+'"><\/script>');
+    });
+  }
+  Tok = Par.Tok;
+</script>
+
+<script>
+try {
   var NUMBER = 7;
   var REGEX = 8;
   var PUNCTUATOR = 9;
@@ -16,33 +35,36 @@ Another focus point is black and white token indexes.<br>
   var ASI = 15;
   var WHITE = 18;
 
-  function assert(a,b,c){ if (a!==b) throw new Error(c+' (found: '+a+' expected: '+b+')'); }
+  function assert(a, b, c){ if (a !== b) throw new Error(c + ' (found: ' + a + ' expected: ' + b + ')'); }
+
   function assertToken(desc, token, index, type, value, start, stop, white, black){
-    assert(token.type, type, desc+': '+index+' ('+Tok[type]+'): type');
-    assert(token.start, start, desc+': '+index+' ('+Tok[type]+'): start');
-    assert(token.stop, stop, desc+': '+index+' ('+Tok[type]+'): stop');
-    assert(token.value, value, desc+': '+index+' ('+Tok[type]+'): value');
-    assert(token.white, white, desc+': '+index+' ('+Tok[type]+'): white-index');
-    assert(token.black, black, desc+': '+index+' ('+Tok[type]+'): black-index');
+    assert(token.type, type, desc + ': ' + index + ' (' + Par[type] + '): type');
+    assert(token.start, start, desc + ': ' + index + ' (' + Par[type] + '): start');
+    assert(token.stop, stop, desc + ': ' + index + ' (' + Par[type] + '): stop');
+    assert(token.value, value, desc + ': ' + index + ' (' + Par[type] + '): value');
+    assert(token.white, white, desc + ': ' + index + ' (' + Par[type] + '): white-index');
+    assert(token.black, black, desc + ': ' + index + ' (' + Par[type] + '): black-index');
   }
+
   function assertCode(desc, code, expect){
     var whites = 0;
     var blacks = 0;
-    function onToken(type, value, start, stop, white) {
-      assertToken('(onToken) '+desc, {
-        type:type,
-        value:value,
-        start:start,
-        stop:stop,
-        white:white,
+
+    function onToken(type, value, start, stop, white){
+      assertToken('(onToken) ' + desc, {
+        type: type,
+        value: value,
+        start: start,
+        stop: stop,
+        white: white,
         black: (type !== WHITE ? blacks++ : undefined)
       }, whites, expect[whites][0], expect[whites][1], expect[whites][2], expect[whites][3], whites, expect[whites][4]);
 
       ++whites
     }
 
-    var tokens = Par.parse(code, {saveTokens: true, onToken:onToken}).tok.tokens;
-    console.log(desc+':', tokens);
+    var tokens = Par.parse(code, {saveTokens: true, onToken: onToken, runWithoutFurtherInput:true}).tok.tokens;
+    console.log(desc + ':', tokens);
     expect.forEach(function(arr, i){
       assertToken(desc, tokens[i], i, arr[0], arr[1], arr[2], arr[3], i, arr[4]);
     });
@@ -50,7 +72,7 @@ Another focus point is black and white token indexes.<br>
     // do it again with just onToken
     whites = 0;
     blacks = 0;
-    Par.parse(code, {saveTokens: false, onToken:onToken}).tok.tokens;
+    Par.parse(code, {saveTokens: false, onToken: onToken, runWithoutFurtherInput:true}).tok.tokens;
   }
 
   assertCode('base', "foo ;", [
@@ -123,4 +145,12 @@ Another focus point is black and white token indexes.<br>
     [EOF, '', 22, 22, 8]
   ]);
 
+  document.getElementById('result').innerHTML = 'PASS';
+  document.getElementById('result').style.color = 'white';
+  document.body.style.backgroundColor = 'green';
+} catch(e) {
+  document.getElementById('result').innerHTML = 'FAIL: '+e;
+  document.getElementById('result').style.color = 'white';
+  document.body.style.backgroundColor = 'red';
+}
 </script>
