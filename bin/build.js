@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-console.log("Building...");
+var showHelp = process.argv[2] === '--help' || process.argv[2] === '-?' || process.argv[2] === '--?';
+if (!showHelp) console.log("Building...");
 
 var fs = require('fs');
 var path = require('path');
@@ -9,7 +10,11 @@ var ROOT_DIR = path.resolve(__dirname+'/..');
 var BUILD_DIR = ROOT_DIR + '/build';
 
 // prototype elimination
-var ParMeta = require('./zeparser2-meta.js').Par;
+var ParMeta = require(ROOT_DIR + '/bin/zeparser2-meta.js').Par;
+
+// post process build to make it into a streamer
+var eliminateLogic = require(ROOT_DIR + '/bin/streamer/eliminatelogic');
+var makeFreezable = require(ROOT_DIR + '/bin/streamer/makefreezable');
 
 // self testing
 var Par = require(ROOT_DIR + '/src/par.js').Par;
@@ -19,11 +24,28 @@ var noComment = true;
 var enableLast = 5;
 var showLast = 10;
 var dirnameBare = '';
-if (!process.argv[2]) {
-  console.log('(Note: no params found. If you add a param you can name this build and have it auto-added to the gonzales project locally).');
-  console.log('--comments (no arg) to include comments, they are omitted without this arg');
-  console.log('--show n To show last n builds (default:10)');
-  console.log('--enable n To enable last n builds (default:5)');
+var streamer = false;
+var buildall = false;
+if (!process.argv[2] || showHelp) {
+  if (!showHelp) console.log('(Note: no params found. If you add a param you can name this build and have it auto-added to the gonzales project locally).');
+  else {
+    console.log('Build script for ZeParser2, puts results in /build or /build/<timestamp>_<name>/ if a name was given');
+    console.log('');
+    console.log('Flags:');
+  }
+  console.log('--comments      Leaves comments in, they are omitted without this arg');
+  console.log('--show n        To show last n builds in Gonzales (default:10)');
+  console.log('--enable n      To enable last n builds in Gonzales (default:5)');
+  console.log('--streamer      Builds a streaming parser (zps.js)');
+  console.log('--all           Create regular (zp.js) and streaming (zps.js) builds, no name');
+  if (!showHelp) console.log('--help          Duh');
+
+  if (showHelp) {
+    console.log('');
+    console.log('Usage: ./build.js [flags]');
+    console.log('Usage: ./build.js [flags] name');
+    process.exit();
+  }
 } else {
   var argIndex = 2;
   var next = process.argv[argIndex];
@@ -31,10 +53,12 @@ if (!process.argv[2]) {
 
     switch (next.slice(2)) {
       case 'comments':
+        console.log('-- Leaving in comments')
         noComment = false;
         break;
       case 'enable':
         var n = parseInt(process.argv[argIndex+1], 10);
+        console.log('-- enabling the last '+n+' builds in gonzales');
         if (n+'' === process.argv[argIndex+1]) {
           enableLast = n;
           ++argIndex;
@@ -44,6 +68,7 @@ if (!process.argv[2]) {
         break;
       case 'show':
         var m = parseInt(process.argv[argIndex+1], 10);
+        console.log('-- showing the last '+m+' builds in gonzales');
         if (m+'' === process.argv[argIndex+1]) {
           showLast = m;
           ++argIndex;
@@ -51,9 +76,17 @@ if (!process.argv[2]) {
           throw 'Bad arg for --show, expecting int';
         }
         break;
-      default:
-        console.log('Skipping unknown flag: '+next);
+      case 'streamer':
+        console.log('-- producing a streaming parser');
+        streamer = true;
         break;
+      case 'all':
+        console.log('-- producing a streaming parser and regular build');
+        buildall = true;
+        break;
+      default:
+        console.log('Bailing for unknown flag: '+next);
+        process.exit();
     }
 
     next = process.argv[++argIndex];
@@ -105,7 +138,7 @@ var all = files.map(function(f){
             console.log('Warning: this without dot? investigate. [' + btree.slice(Math.max(0, index-5), Math.min(btree.length, index+5)).map(function(t){ return t.value; }).join(''));
           }
         }
-        else if (varname.type !== Tok.IDENTIFIER) console.log('Warning: whitespace after this? investigate');
+        else if (varname.type !== Par.IDENTIFIER) console.log('Warning: whitespace after this? investigate');
         else {
           next.value = '';
           token.value = prefix;
@@ -118,18 +151,18 @@ var all = files.map(function(f){
     // currently, the prototype is declared as `var proto = { .. };`, so we search for `proto`
     var vars = [];
     var protoToken;
-    var workaroundToken;
     btree.forEach(function(token, index){
-      if (token.type === Tok.IDENTIFIER) {
-        if (token.value === 'proto' && btree[index-1].value === 'var') {
-          if (protoToken) console.log('Warning: proto occurred twice in '+f+' :(');
+      if (token.type === Par.IDENTIFIER) {
+        if (
+          token.value === 'prototype' &&
+          (btree[index-2].value === 'Tok' || btree[index-2].value === 'Par') &&
+          btree[index-1].value === '.'
+        ) {
+          if (protoToken) console.log('Warning: prototype occurred twice in '+f+' :(');
           else {
             protoToken = token;
             btree[index+2].targetProtoObject = true;
           }
-        } else if (token.value === 'chromeWorkaround') {
-          if (workaroundToken) console.log('Warning: workaround token occurred twice in '+f+' :(');
-          workaroundToken = token;
         } else if (token.lhc && token.lhc.targetProtoObject) {
           var key = prefix+token.value;
           // property of the proto object literal; collect
@@ -148,27 +181,6 @@ var all = files.map(function(f){
         }
       }
     });
-
-    if (f !== 'uni.js') {
-      // strip prototype object and chromeWorkaround IIFE
-      if (!protoToken) console.log('Proto not found in '+f);
-      else {
-        // var proto = { ... };
-        // wipe everything from index-1 to index+2.rhc
-        var from = btree[protoToken.black-1].white;
-        var to = btree[protoToken.black+2].rhc.white+1;
-        for (var i=from; i<=to; ++i) wtree[i].value = '';
-      }
-
-      if (!workaroundToken) console.log('Workaround not found in '+f);
-      else {
-        // (function chromeWorkaround(){ ... })();
-        // index-3 ~ rhc+4
-        var from = btree[workaroundToken.black-2].white;
-        var to = btree[workaroundToken.black-1].rhc.white+4; // +4 should actually be in blacks, but i can assume that there's no whitespace because i'm me
-        for (var i=from; i<=to; ++i) wtree[i].value = '';
-      }
-    }
 
     source = wtree.map(function(t){ return t.value; }).join('')
       .replace(
@@ -189,8 +201,8 @@ var all = files.map(function(f){
 
 // my DSL macros
 all = all
-  .replace(/^.*\/\/ #zp-build drop line(?: .*)?$/gm, '')
-  .replace(/^(.*)\.call\(this,\s*(.*)\/\/ #zp-build call(?: .*)?$/gm, '$1($2');
+  .replace(/^.*\/\/ #zp-build drop line(?: .*)?$/gm, '\n')
+  .replace(/(^.*)\.call\(this,\s*(.*)\/\/ #zp-build call(?: .*)?$/gm, '$1($2');
 
 // wrap in nodejs/browser way of exposing an exports object
 all = '(function(exports){'+all+'})(typeof exports === "undefined" ? window : exports);\n';
@@ -209,7 +221,7 @@ var btree = tok.black;
 
 // first pass: replace constants
 btree.forEach(function(token){
-  switch (Tok[token.type]) {
+  switch (Par[token.type]) {
     case 'asi':
       console.log('Warning: ASI encountered, might affect build script');
       break;
@@ -225,7 +237,7 @@ btree.forEach(function(token){
         var lhs = hash[btree[token.black-1].value];
         if (lhs && lhs.valid && btree[token.black-2].value !== '.') {
           var rhs = btree[token.black+1];
-          if (rhs.type === Tok.STRING || rhs.type === Tok.NUMBER || rhs.value === 'null' || rhs.value === 'true' || rhs.value === 'false') {
+          if (rhs.type === Par.STRING || rhs.type === Par.NUMBER || rhs.value === 'null' || rhs.value === 'true' || rhs.value === 'false') {
             lhs.value = rhs.value;
           } else {
             lhs.valid = false;
@@ -238,9 +250,10 @@ btree.forEach(function(token){
 
 // strip comments
 wtree.forEach(function(token){
-  switch (Tok[token.type]) {
+  switch (Par[token.type]) {
     case 'white':
       if (noComment && token.value !== '\n') token.value = ' ';
+//      if (noComment && token.value.length > 2) token.value = '#';
       break;
   }
 });
@@ -272,18 +285,30 @@ all = wtree
 
   // normalize newlines
   .replace(/[\r\n]/g, '\n')
-  .replace(/ +[\n\r]+/g, '') // trim
+  .replace(/ +([\n\r])+/g, '$1') // trim
   .replace(/\n\n\n+/g, '\n\n')
 ;
 
-// to complete...
-//  /function ([\d\w_]+)\(\w*(?:,? ?\w*)*\) ?\{/
-//console.log(all.match(/function this_(?:par|tok)_[\w\d]+/g));
-//return;
+// post process transform the build into a streaming parser?
+if (streamer || all) {
+  var regular = all;
+  console.log('Applying Streamer post processing');
+  console.log('- eliminate logic');
+  all = eliminateLogic(all);
+  console.log('- make freezable');
+  all = makeFreezable(all);
+}
 
-console.log('Writing build to build/zp.js');
-fs.writeFileSync(BUILD_DIR+'/zp.js', all);
-console.log('Done!');
+if (buildall || !streamer) {
+  console.log('Writing regular build to build/zp.js');
+  fs.writeFileSync(BUILD_DIR+'/zp.js', regular || all);
+  console.log('Done!');
+}
+if (buildall || streamer) {
+  console.log('Writing streaming build to build/zps.js');
+  fs.writeFileSync(BUILD_DIR + '/zps.js', all);
+  console.log('Done!');
+}
 
 if (dirnameBare) {
   console.log('Also exporting to '+BUILD_DIR+'/'+dirnameBare);
