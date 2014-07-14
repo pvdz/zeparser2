@@ -14,33 +14,39 @@
     <body>
     (c) qfox.nl<br/>
     Testing parser:<br/>
-    <script src="../src/uni.js"></script>
-    <script src="../src/tok.js"></script>
-    <script src="../src/par.js"></script>
+    <!--<script src="../src/uni.js"></script>-->
+    <!--<script src="../src/tok.js"></script>-->
+    <!--<script src="../src/par.js"></script>-->
+
+    <!--<script src="../build/zp.js"></script>-->
+    <script src="../example/cor/wtf.js"></script>
+
     <script>
-      var s = "this.x = a;";
+      var s = "[1,2];";
       console.warn("Parsing:", [s]);
 
-      var p = new Par(s, {
-        functionMode: false,
-        regexNoClassEscape: false,
-        saveTokens: true,
-        strictAssignmentCheck: true,
-        strictForInCheck: true,
-      });
-
       try {
-        p.run();
+        var p = Par.parse(s, {
+          functionMode: false,
+          regexNoClassEscape: false,
+          saveTokens: true,
+          strictAssignmentCheck: true,
+          strictForInCheck: true,
+          runWithoutFurtherInput: true,
+        });
+
         console.log('Parsed ok.');
       } finally {
-        console.log('window.p:',p);
-        console.log('window.p.tok.tokens:',p.tok.tokens);
-        console.log(p.tok.tokens.map(function(t){
-          var c = t.value.charCodeAt(0);
-          if (t.value.length === 1 && (c <= 20 || c >= 127)) return Tok[t.type]+'[\\x'+(c<16?0:'')+c.toString(16)+'].'+ t.value.length;
-          return Tok[t.type]+'['+ t.value+'].'+ t.value.length;
-        }));
-        console.log('tokenCountAll:', p.tok.tokenCountAll);
-//        console.log('tost:',tost());
+        // let error show first
+        setTimeout(function() {
+          console.log('window.p:',p);
+          console.log('window.p.whites:',p.whites);
+          console.log(p.whites.map(function(t){
+            var c = t.value.charCodeAt(0);
+            if (t.value.length === 1 && (c <= 20 || c >= 127)) return Tok[t.type]+'[\\x'+(c<16?0:'')+c.toString(16)+'].'+ t.value.length;
+            return Par[t.type]+'['+ t.value+'].'+ t.value.length;
+          }));
+          console.log('tokenCountWhite:', p.tokenCountWhite, ', p.whites.length:', p.whites.length);
+        })
       }
     </script>
