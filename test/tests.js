@@ -920,6 +920,8 @@ var good = [
   ["/foo/\u0069;", 2, [true], "regex flags can be unicode escaped 1"],
   ["/foo/m\u0067;", 2, [true], "regex flags can be unicode escaped 2"],
   ["/foo/i\u006dg;", 2, [true], "regex flags can be unicode escaped 3"],
+
+  ["0", [1, 2], "test zero at eof"],
 ];
 
 // these are mainly for the parser, of course...
