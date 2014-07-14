@@ -14,9 +14,28 @@
   <body>
     (c) qfox.nl<br/>
     Testing parser:<br/>
-    <script src="../src/uni.js"></script>
-    <script src="../src/tok.js"></script>
-    <script src="../src/par.js"></script>
+
+    <p id="result">Running...</p>
+
+    <script>
+      // ensure Par is loaded
+
+      Par = parent.Par; // use Par from parent frame
+      if (!Par) {
+        console.warn('parser.html: no parent.Par found, loading own Par');
+        [
+          '../src/uni.js',
+          '../src/tok.js',
+          '../src/par.js',
+//          '../build/zp.js',
+//          '../build/zps.js',
+        ].forEach(function(url){
+            // write it to load the script sync, easier than any other workaround. </lazy>
+            document.write('<script src="'+url+'"><\/script>');
+          });
+      }
+    </script>
+
     <script src="tests.js"></script>
     <script src="js1k.js"></script>
     <script>
@@ -81,15 +100,14 @@
 
           var crashed = false;
           try {
-            var par = new Par(input);
-            par.run();
+            var par = Par.parse(input);
           } catch (e) {
             console.error('Crash for', input);
             console.error(e);
             crashed = sans(e.toString());
           }
 
-          var tcount = par.tok.tokenCountAll -1; // inc asi, ex eof
+          var tcount = par.tokenCountWhite -1; // inc asi, ex eof
 
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed + ')');
@@ -139,8 +157,7 @@
 
           var crashed = false;
           try {
-            var par = new Par(input);
-            par.run();
+            var par = Par.parse(input);
             console.warn("Did not fail:", desc);
           } catch (e) {
             var msg = sans(e.toString());
@@ -172,8 +189,7 @@
 
           for (var j1=0; j1<js1kScripts.length; ++j1) {
             try {
-              var par = new Par(js1kScripts[j1].code);
-              par.run();
+              var par = Par.parse(js1kScripts[j1].code);
               if (!hidePasses) debug('<span class="green">JS1k demo ['+js1kScripts[j1].id+'] ok</span>');
               if (!hidePasses) debug('<br/>');
               ++ok;
@@ -396,7 +412,11 @@
 
         }
 
-        debug("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
+        debug('Parser test suite finished (' + (Date.now() - start) + ' ms).');
+        debug('ok: ' + ok + ', fail: ' + fail);
+        document.getElementById('result').innerHTML = 'ok: ' + ok + ', fail: ' + fail;
+        document.getElementById('result').style.color = 'white';
+        document.body.style.backgroundColor = fail ? 'red' : 'green';
         console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
       };
     </script>

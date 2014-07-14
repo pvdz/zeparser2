@@ -14,11 +14,32 @@
 	<body>
 		(c) qfox.nl<br/>
     Testing tokenizer:<br/>
-    <script src="../src/uni.js"></script>
-    <script src="../src/tok.js"></script>
+    <p id="result">Running...</p>
+
+    <script>
+      // ensure Par is loaded
+
+      Par = parent.Par; // use Par from parent frame
+      if (!Par) {
+        console.warn('tokenizer.html: no parent.Par found, loading own Par');
+        [
+          '../src/uni.js',
+          '../src/tok.js',
+          '../src/par.js',
+//          '../build/zp.js',
+//          '../build/zps.js',
+        ].forEach(function(url){
+            // write it to load the script sync, easier than any other workaround. </lazy>
+            document.write('<script src="'+url+'"><\/script>');
+          });
+      }
+    </script>
+    <script>Tok = Par.Tok;</script>
 		<script src="tests.js"></script>
+
 		<script>
-      new function(){
+    new function(){
+      try {
         var hidePasses = true;
 
         var out = document.createElement('pre');
@@ -29,7 +50,7 @@
           out.appendChild(f);
         };
 
-        debug("Running test suite...",good.length,"tests");
+        debug("Running test suite...", good.length, "tests");
         debug(' ');
 
         var TESTINPUT = 0;
@@ -52,7 +73,7 @@
         var ok = 0;
         var fail = 0;
         var newlineState = NEWLINESTATE_N;
-        for (var i=0; i<good.length; ++i) {
+        for (var i = 0; i < good.length; ++i) {
           var currentNewline = NEWLINEFORSTATE[newlineState];
           var test = good[i];
           var input = test[TESTINPUT];
@@ -64,7 +85,7 @@
           // test all valid newlines
           if (currentNewline) {
             input = input.replace(/\n/g, currentNewline);
-            desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+            desc += ' (newline used: ' + NEWLINESTATES[newlineState] + ')';
           }
 
           try {
@@ -88,19 +109,19 @@
 
           var passed = false;
           if (errorThrown) {
-            debug('<b class="red">Test failed:</b>',desc,'<span class="red">('+errorThrown+')</span>'),console.log(desc, tok);
+            debug('<b class="red">Test failed:</b>', desc, '<span class="red">(' + errorThrown + ')</span>'), console.log(desc, tok);
             ++fail;
           } else if (found == outputLen) {
-            if (!hidePasses) debug('<span class="green">Test '+i+' ok:</span>',desc);
+            if (!hidePasses) debug('<span class="green">Test ' + i + ' ok:</span>', desc);
             ++ok;
             passed = true;
           } else {
-            debug('<b class="red">Test failed:</b>',desc,'<span class="red">(found',found,'expected',outputLen+')</span>'),console.log(desc, tok);
+            debug('<b class="red">Test failed:</b>', desc, '<span class="red">(found', found, 'expected', outputLen + ')</span>'), console.log(desc, tok);
             ++fail;
           }
-          if (!passed || !hidePasses) if (regexHints && regexHints.length) debug('<i>[regex hints: '+regexHints+']</i>');
-          if (!passed || !hidePasses) debug('<b>'+input.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>');
-          if (!passed || !hidePasses) debug('Types: <i>'+types.map(function(t){ return Tok[t]; }).join(',')+'</i>');
+          if (!passed || !hidePasses) if (regexHints && regexHints.length) debug('<i>[regex hints: ' + regexHints + ']</i>');
+          if (!passed || !hidePasses) debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
+          if (!passed || !hidePasses) debug('Types: <i>' + types.map(function(t){ return Par[t]; }).join(',') + '</i>');
           if (!passed || !hidePasses) debug('<br/>');
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
@@ -108,9 +129,15 @@
           if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
           else newlineState = NEWLINESTATE_N;
         }
-        debug("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
-        console.log("Tokenizer test suite finished ("+(Date.now() - start)+' ms). ok:'+ok+', fail:'+fail);
-      };
+      } finally {
+        debug('Tokenizer test suite finished (' + (Date.now() - start) + ' ms).');
+        debug('ok: ' + ok + ', fail: ' + fail);
+        document.getElementById('result').innerHTML = 'ok: ' + ok + ', fail: ' + fail;
+        document.getElementById('result').style.color = 'white';
+        document.body.style.backgroundColor = fail ? 'red' : 'green';
+        console.log("Tokenizer test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
+      }
+    };
 		</script>
 	</body>
 </html>
