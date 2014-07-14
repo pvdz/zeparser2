@@ -1,7 +1,18 @@
 #!/usr/bin/env node
 
-// echo "foo" | cli.js
-var Par = require(__dirname+'/../src/par.js').Par;
+var build = process.argv[2] === '--build';
+var streamer = process.argv[2] === '--stream';
+if (build) console.log('Using build parser (build/zp.js)');
+if (streamer) console.log('Using streaming parser (build/zps.js)');
+else console.log('Using dev parser (src/par.js)');
+console.log('(Use --stream for streaming parser, --build for the build, nothing for dev parser)');
+console.log('----------');
+
+var parserFile = __dirname+'/../src/par.js';
+if (build) parserFile = __dirname+'/../build/zp.js'
+if (streamer) parserFile = __dirname+'/../build/zps.js'
+
+var Par = require(parserFile).Par;
 
 var data = '';
 process.stdin.resume();
@@ -13,10 +24,10 @@ process.stdin.on('data', function (chunk) {
 
 process.stdin.on('end', function () {
   if (data.length < 2000) console.log(data);
+  console.log('----------');
   var start = Date.now();
-  var par = new Par(data);
-  par.run();
-  console.log('-- finished ('+par.tok.tokenCountAll+' tokens, '+(Date.now()-start)+'ms)');
+  var par = Par.parse(data, {noMoreInput:true});
+  console.log('-- finished ('+par.tokenCountWhite+' tokens, '+data.length+' bytes, '+(Date.now()-start)+'ms)');
 });
 
 /*
