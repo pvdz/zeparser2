@@ -211,7 +211,7 @@ function makeFreezable(data){
 
       stmtstrt.before +=
         '\nstep = '+(++cases)+';\n'+
-        'return (frozen = true), ('+freezeArgs+'||undefined);\n'+
+        'return (frozen = true), ('+(freezeArgs&&(freezeArgs+"||"))+'undefined);\n'+
         'case '+cases+':\n';
 
     } else if (t.isCallLhp && blacks[t.black-1].value.indexOf('this_') === 0) {
