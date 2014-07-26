@@ -225,6 +225,7 @@ function makeFreezable(data){
       if (ident.isStatementStart) {
         //
         ident.value =
+          'step = '+(++cases)+'; case '+cases+':\n'+ // fixes parseRegex, at least. TOFIX: i think there's a more precise fix for this, this adds a lot of overhead for each statement. need to trim it down a bit.
           'v'+callCounter+' = (f'+callCounter+' = f'+callCounter+' || '+ident.value;
 
         t.rhp.value +=
