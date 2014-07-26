@@ -1077,7 +1077,7 @@
           if (c === ORD_BACKSLASH_5C) {
             // only valid here is `\u006` followed by a 7=g 9=i or d=m
             backslash = true;
-            c = this.regexFlagUniEscape(this.input, pos + 1);
+            c = this.regexFlagUniEscape(pos + 1);
           }
 
           if (c === ORD_L_G_67) {
@@ -1100,12 +1100,12 @@
       }
       this.pos = pos;
     },
-    // TOFIX: this should fail the streamer due to cached input, make a test
-    regexFlagUniEscape: function(input, pos){
+    regexFlagUniEscape: function(pos){
       if (pos >= this.len) this.getMoreInput(REQUIRED);
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
+      var input = this.input; // safe to cache, we dont update it anymore
       if (input.charCodeAt(pos) !== ORD_L_U_75 || input.charCodeAt(pos+1) !== ORD_L_0_30 || input.charCodeAt(pos+2) !== ORD_L_0_30 || input.charCodeAt(pos+3) !== ORD_L_6_36) {
         return 0;
       }
