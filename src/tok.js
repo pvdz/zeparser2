@@ -991,16 +991,16 @@
       return REGEX;
     },
     regexBody: function(){
-      var len = this.len;
       // TOFIX: should try to have the regex parser only use pos, not this.pos
       var guard = 100000; // #zp-build drop line
-      while (this.pos < len) {
+      while (true) {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
-        if (this.pos >= this.len) this.getMoreInput(REQUIRED);
+
+        if (this.pos >= this.len && !this.getMoreInput(OPTIONALLY)) this.throwSyntaxError('Unterminated regular expression at eof');
         var c = this.input.charCodeAt(this.pos++);
 
         if (c === ORD_BACKSLASH_5C) { // backslash
-          if (this.pos >= this.len) this.getMoreInput(REQUIRED);
+          if (this.pos >= this.len && !this.getMoreInput(OPTIONALLY)) this.throwSyntaxError('Unterminated regular expression escape at eof');
           var d = this.input.charCodeAt(this.pos++);
           if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             this.throwSyntaxError('Newline can not be escaped in regular expression');
@@ -1012,8 +1012,6 @@
           this.throwSyntaxError('Newline can not be escaped in regular expression ['+c+']');
         }
       }
-
-      this.throwSyntaxError('Unterminated regular expression at eof');
     },
     regexClass: function(){
       var len = this.len;
