@@ -303,6 +303,7 @@ if (streamer || buildAll) {
   console.log('Applying Streamer post processing');
   console.log('- eliminate logic');
   code = eliminateLogic(code);
+  fs.writeFileSync(BUILD_DIR+'/zp-nologic.js', code);
   console.log('- make freezable');
   code = makeFreezable(code);
 }
