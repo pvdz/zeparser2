@@ -272,13 +272,13 @@
         var guard = 100000; // #zp-build drop line
         do {
           if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
-          had = this.waitForInput('need backup, nao!');
+          had = this.waitForInput();
+        } while (had !== false && !had.length);
 
-          if (had) {
-            this.input += had;
-            this.len = this.input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
-          }
-        } while (had !== false && len === this.input.length);
+        if (had) {
+          this.input += had;
+          this.len = this.input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+        }
       }
 
       if (had === false) {
