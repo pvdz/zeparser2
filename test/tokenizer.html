@@ -21,17 +21,17 @@
 
       Par = parent.Par; // use Par from parent frame
       if (!Par) {
-        console.warn('tokenizer.html: no parent.Par found, loading own Par');
-        [
-          '../src/uni.js',
-          '../src/tok.js',
-          '../src/par.js',
-//          '../build/zp.js',
-//          '../build/zps.js',
-        ].forEach(function(url){
-            // write it to load the script sync, easier than any other workaround. </lazy>
-            document.write('<script src="'+url+'"><\/script>');
-          });
+        console.warn('tokenizer.html: no parent.Par found, loading own Par ['+location.search+']');
+        switch (location.search) {
+          case '?build':
+            document.write('<script src="../build/zp.js"><\/script>');
+            break;
+          case '?streaming':
+            document.write('<script src="../build/zps.js"><\/script>');
+            break;
+          default:
+            document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+        }
       }
     </script>
     <script>Tok = Par.Tok;</script>
@@ -94,29 +94,42 @@
 
             var tokenCount = 0;
             do {
-              var type = tok.nextAnyToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
-              types.push(type);
-            } while (tokenCount < 1000 && type !== Tok.EOF);
+              var type = tok._nextToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
 
+              // streamer?
+              if (typeof type === 'function') {
+                var guard = 0;
+                do {
+                  if (++guard > 1000) throw 'inner loop protection triggered';
+                  // start parsing nao
+                  if (tok._isFrozen()) tok._thaw(); // entrypoint that we use doesn't thaw so we have to do this ourselves
+                  var yieldValue = type(false);
+                } while (tok._isFrozen());
+                type = yieldValue;
+              }
+              // /streaming
+
+              types.push(type);
+            } while (tokenCount < 1000 && type !== Par.EOF);
           } catch (e) {
             errorThrown = e.toString();
             console.error('Crash for', input);
             console.error(e);
           }
-          tokenCount += tok.tokenCountAll; // add tokens counted by newline+whitespace trick
+          tokenCount += tok._getTrickedTokenCount(); // add tokens counted by newline+whitespace trick
 
           var found = tokenCount - 1; // -eof
 
           var passed = false;
           if (errorThrown) {
-            debug('<b class="red">Test failed:</b>', desc, '<span class="red">(' + errorThrown + ')</span>'), console.log(desc, tok);
+            debug('<b class="red">Test '+i+' failed:</b>', desc, '<span class="red">(' + errorThrown + ')</span>');
             ++fail;
           } else if (found == outputLen) {
             if (!hidePasses) debug('<span class="green">Test ' + i + ' ok:</span>', desc);
             ++ok;
             passed = true;
           } else {
-            debug('<b class="red">Test failed:</b>', desc, '<span class="red">(found', found, 'expected', outputLen + ')</span>'), console.log(desc, tok);
+            debug('<b class="red">Test '+i+' failed:</b>', desc, '<span class="red">(found', found, 'expected', outputLen + ')</span>');
             ++fail;
           }
           if (!passed || !hidePasses) if (regexHints && regexHints.length) debug('<i>[regex hints: ' + regexHints + ']</i>');
@@ -134,7 +147,7 @@
         debug('ok: ' + ok + ', fail: ' + fail);
         document.getElementById('result').innerHTML = 'ok: ' + ok + ', fail: ' + fail;
         document.getElementById('result').style.color = 'white';
-        document.body.style.backgroundColor = fail ? 'red' : 'green';
+        document.body.style.backgroundColor = (fail || !ok) ? 'red' : 'green';
         console.log("Tokenizer test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
       }
     };
