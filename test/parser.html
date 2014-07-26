@@ -19,20 +19,19 @@
 
     <script>
       // ensure Par is loaded
-
       Par = parent.Par; // use Par from parent frame
       if (!Par) {
-        console.warn('parser.html: no parent.Par found, loading own Par');
-        [
-          '../src/uni.js',
-          '../src/tok.js',
-          '../src/par.js',
-//          '../build/zp.js',
-//          '../build/zps.js',
-        ].forEach(function(url){
-            // write it to load the script sync, easier than any other workaround. </lazy>
-            document.write('<script src="'+url+'"><\/script>');
-          });
+        console.warn('parser.html: no parent.Par found, loading own Par ['+location.search+']');
+        switch (location.search) {
+          case '?build':
+            document.write('<script src="../build/zp.js"><\/script>');
+            break;
+          case '?streaming':
+            document.write('<script src="../build/zps.js"><\/script>');
+            break;
+          default:
+            document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+        }
       }
     </script>
 
@@ -100,7 +99,7 @@
 
           var crashed = false;
           try {
-            var par = Par.parse(input);
+            var par = Par.parse(input, {runWithoutFurtherInput: true});
           } catch (e) {
             console.error('Crash for', input);
             console.error(e);
@@ -121,7 +120,7 @@
             if (!hidePasses) debug('<br/>');
             ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')'), console.log(desc, par);
+            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')');
             debug('<b>' + sans(input) + '</b>');
             debug('<br/>');
             ++fail;
@@ -157,7 +156,7 @@
 
           var crashed = false;
           try {
-            var par = Par.parse(input);
+            var par = Par.parse(input, {runWithoutFurtherInput: true});
             console.warn("Did not fail:", desc);
           } catch (e) {
             var msg = sans(e.toString());
@@ -189,7 +188,7 @@
 
           for (var j1=0; j1<js1kScripts.length; ++j1) {
             try {
-              var par = Par.parse(js1kScripts[j1].code);
+              var par = Par.parse(js1kScripts[j1].code, {runWithoutFurtherInput: true});
               if (!hidePasses) debug('<span class="green">JS1k demo ['+js1kScripts[j1].id+'] ok</span>');
               if (!hidePasses) debug('<br/>');
               ++ok;
@@ -243,6 +242,7 @@
               var options = {};
               options[testGroup.optionName] = true;
               if (testGroup.optionsWhenOn) options = testGroup.optionsWhenOn;
+              options.runWithoutFurtherInput = true;
               Par.parse(input, options);
               failed = !testGroup.expectedWhenOn;
               passedWhenTrue = true;
@@ -256,6 +256,7 @@
               var options = {};
               options[testGroup.optionName] = false;
               if (testGroup.optionsWhenOff) options = testGroup.optionsWhenOff;
+              options.runWithoutFurtherInput = true;
               Par.parse(input, options);
               failed = !testGroup.expectedWhenOff;
               passedWhenFalse = true;
@@ -313,6 +314,7 @@
               var options = {};
               options[testGroup.optionName] = true;
               if (testGroup.optionsWhenOn) options = testGroup.optionsWhenOn;
+              options.runWithoutFurtherInput = true;
               Par.parse(input, options);
               passedWhenTrue = true;
             } catch (e) {
@@ -322,6 +324,7 @@
             try {
               var options = {};
               options[testGroup.optionName] = false;
+              options.runWithoutFurtherInput = true;
               Par.parse(input, options);
               passedWhenFalse = true;
             } catch (e) {
@@ -373,6 +376,7 @@
             try {
               var options = {};
               options[testGroup.optionName] = true;
+              options.runWithoutFurtherInput = true;
               Par.parse(input, options);
               passedWhenTrue = true;
             } catch (e) {
@@ -383,6 +387,7 @@
               var options = {};
               options[testGroup.optionName] = false;
               if (testGroup.optionsWhenOn) options = testGroup.optionsWhenOn;
+              options.runWithoutFurtherInput = true;
               Par.parse(input, options);
               passedWhenFalse = true;
             } catch (e) {
