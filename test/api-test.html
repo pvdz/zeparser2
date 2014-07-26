@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Parser Test Suite - API test</title>
+    <style>
+      input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
+      #cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
+      div { font-size: 11px; font-family: monospace; }
+      .red { background-color: red; color: white; }
+      .green { background-color: green; color: white; }
+      hr { margin: 0; padding: 0; font-size: 1px; }
+    </style>
+  </head>
+  <body>
+    <p><a href="http://github.com/qfox/zeparser2/">ZeParser2</a> test suite: API test</p>
+    <p>(c) qfox.nl</p>
+    <p>Confirms that `Par.parse` returns the proper object.</p>
+    <p id="result">Running...</p>
+
+    <script>
+      // ensure Par is loaded
+
+      Par = parent.Par; // use Par from parent frame
+      if (!Par) {
+        console.warn('api-test.html: no parent.Par found, loading own Par ['+location.search+']');
+        switch (location.search) {
+          case '?build':
+            document.write('<script src="../build/zp.js"><\/script>');
+            break;
+          case '?streaming':
+            document.write('<script src="../build/zps.js"><\/script>');
+            break;
+          default:
+            document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+        }
+      }
+    </script>
+
+    <script>
+    try {
+      if (typeof Par !== 'function') throw 'Par not properly included, is not a function';
+      if (typeof Par.parse !== 'function') throw 'Par.parse is not a function, should be';
+      if (typeof Par.Tok !== 'function') throw 'Par.Tok is not a function, should expose the Tok class';
+
+      var STRING = 10;
+      var NUMBER = 7;
+      var REGEX = 8;
+      var PUNCTUATOR = 9;
+      var IDENTIFIER = 13;
+      var EOF = 14;
+      var ASI = 15;
+      var ERROR = 16;
+      var WHITE = 18;
+
+      if (Par[WHITE] !== 'white space') throw 'Missing Par[WHITE]';
+      if (Par[STRING] !== 'string') throw 'Missing Par[STRING]';
+      if (Par[NUMBER] !== 'number') throw 'Missing Par[NUMBER]';
+      if (Par[REGEX] !== 'regex') throw 'Missing Par[REGEX]';
+      if (Par[PUNCTUATOR] !== 'punctuator') throw 'Missing Par[PUNCTUATOR]';
+      if (Par[IDENTIFIER] !== 'identifier') throw 'Missing Par[IDENTIFIER]';
+      if (Par[EOF] !== 'EOF') throw 'Missing Par[EOF]';
+      if (Par[ASI] !== 'ASI') throw 'Missing Par[ASI]';
+      if (Par[ERROR] !== 'error') throw 'Missing Par[ERROR]';
+
+      if (Par.WHITE !== WHITE) throw 'Missing Par.WHITE';
+      if (Par.STRING !== STRING) throw 'Missing Par.STRING';
+      if (Par.NUMBER !== NUMBER) throw 'Missing Par.NUMBER';
+      if (Par.REGEX !== REGEX) throw 'Missing Par.REGEX';
+      if (Par.PUNCTUATOR !== PUNCTUATOR) throw 'Missing Par.PUNCTUATOR';
+      if (Par.IDENTIFIER !== IDENTIFIER) throw 'Missing Par.IDENTIFIER';
+      if (Par.EOF !== EOF) throw 'Missing Par.EOF';
+      if (Par.ASI !== ASI) throw 'Missing Par.ASI';
+      if (Par.ERROR !== ERROR) throw 'Missing Par.ERROR';
+
+      // first simple test
+      var p1 = Par.parse('var foo = bar;', {runWithoutFurtherInput:true});
+      console.log('p1',p1);
+      if (typeof p1 !== 'object') throw 'par is not an object';
+      if (typeof p1.par !== 'object') throw 'par.par is not an object';
+      if (typeof p1.tok !== 'object') throw 'par.tok is not an object';
+      if (typeof p1.options !== 'object') throw 'par.options is not an object';
+      if (!('allowCallAssignment' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('checkAccessorArgs' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('createBlackStream' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('functionMode' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('regexNoClassEscape' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('requireDoWhileSemi' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('saveTokens' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('strictAssignmentCheck' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('strictForInCheck' in p1.options)) throw 'missing option allowCallAssignment';
+      if (p1.tokenCountWhite !== 9) throw 'Expecting 9 tokens, have [' + p1.tokenCountWhite + ']';
+
+      // test repeated parsings
+      var p2 = Par.parse('if (telve && thirteen) one;', {runWithoutFurtherInput:true});
+      console.log('p2',p2);
+      if (typeof p2 !== 'object') throw 'par is not an object';
+      if (typeof p2.tok !== 'object') throw 'par.tok is not an object';
+      if (typeof p2.options !== 'object') throw 'par.options is not an object';
+      if (!('allowCallAssignment' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('checkAccessorArgs' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('createBlackStream' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('functionMode' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('regexNoClassEscape' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('requireDoWhileSemi' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('saveTokens' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('strictAssignmentCheck' in p2.options)) throw 'missing option allowCallAssignment';
+      if (!('strictForInCheck' in p2.options)) throw 'missing option allowCallAssignment';
+      if (p2.tokenCountWhite !== 13) throw 'Expecting 13 tokens, have [' + p2.tokenCountWhite + ']';
+
+      // confirm the old object did not get messed up
+      if (typeof p1 !== 'object') throw 'par is not an object';
+      if (typeof p1.tok !== 'object') throw 'par.tok is not an object';
+      if (typeof p1.options !== 'object') throw 'par.options is not an object';
+      if (!('allowCallAssignment' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('checkAccessorArgs' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('createBlackStream' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('functionMode' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('regexNoClassEscape' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('requireDoWhileSemi' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('saveTokens' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('strictAssignmentCheck' in p1.options)) throw 'missing option allowCallAssignment';
+      if (!('strictForInCheck' in p1.options)) throw 'missing option allowCallAssignment';
+      if (p1.tokenCountWhite !== 9) throw 'Expecting 9 tokens, have [' + p1.tokenCountWhite + ']';
+
+      // check white tokens
+      var p3 = Par.parse('try { fail; } catch (e) {}', {saveTokens: true, runWithoutFurtherInput:true});
+      console.log('p3',p3);
+      if (!(p3.whites instanceof Array || p3.whites instanceof parent.Array)) throw 'p3.whites is not an array 1';
+      if (p3.whites.length !== 18) throw 'should have 18 tokens, have [' + p3.whites.length + ']';
+
+      // check black tokens
+      var p4 = Par.parse('foo: break foo;', {saveTokens: true, createBlackStream: true, runWithoutFurtherInput:true});
+      console.log('p4',p4);
+      if (!(p4.whites instanceof Array || p4.whites instanceof parent.Array)) throw 'par.whites is not an array 2';
+      if (!(p4.blacks instanceof Array || p4.whites instanceof parent.Array)) throw 'par.blacks is not an array 3';
+      if (p4.whites.length !== 8) throw 'whites should have 8 tokens, have [' + p4.whites.length + ']';
+      if (p4.blacks.length !== 6) throw 'blacks should have 6 tokens, have [' + p4.blacks.length + ']';
+
+      var p5 = Par.parse('foo; \nwhile (true) Infinity', {saveTokens: true, createBlackStream: true, runWithoutFurtherInput:true});
+      console.log('p5',p5);
+      if (!(p5.whites instanceof Array || p5.whites instanceof parent.Array)) throw 'par.whites is not an array 4';
+      if (!(p5.blacks instanceof Array || p5.whites instanceof parent.Array)) throw 'par.blacks is not an array 5';
+      if (p5.whites.length !== 13) throw 'whites should have 13 tokens, have [' + p5.whites.length + ']';
+      if (p5.blacks.length !== 10) throw 'blacks should have 10 tokens, have [' + p5.blacks.length + ']';
+
+      if (!(p4.whites instanceof Array || p4.whites instanceof parent.Array)) throw 'par.whites is not an array 6';
+      if (!(p4.blacks instanceof Array || p4.whites instanceof parent.Array)) throw 'par.blacks is not an array 7';
+      if (p4.whites.length !== 8) throw 'whites should have 8 tokens, have [' + p4.whites.length + ']';
+      if (p4.blacks.length !== 6) throw 'blacks should have 6 tokens, have [' + p4.blacks.length + ']';
+
+      document.getElementById('result').innerHTML = 'OK!';
+      document.body.style.backgroundColor = 'green';
+      document.getElementById('result').style.color = 'white';
+    } catch(e) {
+      document.getElementById('result').innerHTML = 'Error :( '+e;
+      document.body.style.backgroundColor = 'red';
+      document.getElementById('result').style.color = 'white';
+    }
+    </script>
+  </body>
+</html>

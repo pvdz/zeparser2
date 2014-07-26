@@ -1,0 +1,64 @@
+<p>Tests whether thawing won't gain memory by parsing a 50mb identifier (totally legal, yo).</p>
+<p id="result">Running...</p>
+
+<script>
+  // ensure Par is loaded
+
+  Par = parent.Par; // use Par from parent frame
+  if (!Par) {
+    console.warn('streamer.html: no parent.Par found, loading own Par ['+location.search+']');
+    switch (location.search) {
+      case '?build':
+        document.write('<script src="../build/zp.js"><\/script>');
+        break;
+      case '?streaming':
+        document.write('<script src="../build/zps.js"><\/script>');
+        break;
+      default:
+        document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+    }
+
+  }
+</script>
+break right after single quote
+<script>
+  var limit = 4e4;
+  var input = "if (useGuards) if (!--guard1) throw 'loop security';";
+  var tokens = 18 * limit + 1;
+
+  var start = Date.now();
+
+  try {
+
+    console.warn('streaming memory test');
+
+    var t = 0;
+    var o = Par.parse('', {onToken: function(){ ++t; }});
+    o.thaw();
+
+    console.log('total bytes:', limit*input.length, 'expecting', tokens, 'tokens');
+
+    for (var i=0; i<limit; ++i) {
+      // cut up at arbitrary points
+      var n = Math.floor(Math.random() * input.length);
+      o.thaw(input.slice(0, n));
+      o.thaw(input.slice(n));
+    }
+
+    var p = o.thaw(false);
+    console.log('result par:', p);
+    console.log('got', t, 'tokens');
+    console.log(Date.now() - start + ' ms');
+
+    if (t !== tokens) throw 'Expected exactly '+tokens+' tokens';
+
+    document.getElementById('result').innerHTML = 'PASS';
+    document.getElementById('result').style.color = 'white';
+    document.body.style.backgroundColor = 'green';
+  } catch(e) {
+    document.getElementById('result').innerHTML = 'FAIL: '+e;
+    document.getElementById('result').style.color = 'white';
+    document.body.style.backgroundColor = 'red';
+  }
+
+</script>

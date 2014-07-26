@@ -1,0 +1,59 @@
+<p>ZeParser2 test suite. Sub tests are included here as iframes. They reference the `Par` that was included in this `parent`.</p>
+<pre><span>&nbsp;<a href="?dev">Dev version</a>&nbsp;</span> | <span>&nbsp;<a href="?build">Build version</a>&nbsp;</span> | <span>&nbsp;<a href="?streaming">Streaming version</a>&nbsp;</span></pre>
+
+<style>
+  iframe { height: 500px; }
+  div { float: left; }
+  div>p { text-align: center; }
+</style>
+
+<script>
+  var e = document.querySelector('a[href="'+(location.search||'?dev')+'"]').parentNode;
+  e.innerHTML = e.innerHTML.replace('&nbsp;','&lt;').replace('&nbsp;','&gt;');
+  e.firstElementChild.style.textDecoration = 'none';
+
+  switch (location.search) {
+    case '?build':
+      document.write('<script src="../build/zp.js"><\/script>');
+      break;
+    case '?streaming':
+      document.write('<script src="../build/zps.js"><\/script>');
+      break;
+    default:
+      document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+  }
+</script>
+
+<p>
+  <a href="onetok.html">onetok.html</a> | <a href="onepar.html">onepar.html</a>
+</p>
+
+<div>
+  <p><a href="api-test.html">api-test.html</a></p>
+  <iframe src="api-test.html"></iframe>
+</div>
+<div style="float:left;">
+  <p><a href="tokenizer.html">tokenizer.html</a></p>
+  <iframe src="tokenizer.html"></iframe>
+</div>
+<div style="float:left;">
+  <p><a href="parser.html">parser.html</a></p>
+  <iframe src="parser.html"></iframe>
+</div>
+<div style="float:left;">
+  <p><a href="strict-token-tests.html">strict-token-tests.html</a></p>
+  <iframe src="strict-token-tests.html"></iframe>
+</div>
+<div style="float:left;">
+  <p><a href="streamer.html">streamer.html</a></p>
+  <iframe src="streamer.html"></iframe>
+</div>
+
+<script>
+
+  Array.prototype.slice.call(document.querySelectorAll('p>a'), 0).forEach(function(e){
+    if (e.href.indexOf(e.innerHTML) >= 0) e.href += location.search;
+  });
+</script>
+
+<!--<iframe src="tokenfuzzer.html"></iframe>-->

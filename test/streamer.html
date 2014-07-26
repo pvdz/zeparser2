@@ -1,0 +1,108 @@
+<p>Tests the streaming api, checks if it streams properly.</p>
+<p id="result">Running...</p>
+
+<script>
+  // ensure Par is loaded
+
+  Par = parent.Par; // use Par from parent frame
+  if (!Par) {
+    console.warn('streamer.html: no parent.Par found, loading own Par ['+location.search+']');
+    switch (location.search) {
+      case '?build':
+        document.write('<script src="../build/zp.js"><\/script>');
+        break;
+      case '?streaming':
+        document.write('<script src="../build/zps.js"><\/script>');
+        break;
+      default:
+        document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+    }
+
+  }
+</script>
+
+<script>
+
+  function simple() {
+    console.warn('simple test');
+//    console.log('initializing');
+    var o = Par.parse('var foo', {saveTokens: true});
+//    console.log('starting', o);
+    o.thaw();
+//    console.log('faking');
+    o.thaw('');
+//    console.log('streaming on');
+    o.thaw(' = bar;');
+//    console.log('ending');
+    var p = o.thaw(false);
+
+    console.log('simple:', p);
+  }
+
+  function splitIdent() {
+    console.warn('split identifier test');
+    var o = Par.parse('hel', {saveTokens: true});
+    o.thaw();
+    o.thaw('lo;');
+    var p = o.thaw(false);
+    console.log('split:', p);
+  }
+
+  function callbacks() {
+    console.warn('onToken tests');
+    var s = '';
+    var o = Par.parse('function f', {onToken: function(t, v, a, b, n){
+      s += v;
+      console.log(Par[t], [v], a, b, 'n:',n);
+    }});
+    o.thaw();
+    o.thaw('');
+    o.thaw('oo(x) {\n');
+    o.thaw('  /foo/.');
+    o.thaw('test(bar); /');
+    o.thaw('/ dead\n }');
+    o.thaw(false);
+
+    console.log('parsed:',[s]);
+  }
+
+  function compounds() {
+    console.warn('multi-char ambiguous puncs test');
+    var s = '';
+    var o = Par.parse('', {onToken: function(t, v, a, b, n){
+      s += v;
+      console.log(Par[t], [v], a, b, 'n:',n);
+    }});
+    o.thaw();
+
+    o.thaw('+');
+    o.thaw('+');
+    o.thaw('a');
+    o.thaw('b');
+    o.thaw(';');
+    o.thaw('x');
+    o.thaw('+');
+    o.thaw('=');
+    o.thaw('y;');
+
+    o.thaw(false);
+    console.log('parsed:',[s]);
+  }
+
+  try {
+
+    simple();
+    splitIdent();
+    callbacks();
+    compounds();
+
+    document.getElementById('result').innerHTML = 'PASS';
+    document.getElementById('result').style.color = 'white';
+    document.body.style.backgroundColor = 'green';
+  } catch(e) {
+    document.getElementById('result').innerHTML = 'FAIL: '+e;
+    document.getElementById('result').style.color = 'white';
+    document.body.style.backgroundColor = 'red';
+  }
+
+</script>
