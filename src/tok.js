@@ -268,7 +268,6 @@
       var had = false;
 
       if (!this.reachedEof) {
-        var len = this.input.length;
         var guard = 100000; // #zp-build drop line
         do {
           if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
