@@ -9,19 +9,18 @@
 
   Par = parent.Par; // use Par from parent frame
   if (!Par) {
-    console.warn('strict-token-tests.html: no parent.Par found, loading own Par');
-    [
-      '../src/uni.js',
-      '../src/tok.js',
-      '../src/par.js',
-//          '../build/zp.js',
-//          '../build/zps.js',
-    ].forEach(function(url){
-      // write it to load the script sync, easier than any other workaround. </lazy>
-      document.write('<script src="'+url+'"><\/script>');
-    });
+    console.warn('strict-token-tests.html: no parent.Par found, loading own Par ['+location.search+']');
+    switch (location.search) {
+      case '?build':
+        document.write('<script src="../build/zp.js"><\/script>');
+        break;
+      case '?streaming':
+        document.write('<script src="../build/zps.js"><\/script>');
+        break;
+      default:
+        document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+    }
   }
-  Tok = Par.Tok;
 </script>
 
 <script>
@@ -63,7 +62,7 @@ try {
       ++whites
     }
 
-    var tokens = Par.parse(code, {saveTokens: true, onToken: onToken, runWithoutFurtherInput:true}).tok.tokens;
+    var tokens = Par.parse(code, {saveTokens: true, onToken: onToken, runWithoutFurtherInput:true}).whites;
     console.log(desc + ':', tokens);
     expect.forEach(function(arr, i){
       assertToken(desc, tokens[i], i, arr[0], arr[1], arr[2], arr[3], i, arr[4]);
@@ -72,7 +71,7 @@ try {
     // do it again with just onToken
     whites = 0;
     blacks = 0;
-    Par.parse(code, {saveTokens: false, onToken: onToken, runWithoutFurtherInput:true}).tok.tokens;
+    Par.parse(code, {saveTokens: false, onToken: onToken, runWithoutFurtherInput:true}).whites;
   }
 
   assertCode('base', "foo ;", [
