@@ -1,23 +1,18 @@
 (function(exports){
   var uniRegex = exports.uni || require(__dirname+'/uni.js').uni;
 
+  var useGuards = true; // #zp-build drop line
+
   // punctuator occurrence stats: http://qfox.nl/weblog/301
   // token start stats: http://qfox.nl/weblog/302
 
   // TOFIX: should `/x/y()` and `new /x/y()` be allowed? firefox used to do this, legacy syntax?
+  // TOFIX: ASI messes up white index? difference in token index and white index...
 
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
-  var WHITE_SPACE = 1;
-  var LINETERMINATOR = 2;
-  var COMMENT_SINGLE = 3;
-  var COMMENT_MULTI = 4;
   var STRING = 10;
-  var STRING_SINGLE = 5;
-  var STRING_DOUBLE = 6;
   var NUMBER = 7;
-  var NUMERIC_DEC = 11;
-  var NUMERIC_HEX = 12;
   var REGEX = 8;
   var PUNCTUATOR = 9;
   var IDENTIFIER = 13;
@@ -26,8 +21,22 @@
   var ERROR = 16;
   var WHITE = 18; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
 
+  // reverse lookup (only used for error messages..)
+  var typeToString = {};
+  typeToString[STRING] = 'string';
+  typeToString[NUMBER] = 'number';
+  typeToString[REGEX] = 'regex';
+  typeToString[PUNCTUATOR] = 'punctuator';
+  typeToString[IDENTIFIER] = 'identifier';
+  typeToString[EOF] = 'eof';
+  typeToString[ASI] = 'asi';
+  typeToString[ERROR] = 'error';
+  typeToString[WHITE] = 'white space';
+
   var EXPR = true;
   var PUNC = false;
+  var REQUIRED = true;
+  var OPTIONALLY = false;
 
   var UNICODE_LIMIT_127 = 127;
 
@@ -169,6 +178,7 @@
 
     // v8 "appreciates" it when all instance properties are set explicitly
     this.pos = 0;
+    this.reachedEof = false;
 
     this.lastOffset = 0;
     this.lastStop = 0;
@@ -188,53 +198,24 @@
       this['tokens'] = this.tokens = [];
       if (options.createBlackStream) this['black'] = this.black = [];
     }
+
+    // for testing the builds
+    this['_getTrickedTokenCount'] = function(){ return this.tokenCountAll; };
+    this['_isFrozen'] = function(){ return frozen; };
+    this['_thaw'] = function(){ frozen = false; };
+    this['_nextToken'] = this.nextAnyToken;
   };
 
-  // reverse lookup (only used for error messages..)
-
-  Tok[WHITE_SPACE] = 'whitespace';
-  Tok[LINETERMINATOR] = 'lineterminator';
-  Tok[COMMENT_SINGLE] = 'comment_single';
-  Tok[COMMENT_MULTI] = 'comment_multi';
-  Tok[STRING] = 'string';
-  Tok[STRING_SINGLE] = 'string_single';
-  Tok[STRING_DOUBLE] = 'string_multi';
-  Tok[NUMBER] = 'number';
-  Tok[NUMERIC_DEC] = 'numeric_dec';
-  Tok[NUMERIC_HEX] = 'numeric_hex';
-  Tok[REGEX] = 'regex';
-  Tok[PUNCTUATOR] = 'punctuator';
-  Tok[IDENTIFIER] = 'identifier';
-  Tok[EOF] = 'eof';
-  Tok[ASI] = 'asi';
-  Tok[ERROR] = 'error';
-  Tok[WHITE] = 'white';
-
-  Tok.WHITE_SPACE = WHITE_SPACE;
-  Tok.LINETERMINATOR = LINETERMINATOR;
-  Tok.COMMENT_SINGLE = COMMENT_SINGLE;
-  Tok.COMMENT_MULTI = COMMENT_MULTI;
-  Tok.STRING = STRING;
-  Tok.STRING_SINGLE = STRING_SINGLE;
-  Tok.STRING_DOUBLE = STRING_DOUBLE;
-  Tok.NUMBER = NUMBER;
-  Tok.NUMERIC_DEC = NUMERIC_DEC;
-  Tok.NUMERIC_HEX = NUMERIC_HEX;
-  Tok.REGEX = REGEX;
-  Tok.PUNCTUATOR = PUNCTUATOR;
-  Tok.IDENTIFIER = IDENTIFIER;
-  Tok.EOF = EOF;
-  Tok.ASI = ASI;
-  Tok.ERROR = ERROR;
-  Tok.WHITE = WHITE; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
-
-  var proto = {
+  // note: this causes deopt in chrome by this bug: https://code.google.com/p/v8/issues/detail?id=2246
+  Tok.prototype = {
     /** @property {string} input */
     input: '',
     /** @property {number} len */
     len: 0,
     /** @property {number} pos */
     pos: 0,
+    /** @property {boolean} reachedEof Becomes true when you reach end of stream */
+    reachedEof: false,
 
     /**
      * Shared with Par.
@@ -276,6 +257,57 @@
     tokens: null,
     /** @property {Object[]} black List of only black tokens, if saving them is enabled (this.options.saveTokens) and createBlackStream is too */
     black: null,
+
+    /**
+     * Call whenever reaching EOF.
+     *
+     * @param mustHaveMore
+     * @returns {boolean}
+     */
+    getMoreInput: function(mustHaveMore){
+      var had = false;
+
+      if (!this.reachedEof) {
+        var len = this.input.length;
+        var guard = 100000; // #zp-build drop line
+        do {
+          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          had = this.waitForInput('need backup, nao!');
+
+          if (had) {
+            this.input += had;
+            this.len = this.input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+          }
+        } while (had !== false && len === this.input.length);
+      }
+
+      if (had === false) {
+        // if there was no more input, next time skip the freeze part
+        this.reachedEof = true;
+        if (mustHaveMore) this.throwSyntaxError('Unexpected EOF');
+      }
+
+      return had;
+    },
+    /**
+     * External api endpoint.
+     * Call with new input, then thaw the parser.
+     *
+     * @param {string} input
+     */
+    updateInput: function(input){
+      this.input += input;
+      this.len += input.length;
+    },
+
+    /**
+     * Should not be callable after being processed for streaming parser
+     * @returns {boolean} false
+     */
+    waitForInput: function(){
+      // noop
+      return false;
+    },
 
     // some of these regular expressions are so complex that i had to
     // write scripts to construct them. the only way to keep my sanity
@@ -335,7 +367,7 @@
      */
     mustBeIdentifier: function(nextIsExpr){
       if (this.lastType === IDENTIFIER) return this.next(nextIsExpr);
-      this.throwSyntaxError('Expecting current type to be IDENTIFIER but is '+Tok[this.lastType]+' ('+this.lastType+')');
+      this.throwSyntaxError('Expecting current type to be IDENTIFIER but is '+typeToString[this.lastType]+' ('+this.lastType+')');
     },
     /**
      * Parser requires the current token to be this
@@ -358,7 +390,9 @@
       var onToken = options.onToken;
       var tokens = this.tokens;
 
+      var guard = 100000; // #zp-build drop line
       do {
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         var type = this.nextAnyToken(expressionStart);
         if (saveTokens) {
           var token = {type:type, value:this.getLastValue(), start:this.lastOffset, stop:this.pos, white:this.tokenCountAll};
@@ -402,8 +436,12 @@
 
       // note: the offset might change in the newline+space optim trick, so dont re-use it
       var fullStart = this.lastOffset = this.pos;
+
+      if (fullStart >= this.len && !this.getMoreInput(OPTIONALLY)) {
+        this.firstTokenChar = 0;
+        return EOF;
+      }
       var nextChar = this.firstTokenChar = this.input.charCodeAt(fullStart) | 0;
-      if (!nextChar) return EOF; // a nul char here is EOF (NaN) or error, end regardless
 
       var type = this.nextTokenDeterminator(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - this.lastOffset;
@@ -548,13 +586,14 @@
     },
 
     parseBackslash: function(){
-      this.parseAndValidateUnicodeAsIdentifier(this.pos, this.input, true);
+      this.parseAndValidateUnicodeAsIdentifier(this.pos, this.input, true); // TOFIX: eliminate bool
       this.pos += 6;
       this.pos = this.parseIdentifierRest();
       return IDENTIFIER;
     },
 
     parseFwdSlash: function(expressionStart){
+      if (this.pos+1 >= this.len) this.getMoreInput(REQUIRED);
       var d = this.input.charCodeAt(this.pos+1);
       if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
       if (d === ORD_STAR_2A) return this.parseMultiComment();
@@ -567,7 +606,8 @@
       // consume it for the CRLF case. this is completely optional.
 
       var pos = this.pos;
-      var crlf = this.input.charCodeAt(pos+1) === ORD_LF_0A ? 1 : 0;
+      if (pos+1 >= this.len) this.getMoreInput(OPTIONALLY);
+      var crlf = (pos+1 < this.len && this.input.charCodeAt(pos+1)) === ORD_LF_0A ? 1 : 0;
 
       return this.parseVerifiedNewline(pos + crlf, crlf);
     },
@@ -575,7 +615,7 @@
       // mark for ASI
       this.lastNewline = true;
 
-      var input = this.input;
+      var input = this.input; // normally we dont cache input, but its okay here since we dont ask for more input anywhere
       var tokens = this.tokens;
       var saveTokens = this.options.saveTokens;
       var onToken = this.options.onToken;
@@ -586,10 +626,11 @@
       // overhead by directly checking for spaces and tabs first.
       // note: first loop consumes the verified newline.
 
-      // no EOF guard, charCodeAt returns NaN beyond string boundary, which is fine (will deopt, but that's irrelevant at EOF).
-      // (if check, handle consuming the first newline better somehow)
-      while (true) {
-        var c = input.charCodeAt(++pos);
+      // only check for EOF, get new input elsewhere, no need to stream here
+      var guard = 100000; // #zp-build drop line
+      while (++pos < this.len) {
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        var c = input.charCodeAt(pos);
 
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
@@ -620,6 +661,7 @@
       // |&-+
 
       var pos = this.pos+1;
+      if (pos >= this.len) this.getMoreInput(REQUIRED);
       var d = this.input.charCodeAt(pos);
       // pick one, any one :) (this func runs too infrequent to make a significant difference)
 //      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
@@ -636,9 +678,10 @@
     parseEqualSigns: function(){
       var len = 1;
       var offset = this.lastOffset;
-      var input = this.input;
-      if (input.charCodeAt(offset+1) === ORD_IS_3D) {
-        if (input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
+      if (offset+1 >= this.len) this.getMoreInput(REQUIRED);
+      if (this.input.charCodeAt(offset+1) === ORD_IS_3D) {
+        if (offset+2 >= this.len) this.getMoreInput(REQUIRED);
+        if (this.input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
         else len = 2;
       }
       this.pos += len;
@@ -647,16 +690,18 @@
     parseLtgtPunctuator: function(c){
       var len = 1;
       var offset = this.lastOffset;
-      var input = this.input;
-      var d = input.charCodeAt(offset+1);
+      if (offset+1 >= this.len) this.getMoreInput(REQUIRED);
+      var d = this.input.charCodeAt(offset+1);
       if (d === ORD_IS_3D) len = 2;
       else if (d === c) {
         len = 2;
-        var e = input.charCodeAt(offset+2);
+        if (offset+2 >= this.len) this.getMoreInput(REQUIRED);
+        var e = this.input.charCodeAt(offset+2);
         if (e === ORD_IS_3D) len = 3;
         else if (e === c && c !== ORD_LT_3C) {
           len = 3;
-          if (input.charCodeAt(offset+3) === ORD_IS_3D) len = 4;
+          if (offset+3 >= this.len) this.getMoreInput(REQUIRED);
+          if (this.input.charCodeAt(offset+3) === ORD_IS_3D) len = 4;
         }
       }
       this.pos += len;
@@ -664,6 +709,7 @@
     },
     parseCompoundAssignment: function(){
       var len = 1;
+      if (this.pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (this.input.charCodeAt(this.pos+1) === ORD_IS_3D) len = 2;
       this.pos += len;
       return PUNCTUATOR;
@@ -678,12 +724,14 @@
 
     parseSingleComment: function(){
       var pos = this.pos + 1;
-      var input = this.input;
 
       // note: although we _know_ a newline will happen next; explicitly checking for it is slower than not.
 
+      var guard = 100000; // #zp-build drop line
       do {
-        var c = input.charCodeAt(++pos);
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
+        var c = this.input.charCodeAt(pos);
         if (!c || c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
       } while (true);
 
@@ -694,7 +742,7 @@
 /* // reverted: this is slightly slower
       var start = this.pos;
       var pos = start + 1; // +2 but the second char is start of loop
-      var input = this.input;
+      var input = this.input; // note: cannot cache input here
       var len = input.length;
 
       var foundCr = false;
@@ -724,14 +772,17 @@
     },
     parseMultiComment: function(){
       var pos = this.pos + 2;
-      var input = this.input;
 
       var noNewline = true;
       var c = 0;
+      if (pos >= this.len) this.getMoreInput(REQUIRED);
       var d = this.input.charCodeAt(pos);
+      var guard = 100000; // #zp-build drop line
       while (d) {
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         c = d;
-        d = input.charCodeAt(++pos);
+        if (++pos >= this.len) this.getMoreInput(REQUIRED);
+        d = this.input.charCodeAt(pos);
 
         if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) {
           this.pos = pos+1;
@@ -753,9 +804,11 @@
     },
     parseString: function(targetChar){
       var pos = this.pos + 1;
-      var input = this.input;
+      var guard = 100000; // #zp-build drop line
       do {
-        var c = input.charCodeAt(pos++);
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (pos >= this.len) this.getMoreInput(REQUIRED);
+        var c = this.input.charCodeAt(pos++);
 
         if (c === targetChar) {
           this.pos = pos;
@@ -777,8 +830,8 @@
       this.throwSyntaxError('Unterminated string found');
     },
     parseStringEscape: function(pos){
-      var input = this.input;
-      var c = input.charCodeAt(pos);
+      if (pos >= this.len) this.getMoreInput(REQUIRED);
+      var c = this.input.charCodeAt(pos);
 
       // unicode escapes
       if (c === ORD_L_U_75) {
@@ -789,17 +842,24 @@
         // keep in mind, we are already skipping a char. no need to check
         // for other line terminators here. we are merely checking to see
         // whether we need to skip an additional character for CRLF.
-        if (input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
+        if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
+        if (this.input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
       // hex escapes
       } else if (c === ORD_L_X_78) {
-        if (this.parseHexDigit(input.charCodeAt(pos+1)) && this.parseHexDigit(input.charCodeAt(pos+2))) pos += 2;
+        if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
+        if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
+        if (this.parseHexDigit(this.input.charCodeAt(pos+1)) && this.parseHexDigit(this.input.charCodeAt(pos+2))) pos += 2;
         else this.throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     },
     parseUnicodeEscapeBody: function(pos){
-      var input = this.input;
 
+      if (pos >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
+      var input = this.input; // cache input now, it wont change any further
       return this.parseHexDigit(input.charCodeAt(pos)) && this.parseHexDigit(input.charCodeAt(pos+1)) && this.parseHexDigit(input.charCodeAt(pos+2)) && this.parseHexDigit(input.charCodeAt(pos+3));
     },
     parseHexDigit: function(c){
@@ -808,6 +868,7 @@
     },
 
     parseLeadingDot: function(){
+      if (this.pos+1 >= this.len) this.getMoreInput(REQUIRED);
       var c = this.input.charCodeAt(this.pos+1);
 
       if (c >= ORD_L_0_30 && c <= ORD_L_9_39) return this.parseAfterDot(this.pos+2);
@@ -820,6 +881,12 @@
       // a numeric that starts with zero is is either a decimal or hex
       // 0.1234  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
+      // trailing zero at eof can be valid, but must be checked for additional input first
+      if (this.pos+1 >= this.len && !this.getMoreInput(OPTIONALLY)) {
+        ++this.pos;
+        return NUMBER;
+      }
+
       var d = this.input.charCodeAt(this.pos+1);
       if (d === ORD_L_X_78 || d === ORD_L_X_UC_58) { // x or X
         this.parseHexNumber();
@@ -828,18 +895,21 @@
       } else if (d <= ORD_L_9_39 && d >= ORD_L_0_30) {
         this.throwSyntaxError('Invalid octal literal');
       } else {
-        this.pos = this.parseExponent(d, this.pos+1, this.input);
+        this.pos = this.parseExponent(d, this.pos+1);
       }
 
       return NUMBER;
     },
     parseHexNumber: function(){
       var pos = this.pos + 1;
-      var input = this.input;
 
       // (could use OR, eliminate casing branch)
-      do var c = input.charCodeAt(++pos);
-      while ((c <= ORD_L_9_39 && c >= ORD_L_0_30) || (c >= ORD_L_A_61 && c <= ORD_L_F_66) || (c >= ORD_L_A_UC_41 && c <= ORD_L_F_UC_46));
+      var guard = 100000; // #zp-build drop line
+      do {
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
+        var c = this.input.charCodeAt(pos);
+      } while ((c <= ORD_L_9_39 && c >= ORD_L_0_30) || (c >= ORD_L_A_61 && c <= ORD_L_F_66) || (c >= ORD_L_A_UC_41 && c <= ORD_L_F_UC_46));
 
       this.pos = pos;
       return NUMBER;
@@ -849,39 +919,57 @@
       // just encountered a 1-9 as the start of a token...
 
       var pos = this.pos;
-      var input = this.input;
 
-      do var c = input.charCodeAt(++pos);
-      while (c >= ORD_L_0_30 && c <= ORD_L_9_39);
+      var guard = 100000; // #zp-build drop line
+      do {
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
+        var c = this.input.charCodeAt(pos);
+      } while (c >= ORD_L_0_30 && c <= ORD_L_9_39);
 
       if (c === ORD_DOT_2E) return this.parseAfterDot(pos+1);
 
-      this.pos = this.parseExponent(c, pos, input);
+      this.pos = this.parseExponent(c, pos);
       return NUMBER;
     },
     parseAfterDot: function(pos){
-      var input = this.input;
-      var c = input.charCodeAt(pos);
-      while (c >= ORD_L_0_30 && c <= ORD_L_9_39) c = input.charCodeAt(++pos);
+      if (pos < this.len || this.getMoreInput(OPTIONALLY)) {
+        var guard = 100000; // #zp-build drop line
+        do { var c = this.input.charCodeAt(pos);
+          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        } while (c >= ORD_L_0_30 && c <= ORD_L_9_39 && (++pos < this.len || this.getMoreInput(OPTIONALLY)));
+      }
 
-      pos = this.parseExponent(c, pos, input);
+      pos = this.parseExponent(c, pos);
 
       this.pos = pos;
 
       return NUMBER;
     },
-    parseExponent: function(c, pos, input){
+    parseExponent: function(c, pos){
       if (c === ORD_L_E_65 || c === ORD_L_E_UC_45) {
-        c = input.charCodeAt(++pos);
+        if (++pos >= this.len) this.getMoreInput(REQUIRED);
+        c = this.input.charCodeAt(pos);
         // sign is optional (especially for plus)
-        if (c === ORD_DASH_2D || c === ORD_PLUS_2B) c = input.charCodeAt(++pos);
+        if (c === ORD_DASH_2D || c === ORD_PLUS_2B) {
+          if (++pos >= this.len) this.getMoreInput(REQUIRED); // must have at least one char after +-
+          c = this.input.charCodeAt(pos);
+        }
 
         // first digit is mandatory
-        if (c >= ORD_L_0_30 && c <= ORD_L_9_39) c = input.charCodeAt(++pos);
+        if (c >= ORD_L_0_30 && c <= ORD_L_9_39) {
+          if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) return pos;
+          c = this.input.charCodeAt(pos);
+        }
         else this.throwSyntaxError('Missing required digits after exponent');
 
         // rest is optional
-        while (c >= ORD_L_0_30 && c <= ORD_L_9_39) c = input.charCodeAt(++pos);
+        var guard = 100000; // #zp-build drop line
+        while (c >= ORD_L_0_30 && c <= ORD_L_9_39) {
+          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) return pos;
+          c = this.input.charCodeAt(pos);
+        }
       }
       return pos;
     },
@@ -902,14 +990,17 @@
       return REGEX;
     },
     regexBody: function(){
-      var input = this.input;
-      var len = input.length;
+      var len = this.input.length;
       // TOFIX: should try to have the regex parser only use pos, not this.pos
+      var guard = 100000; // #zp-build drop line
       while (this.pos < len) {
-        var c = input.charCodeAt(this.pos++);
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (this.pos >= this.len) this.getMoreInput(REQUIRED);
+        var c = this.input.charCodeAt(this.pos++);
 
         if (c === ORD_BACKSLASH_5C) { // backslash
-          var d = input.charCodeAt(this.pos++);
+          if (this.pos >= this.len) this.getMoreInput(REQUIRED);
+          var d = this.input.charCodeAt(this.pos++);
           if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             this.throwSyntaxError('Newline can not be escaped in regular expression');
           }
@@ -924,12 +1015,14 @@
       this.throwSyntaxError('Unterminated regular expression at eof');
     },
     regexClass: function(){
-      var input = this.input;
-      var len = input.length;
+      var len = this.input.length;
       var pos = this.pos;
 
+      var guard = 100000; // #zp-build drop line
       while (true) {
-        var c = input.charCodeAt(pos++);
+        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (pos >= this.len) this.getMoreInput(REQUIRED);
+        var c = this.input.charCodeAt(pos++);
 
         if (c === ORD_CLOSE_SQUARE_5D) {
           this.pos = pos;
@@ -940,7 +1033,8 @@
           // there's a historical dispute over whether backslashes in regex classes
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this.options.regexNoClassEscape) {
-            var d = input.charCodeAt(pos++);
+            if (pos >= this.len) this.getMoreInput(REQUIRED);
+            var d = this.input.charCodeAt(pos++);
             if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
               this.throwSyntaxError('Newline can not be escaped in regular expression');
             }
@@ -965,47 +1059,56 @@
 
       // okay, we have to actually verify the flags now
 
-      var input = this.input;
       var pos = this.pos;
 
       var g = false;
       var m = false;
       var i = false;
 
-      var c = input.charCodeAt(pos);
-      while (true) {
-        var backslash = false;
+      if (pos < this.len || this.getMoreInput(OPTIONALLY)) {
+        var c = this.input.charCodeAt(pos);
+        var guard = 100000; // #zp-build drop line
+        while (true) {
+          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          var backslash = false;
 
-        // check backslash first so we can replace c with the conanical value of the escape
-        if (c === ORD_BACKSLASH_5C) {
-          // only valid here is `\u006` followed by a 7=g 9=i or d=m
-          backslash = true;
-          c = this.regexFlagUniEscape(input, pos+1);
+          // check backslash first so we can replace c with the conanical value of the escape
+          if (c === ORD_BACKSLASH_5C) {
+            // only valid here is `\u006` followed by a 7=g 9=i or d=m
+            backslash = true;
+            c = this.regexFlagUniEscape(this.input, pos + 1);
+          }
+
+          if (c === ORD_L_G_67) {
+            if (g) throw 'Illegal duplicate regex flag';
+            g = true;
+          } else if (c === ORD_L_I_69) {
+            if (i) throw 'Illegal duplicate regex flag';
+            i = true;
+          } else if (c === ORD_L_M_6D) {
+            if (m) throw 'Illegal duplicate regex flag';
+            m = true;
+          } else {
+            break;
+          }
+
+          if (backslash) pos += 5;
+          if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
+          c = this.input.charCodeAt(pos);
         }
-
-        if (c === ORD_L_G_67) {
-          if (g) throw 'Illegal duplicate regex flag';
-          g = true;
-        } else if (c === ORD_L_I_69) {
-          if (i) throw 'Illegal duplicate regex flag';
-          i = true;
-        } else if (c === ORD_L_M_6D) {
-          if (m) throw 'Illegal duplicate regex flag';
-          m = true;
-        } else {
-          break;
-        }
-
-        if (backslash) pos += 5;
-        c = input.charCodeAt(++pos);
       }
       this.pos = pos;
     },
     regexFlagUniEscape: function(input, pos){
+      if (pos >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
       if (input.charCodeAt(pos) !== ORD_L_U_75 || input.charCodeAt(pos+1) !== ORD_L_0_30 || input.charCodeAt(pos+2) !== ORD_L_0_30 || input.charCodeAt(pos+3) !== ORD_L_6_36) {
         return 0;
       }
 
+      if (pos+4 >= this.len) this.getMoreInput(REQUIRED);
       var c = input.charCodeAt(pos+4);
       if (c === ORD_L_7_37) {
         return ORD_L_G_67;
@@ -1026,7 +1129,6 @@
     parseIdentifierRest: function(){
       // also used by regex flag parser!
 
-      var input = this.input;
       var start = this.lastOffset; // #zp-build drop line
       var pos = this.pos + 1;
 
@@ -1035,19 +1137,24 @@
       } // #zp-build drop line
 
       // note: statements in this loop are the second most executed statements
-      // note: no EOF check. rationale: EOF is a permanent error, optimization is no longer relevant in such case.
+      var guard1 = 100000; // #zp-build drop line
       while (true) {
+        if (useGuards) if (!--guard1) throw 'loop security'; // #zp-build drop line
 
         // sequential lower case letters are very common, 5:2
         // combining lower and upper case letters here to reduce branching later https://twitter.com/mraleph/status/467277652110614528
-        var c = input.charCodeAt(pos);
+        if (pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
+        var c = this.input.charCodeAt(pos);
         var b = c & 0xffdf;
+        var guard2 = 100000; // #zp-build drop line
         while (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
-          c = input.charCodeAt(++pos);
+          if (useGuards) if (!--guard2) throw 'loop security'; // #zp-build drop line
+          if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
+          c = this.input.charCodeAt(pos);
           b = c & 0xffdf;
         }
 
-        var delta = this.parseOtherIdentifierParts(c, pos, input);
+        var delta = this.parseOtherIdentifierParts(c, pos, this.input);
         if (!delta) break;
         pos += delta;
       }
@@ -1056,9 +1163,9 @@
     },
 
     parseOtherIdentifierParts: function(c, pos, input){
-      if (c >= ORD_L_0_30 ? c <= ORD_L_9_39 || c === ORD_LODASH_5F : c === ORD_$_24) {
-        return 1;
-      }
+      // dont use ?: here; for build
+      if (c >= ORD_L_0_30) { if (c <= ORD_L_9_39 || c === ORD_LODASH_5F) return 1; }
+      else if (c === ORD_$_24) return 1;
 
       // \uxxxx
       if (c === ORD_BACKSLASH_5C) {
@@ -1077,6 +1184,7 @@
     },
 
     parseAndValidateUnicodeAsIdentifier: function(pos, input, atStart){
+      if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
 
         var u = parseInt(input.slice(pos+2, pos+6), 16);
@@ -1110,13 +1218,13 @@
       // this seems slightly slower
 //      var val = this.lastValue;
 //      if (!val) {
-//        var input = this.input;
-//        val = this.lastValue = input.substring(this.lastOffset, this.lastStop);
+//        val = this.lastValue = this.input.substring(this.lastOffset, this.lastStop);
 //      }
 //      return val;
     },
 
     getNum: function(offset){
+      if (offset >= this.len) throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?';
       return this.input.charCodeAt(this.lastOffset+offset);
     },
 
@@ -1131,12 +1239,5 @@
       throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
     },
   };
-
-  (function chromeWorkaround(){
-    // workaround for https://code.google.com/p/v8/issues/detail?id=2246
-    var o = {};
-    for (var k in proto) o[k] = proto[k];
-    Tok.prototype = o;
-  })();
 
 })(typeof exports === 'object' ? exports : window);

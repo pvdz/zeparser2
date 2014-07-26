@@ -15,18 +15,12 @@
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
 
+  var USE_LOOP_GUARDS = true; // #zp-build drop line
+
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
-  var WHITE_SPACE = 1;
-  var LINETERMINATOR = 2;
-  var COMMENT_SINGLE = 3;
-  var COMMENT_MULTI = 4;
   var STRING = 10;
-  var STRING_SINGLE = 5;
-  var STRING_DOUBLE = 6;
   var NUMBER = 7;
-  var NUMERIC_DEC = 11;
-  var NUMERIC_HEX = 12;
   var REGEX = 8;
   var PUNCTUATOR = 9;
   var IDENTIFIER = 13;
@@ -118,10 +112,8 @@
   var ORD_LT = 0x3c;
   var ORD_GT = 0x3e;
 
-  var useGuards = true; // #zp-build drop line
-
   var Par = exports.Par = function(input, options){
-    this.options = options = options || {};
+    this.options = options = (options || {});
 
     if (!options.saveTokens) options.saveTokens = false;
     if (!options.createBlackStream) options.createBlackStream = false;
@@ -133,23 +125,83 @@
     if (!options.requireDoWhileSemi) options.requireDoWhileSemi = false;
     options.allowCallAssignment = options.allowCallAssignment ? ASSIGNABLE : NOTASSIGNABLE;
 
-    // `this['tok'] prevents build script mangling :)
+    // `this['xxx'] prevents build script mangling :)
     this['tok'] = new Tok(input, this.options);
     this['run'] = this.run; // used in Par.parse
+
+    // special build
+    if (typeof frozen !== 'undefined') {
+      this['frozenObject'] = {
+        frozen: false,
+        value: undefined,
+        thaw: null
+      };
+    }
   };
+
+  Par[WHITE] = 'white space';
+  Par[STRING] = 'string';
+  Par[NUMBER] = 'number';
+  Par[REGEX] = 'regex';
+  Par[PUNCTUATOR] = 'punctuator';
+  Par[IDENTIFIER] = 'identifier';
+  Par[EOF] = 'EOF';
+  Par[ASI] = 'ASI';
+  Par[ERROR] = 'error';
+
+  Par.WHITE = WHITE; // WHITE_SPACE LINETERMINATOR COMMENT_SINGLE COMMENT_MULTI
+  Par.STRING = STRING;
+  Par.NUMBER = NUMBER;
+  Par.REGEX = REGEX;
+  Par.PUNCTUATOR = PUNCTUATOR;
+  Par.IDENTIFIER = IDENTIFIER;
+  Par.EOF = EOF;
+  Par.ASI = ASI;
+  Par.ERROR = ERROR;
+
+  Par.Tok = Tok;
 
   Par.updateTok = function(T) {
     Tok = T;
+    Par.Tok = Tok;
   };
 
   Par.parse = function(input, options){
     var par = new Par(input, options);
-    par.run();
+    // the call makes sure run has the proper context for the streaming version
+    // it will be the only instance method that has the proper context :)
+    var f = par.run.call(par);
 
-    return par;
+    // `frozen` is added as a module global in an extra build step
+    if (typeof frozen !== 'undefined') {
+      // f will be a generator
+
+      // The browser will yield when the parser needs more input the first time
+      // (it will always do this, even at a "proper" EOF). If you supplied a
+      // `frozenCallback` option, that function will be called with the `thawValue`.
+      // This is optional though. It is either way up to you to call `thaw` to
+      // continue parsing. Passing on `false` will treat the current EOF as an
+      // actual EOF and act accordingly. Otherwise it will accept the argument
+      // as new string input, concat it to the existing input and continue parsing.
+
+      if (options && options.runWithoutFurtherInput) {
+        // testing
+        do {
+          // start parsing nao
+          var yieldValue = f(false);
+        } while (frozen);
+        f = yieldValue;
+      } else {
+        par.frozenObject.thaw = f;
+        f = par.frozenObject;
+      }
+    }
+
+    return f;
   };
 
-  var proto = {
+  // note: this causes deopt in chrome by this bug: https://code.google.com/p/v8/issues/detail?id=2246
+  Par.prototype = {
     /**
      * This object is shared with Tok.
      *
@@ -166,6 +218,7 @@
      * @property {boolean} [options.requireDoWhileSemi=false] Formally the do-while should be terminated by a semi-colon (or asi) but browsers dont enforce this.
      * @property {boolean} [options.neverThrow=false] Dont throw on syntax errors. Will mark the current token an error token and continue parsing. Not yet battle hardened, use at own risk. TOFIX
      * @property {boolean} [options.skipRegexFlagCheck=false] Dont throw for invalid regex flags, this mean anything other than gim or repeated flags.
+     * @property {boolean} [options.runWithoutFurtherInput=false] When in streamer mode, Par.parse() will act as non-streaming mode and run through immediately. Mostly for testing because, well, what's the point otherwise :)
      */
     options: null,
 
@@ -183,15 +236,23 @@
 
       if (tok.pos !== tok.len || tok.lastType !== EOF) tok.throwSyntaxError('Did not complete parsing..');
 
-      return this;
+      return {
+        par: this,
+        tok: this.tok,
+        options: this.options,
+        whites: this.tok.tokens,
+        blacks: this.tok.black,
+        tokenCountWhite: this.tok.tokenCountAll,
+        tokenCountBlack: this.tok.tokenCountBlack,
+      };
     },
 
     parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       // note: statements are optional, this function might not parse anything
       while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL, EMPTY_LABELSET))
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security';else // #zp-build drop line
         ;
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional, freshLabels){
@@ -346,10 +407,10 @@
 
       var tok = this.tok;
       tok.next(PUNC);
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
 
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
@@ -362,9 +423,9 @@
     parseVarPartNoIn: function(){
       var tok = this.tok;
       var vars = 0;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name ['+tok.getLastValue()+'] is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         ++vars;
@@ -545,9 +606,9 @@
       if (value === 'default') ++defaults;
       if (value !== 'case' && !defaults && value !== '}') tok.throwSyntaxError('Switch body must begin with case or default or be empty');
 
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (this.parseStatement(inFunction, inLoop, INSWITCH, labelSet, OPTIONAL, EMPTY_LABELSET)) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         // switches are quite infrequent so this overhead is okay, compared ot the alternatives
         if (tok.getLastValue() === 'default' && ++defaults > 1) tok.throwSyntaxError('Only one default allowed per switch');
       }
@@ -654,9 +715,9 @@
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function param name is reserved.');
         tok.next(EXPR);
         // there are only two valid next tokens; either a comma or a closing paren
-        if (useGuards) var guard = 100000; // #zp-build drop line
+        if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
           if (paramCount === ONEARG) tok.throwSyntaxError('Setters have exactly one param');
 
           // param name
@@ -699,7 +760,37 @@
       return PARSEDNOTHING;
     },
     addAsi: function(){
-      ++this.tok.tokenCountAll;
+      var tok = this.tok;
+      var pos = tok.pos;
+      var options = tok.options;
+      var white = tok.tokenCountAll++;
+
+      if (options.saveTokens) {
+        // at this point we probably already parsed some whitespace and the next black token
+        // we dont have to care about the whitespace, but the black token will have to be
+        // updated with a new black and white index, and a new token has to be put before it.
+
+        // this is the white and black of the token after the ASI (oldTop)
+        var black = tok.tokenCountBlack++;
+
+        var oldTop = tok.tokens.pop();
+
+        var asi = {type:ASI, value:'', start:oldTop.start, stop:oldTop.start, white:white-1, black:black-1};
+
+        oldTop.white = white;
+        oldTop.black = black;
+
+        tok.tokens.push(asi, oldTop);
+        if (options.createBlackStream) {
+          tok.black.push(asi, oldTop);
+        }
+      }
+
+      // this kind of sucks since it probably already emitted the following token... we can't really help this atm.
+      // (yes we could by delaying emitting by one token, but think of the perf-dren!)
+      // pass on -1 for start/stop because we probably wont know it at this point (we could do this as well at a cost)
+      if (options.onToken) options.onToken(ASI, '', -1, -1, white-1);
+
       return ASI;
     },
 
@@ -744,9 +835,9 @@
       var tokCount = tok.tokenCountAll;
       this.parseExpressionOptional();
       if (tokCount !== tok.tokenCountAll) {
-        if (useGuards) var guard = 100000; // #zp-build drop line
+        if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
           this.parseExpression();
         }
       }
@@ -755,9 +846,9 @@
       // track for parseGroup, if this expression is wrapped, is it still assignable?
       var groupAssignable = this.parseExpression();
       var tok = this.tok;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (tok.nextExprIfNum(ORD_COMMA)) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         this.parseExpression();
         groupAssignable = NOTASSIGNABLE;
       }
@@ -802,9 +893,9 @@
       // assignment ops are allowed until the first non-assignment binary op
       var tok = this.tok;
       var strictAssign = this.options.strictAssignmentCheck;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (this.isAssignmentOperator()) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (!assignable && strictAssign) tok.throwSyntaxError('LHS of this assignment is invalid assignee');
         // any assignment means not a for-in per definition
         tok.next(EXPR);
@@ -814,9 +905,9 @@
     parseNonAssignments: function(){
       var tok = this.tok;
       // keep parsing non-assignment binary/ternary ops
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (true) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (this.isBinaryOperator()) {
           tok.next(EXPR);
           this.parsePrimary(REQUIRED);
@@ -843,9 +934,9 @@
       var tok = this.tok;
 
       var validForInLhs = this.parseExpressionNoIn();
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (tok.nextExprIfNum(ORD_COMMA)) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         // lhs of for-in cant be multiple expressions
         this.parseExpressionNoIn();
         validForInLhs = NOTASSIGNABLE;
@@ -862,9 +953,9 @@
 
       // keep parsing non-assignment binary/ternary ops unless `in`
       var repeat = true;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (repeat) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (this.isBinaryOperator()) {
           // rationale for using getLastNum; this is the `in` check which will succeed
           // about 50% of the time (stats from 8mb of various js). the other time it
@@ -930,6 +1021,7 @@
           } else if (c === ORD_L_N) {
             if (tok.nextExprIfString('new')) {
               // new is actually assignable if it has a trailing property AND at least one paren pair
+              // TOFIX: isn't the OR flawed? HASNEW is a constant...
               return this.parsePrimaryOrPrefix(REQUIRED, HASNEW || hasNew, NOTLABEL);
             }
           } else if (c === ORD_L_D) {
@@ -982,9 +1074,11 @@
       var identifier = tok.getLastValue();
       var c = tok.firstTokenChar;
 
-      if (maybeLabel ? this.isReservedIdentifierSpecial() : this.isReservedIdentifier(IGNOREVALUES)) {
-        tok.throwSyntaxError('Reserved identifier ['+identifier+'] found in expression');
-      }
+      // dont use ?: here (build script)
+      var fail;
+      if (maybeLabel) fail = this.isReservedIdentifierSpecial();
+      else fail = this.isReservedIdentifier(IGNOREVALUES);
+      if (fail) tok.throwSyntaxError('Reserved identifier ['+identifier+'] found in expression');
 
       tok.next(PUNC);
 
@@ -1054,9 +1148,9 @@
       if (unassignableUntilAfterCall) assignable = NOTASSIGNABLE; // for new, must have trailing property _after_ a call
 
       var tok = this.tok;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       while (true) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         // see c frequency stats in /stats/primary suffix start.txt
         var c = tok.firstTokenChar;
         if (c > 0x2e) {
@@ -1195,9 +1289,9 @@
     },
     parseArray: function(){
       var tok = this.tok;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         this.parseExpressionOptional(); // just one because they are all optional (and arent in expressions)
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
@@ -1206,9 +1300,9 @@
     },
     parseObject: function(){
       var tok = this.tok;
-      if (useGuards) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
         var type = tok.lastType;
         if (type === IDENTIFIER || type === STRING || type === NUMBER) this.parsePair(); // 84% 9% 1% = 94%
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
@@ -1280,7 +1374,11 @@
 
       if (c === ORD_L_C) { // 2.5%
         var d = tok.getNum(1);
-        return (d === ORD_L_O && tok.getLastValue() === 'const') || (d === ORD_L_A && ((value=tok.getLastValue()) === 'catch' || value === 'case')) || (d === ORD_L_L && tok.getLastValue() === 'class');
+        if (d === ORD_L_O && tok.getLastValue() === 'const') return true;
+        if (d === ORD_L_L && tok.getLastValue() === 'class') return true;
+        if (d !== ORD_L_A) return false;
+        var value = tok.getLastValue();
+        return (value === 'catch' || value === 'case');
       }
 
       if (c === ORD_L_S) { // 1.8%
@@ -1293,7 +1391,10 @@
 
       if (c === ORD_L_E) { // 1.1%
         var d = tok.getNum(1);
-        return (d === ORD_L_L && tok.getLastValue() === 'else') || (d === ORD_L_N && tok.getLastValue() === 'enum') || (d === ORD_L_X && ((value=tok.getLastValue()) === 'export' || value === 'extends'));
+        if ((d === ORD_L_L && tok.getLastValue() === 'else') || (d === ORD_L_N && tok.getLastValue() === 'enum')) return true;
+        if (d !== ORD_L_X) return false;
+        var value = tok.getLastValue();
+        return (value === 'export' || value === 'extends');
       }
 
       if (c === ORD_L_F) { // 0.8%
@@ -1511,12 +1612,5 @@
       return c === ORD_L_F && word.length === 5 && word === 'false';
     },
   };
-
-  (function chromeWorkaround(){
-    // workaround for https://code.google.com/p/v8/issues/detail?id=2246
-    var o = {};
-    for (var k in proto) o[k] = proto[k];
-    Par.prototype = o;
-  })();
 
 })(typeof exports === 'object' ? exports : window);
