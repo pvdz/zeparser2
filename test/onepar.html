@@ -13,16 +13,24 @@
     </head>
     <body>
     (c) qfox.nl<br/>
-    Testing parser:<br/>
-    <!--<script src="../src/uni.js"></script>-->
-    <!--<script src="../src/tok.js"></script>-->
-    <!--<script src="../src/par.js"></script>-->
-
-    <!--<script src="../build/zp.js"></script>-->
-    <script src="../example/cor/wtf.js"></script>
+    Testing parser on one case. See console.<br/>
 
     <script>
-      var s = "[1,2];";
+      console.warn('loading own Par ['+location.search+']');
+      switch (location.search) {
+        case '?build':
+          document.write('<script src="../build/zp.js"><\/script>');
+          break;
+        case '?streaming':
+          document.write('<script src="../build/zps.js"><\/script>');
+          break;
+        default:
+          document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+      }
+    </script>
+
+    <script>
+      var s = "var abc;";
       console.warn("Parsing:", [s]);
 
       try {
@@ -34,6 +42,7 @@
           strictForInCheck: true,
           runWithoutFurtherInput: true,
         });
+        console.log(p)
 
         console.log('Parsed ok.');
       } finally {
@@ -47,6 +56,6 @@
             return Par[t.type]+'['+ t.value+'].'+ t.value.length;
           }));
           console.log('tokenCountWhite:', p.tokenCountWhite, ', p.whites.length:', p.whites.length);
-        })
+        }, 10);
       }
     </script>
