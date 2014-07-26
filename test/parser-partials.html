@@ -1,0 +1,212 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Parser Test Suite Page</title>
+    <style>
+      input+span:hover { border-bottom: 1px solid red; cursor: pointer; }
+      #cfg-menu { position: fixed; top:0; left: 0; background-color: white; }
+      div { font-size: 11px; font-family: monospace; }
+      .red { background-color: red; color: white; }
+      .green { background-color: green; color: white; }
+      hr { margin: 0; padding: 0; font-size: 1px; }
+    </style>
+  </head>
+  <body>
+    (c) qfox.nl<br/>
+    Testing streamer on test cases. Each test is broken up at all places and checked whether it parses properly.<br/>
+
+    <p id="result">Running...</p>
+
+    <script>
+      // ensure Par is loaded
+      Par = parent.Par; // use Par from parent frame
+      if (!Par) {
+        console.warn('parser.html: no parent.Par found, loading own Par ['+location.search+']');
+        switch (location.search) {
+          case '?build':
+            document.write('<script src="../build/zp.js"><\/script>');
+            break;
+          case '?streaming':
+            document.write('<script src="../build/zps.js"><\/script>');
+            break;
+          default:
+            document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+        }
+      }
+    </script>
+
+    <script src="tests.js"></script>
+    <script src="js1k.js"></script>
+    <script>
+      new function(){
+        var hidePasses = true;
+
+        var out = document.createElement('pre');
+        document.body.appendChild(out);
+        var debug = function () {
+          var f = document.createElement('div');
+          f.innerHTML = Array.prototype.slice.call(arguments, 0).join(' ');
+          out.appendChild(f);
+        };
+        function sans(s) {
+          return nonl(s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'));
+        }
+        function nonl(s) {
+          return s.replace(/[\u000a\u000d\u2028\u2029]/g, '\u21b5');
+        }
+
+        debug("Running test suite on streamer...", good.length + bad.length, "tests");
+        debug(' ');
+
+        var TESTINPUT = 0;
+        var TOKENCOUNT = 1;
+        var PARSERCOUNT = 1;
+        var REGEXHINT = 2;
+        var DESCWITHOUTREGEXHINT = 2;
+        var DESCWITHREGEXHINT = 3;
+
+        var NEWLINESTATE_N = 0;
+        var NEWLINESTATE_R = 1;
+        var NEWLINESTATE_RN = 2;
+        var NEWLINESTATE_PS = 3;
+        var NEWLINESTATE_LS = 4;
+        var NEWLINESTATES = ['\\n', '\\r', '\\r\\n', '\\u2028', '\\u2029'];
+        // note: first is `\n`, we dont need to replace anything for that, so it's `false`
+        var NEWLINEFORSTATE = [false, '\r', '\r\n', '\u2028', '\u2029'];
+
+        var start = Date.now();
+        var ok = 0;
+        var fail = 0;
+        var newlineState = NEWLINESTATE_N;
+        for (var i = 0; i < good.length; ++i) {
+          var currentNewline = NEWLINEFORSTATE[newlineState];
+          var test = good[i];
+
+          var input = test[TESTINPUT];
+          var outputLen = test[TOKENCOUNT].length ? test[TOKENCOUNT][PARSERCOUNT] : test[TOKENCOUNT];
+          var regexHints = test[DESCWITHREGEXHINT] ? test[DESCWITHOUTREGEXHINT] : []; // if flags, then len=4
+          var desc = test[DESCWITHREGEXHINT] || test[DESCWITHOUTREGEXHINT];
+
+          // test all valid newlines
+          if (currentNewline) {
+            input = input.replace(/\n/g, currentNewline);
+            desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+          }
+
+          if (!newlineState) try { Function(input); } catch (e) {
+            console.warn('['+i+']['+nonl(input)+']; cant compile in browser');
+          }
+
+          var crashed = false;
+          try {
+            // try to split up the input in every possible way (only one split to reduce complexity...)
+            // the rest is pretty much the same as normal test
+            var splitIndex = 0;
+            while (splitIndex < input.length) {
+              var obj = Par.parse(input.slice(0, splitIndex), {});
+              obj.thaw();
+              obj.thaw(input.slice(splitIndex));
+              var par = obj.thaw(false);
+              ++splitIndex;
+            }
+          } catch (e) {
+            console.error('Crash for', input, 'at splitIndex=',splitIndex);
+            console.error(e.stack);
+            crashed = sans(e.toString()+' at splitIndex='+splitIndex);
+          }
+
+          var tcount = par.tokenCountWhite -1; // inc asi, ex eof
+
+          if (crashed) {
+            debug('<b class="red">Test crashed:</span>', desc, '(' + crashed + ')');
+            debug('<b>' + sans(input) + '</b>');
+            debug('<br/>');
+            ++fail;
+            test.noRepeat = true;
+          } else if (tcount == outputLen) {
+            if (!hidePasses) debug('<span class="green">Test ' + i + ' ok:</span>', desc);
+            if (!hidePasses) debug('<b>' + sans(input) + '</b>');
+            if (!hidePasses) debug('<br/>');
+            ++ok;
+          } else {
+            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')');
+            debug('<b>' + sans(input) + '</b>');
+            debug('<br/>');
+            ++fail;
+            test.noRepeat = true;
+          }
+
+          // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+          // if the base case (\n) crashed, do not repeat for other newlines. if that's an actual problem it'll popup after fix.
+          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0 && !test.noRepeat);
+          if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+          else newlineState = NEWLINESTATE_N;
+        }
+
+        debug("<h1>These tests should fail:</h1><br/>");
+
+        newlineState = NEWLINESTATE_N;
+        for (var i = 0; i < bad.length; ++i) {
+          var currentNewline = NEWLINEFORSTATE[newlineState];
+          var test = bad[i];
+          if (!test) console.warn("Probably missing a comma...");
+          var input = test[0];
+          var desc = test[1];
+
+          // test all valid newlines
+          if (currentNewline) {
+            input = input.replace(/\n/g, currentNewline);
+            desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
+          }
+
+          if (!newlineState) try { Function(input);
+            console.error('['+i+']['+nonl(input)+']; _does_ compile in browser');
+          } catch (e) {}
+
+
+          // try to split up the input in every possible way (only one split to reduce complexity...)
+          // the rest is pretty much the same as normal test
+          var splitIndex = 0;
+          while (splitIndex < input.length) {
+              var crashed = false;
+              try {
+              var obj = Par.parse(input.slice(0, splitIndex), {});
+              obj.thaw();
+              var par = obj.thaw(input.slice(splitIndex));
+                console.warn("Did not fail:", desc);
+              } catch (e) {
+              var msg = sans(e.toString());
+              crashed = true;
+            }
+            ++splitIndex;
+          }
+
+          if (crashed) {
+            if (!hidePasses) debug('<span class="green">Test ' + i + ' should fail and did:</span>', desc, '<small style="color:#ccc;white-space:nowrap;overflow:hidden;">'+msg+'</small>');
+            if (!hidePasses) debug('<b>' + sans(input) + '</b>');
+            if (!hidePasses) debug('<br/>');
+            ++ok;
+          } else {
+            debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc);
+            debug('<b>' + sans(input) + '</b>');
+            debug('<br/>');
+            ++fail;
+            test.noRepeat = true;
+          }
+
+          // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
+          var testNewlines = newlineState || (input.indexOf('\n') >= 0 && input.indexOf('\r') < 0 && !test.noRepeat);
+          if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
+          else newlineState = NEWLINESTATE_N;
+        }
+
+        debug('Parser test suite finished (' + (Date.now() - start) + ' ms).');
+        debug('ok: ' + ok + ', fail: ' + fail);
+        document.getElementById('result').innerHTML = 'ok: ' + ok + ', fail: ' + fail;
+        document.getElementById('result').style.color = 'white';
+        document.body.style.backgroundColor = fail ? 'red' : 'green';
+        console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
+      };
+    </script>
+  </body>
+</html>
