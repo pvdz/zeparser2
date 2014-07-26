@@ -151,6 +151,8 @@ var all = files.map(function(f){
     // currently, the prototype is declared as `var proto = { .. };`, so we search for `proto`
     var vars = [];
     var protoToken;
+    var protoStart = Infinity;
+    var protoStop = Infinity;
     btree.forEach(function(token, index){
       if (token.type === Par.IDENTIFIER) {
         if (
@@ -162,6 +164,8 @@ var all = files.map(function(f){
           else {
             protoToken = token;
             btree[index+2].targetProtoObject = true;
+            protoStart = btree[index-2].white;
+            protoStop = btree[index+2].rhc.white;
           }
         } else if (token.lhc && token.lhc.targetProtoObject) {
           var key = prefix+token.value;
@@ -182,7 +186,11 @@ var all = files.map(function(f){
       }
     });
 
-    source = wtree.map(function(t){ return t.value; }).join('')
+    source = wtree.map(function(t, i){
+      if (i >= protoStart && i <= protoStop) return '';
+      return t.value;
+    })
+      .join('')
       .replace(
         "(function(exports){",
         vars.join('\n')
@@ -290,7 +298,7 @@ all = wtree
 ;
 
 // post process transform the build into a streaming parser?
-if (streamer || all) {
+if (streamer && all) {
   var regular = all;
   console.log('Applying Streamer post processing');
   console.log('- eliminate logic');
