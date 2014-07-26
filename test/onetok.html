@@ -13,14 +13,30 @@
   </head>
   <body>
     (c) qfox.nl<br/>
-    Testing tokenizer:<br/>
-    <script src="../src/uni.js"></script>
-    <script src="../src/tok.js"></script>
+    Testing tokenizer on one case. <br/>
+
+    <script>
+      console.warn('loading own Tok ['+location.search+']');
+      switch (location.search) {
+        case '?build':
+          document.write('<script src="../build/zp.js"><\/script>');
+          break;
+        case '?streaming':
+          document.write('<script src="../build/zps.js"><\/script>');
+          break;
+        default:
+          document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
+      }
+    </script>
+    <script>
+      var Tok = Par.Tok;
+    </script>
+
     <script>
       new function() {
 
-        var input = "\n     ";
-        var outputLen = 6;
+        var input = "a";
+        var outputLen = 1;
         var regexHints = [];
 
         var out = document.createElement('pre');
@@ -32,16 +48,34 @@
         };
 
         var errorThrown = false;
-
         var types = [];
+
         var tok = new Tok(input, {});
 
         var tokenCount = 0;
         do {
-          var type = tok.nextWhiteToken(regexHints[tokenCount++]);
+          var type = tok._nextToken(regexHints[tokenCount++]); // note! regexHints are skipped for spaces/tabs after newlines
+
+          // streamer?
+          if (typeof type === 'function') {
+            var guard = 0;
+            do {
+              if (++guard > 1000) throw 'inner loop protection triggered';
+              // start parsing nao
+              if (tok._isFrozen()) {
+                console.log('thawing');
+                tok._thaw(); // entrypoint that we use doesn't thaw so we have to do this ourselves
+              }
+              var yieldValue = type(false);
+            } while (tok._isFrozen());
+            console.log(yieldValue, Par[yieldValue]);
+            type = yieldValue;
+          }
+          // /streaming
+
           types.push(type);
-        } while (tokenCount < 1000 && type !== Tok.EOF);
-        tokenCount += tok.tokenCountAll; // add tokens counted by newline+whitespace trick
+        } while (tokenCount < 1000 && type !== Par.EOF);
+        tokenCount += tok._getTrickedTokenCount(); // add tokens counted by newline+whitespace trick
 
         if (errorThrown) {
           debug('<b class="red">Test failed:</b> <span class="red">(' + errorThrown + ')</span>')
@@ -54,7 +88,7 @@
         }
         if (regexHints && regexHints.length) debug('<i>[regex hints: ' + regexHints + ']</i>');
         debug('<b>' + input.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b>');
-        debug('Types: <i>' + types.map(function (t) { return Tok[t]; }).join(',') + '</i>');
+        debug('Types: <i>' + types.map(function (t) { return Par[t]; }).join(',') + '</i>');
       };
     </script>
   </body>
