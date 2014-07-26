@@ -34,121 +34,209 @@ try {
   var ASI = 15;
   var WHITE = 18;
 
-  function assert(a, b, c){ if (a !== b) throw new Error(c + ' (found: ' + a + ' expected: ' + b + ')'); }
+  var U = undefined;
+  var STREAM_ONLY = 1;
+  var ONTOKEN_ONLY = 2;
+  var BOTH = undefined;
 
-  function assertToken(desc, token, index, type, value, start, stop, white, black){
-    assert(token.type, type, desc + ': ' + index + ' (' + Par[type] + '): type');
-    assert(token.start, start, desc + ': ' + index + ' (' + Par[type] + '): start');
-    assert(token.stop, stop, desc + ': ' + index + ' (' + Par[type] + '): stop');
-    assert(token.value, value, desc + ': ' + index + ' (' + Par[type] + '): value');
-    assert(token.white, white, desc + ': ' + index + ' (' + Par[type] + '): white-index');
-    assert(token.black, black, desc + ': ' + index + ' (' + Par[type] + '): black-index');
+  function assert(a, b, c){ if (a !== b) throw new Error(c + '. Should be '+a+', is '+b+'.'); }
+
+  function assertToken(desc, resultToken, index, expectToken){
+    try {
+      assert(expectToken.type, resultToken.type, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): type');
+      assert(expectToken.start, resultToken.start, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): start');
+      assert(expectToken.stop, resultToken.stop, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): stop');
+      assert(expectToken.value, resultToken.value, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): value');
+      assert(expectToken.white, resultToken.white, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): white-index');
+      assert(expectToken.black, resultToken.black, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): black-index');
+    } catch (e) {
+      console.error(desc);
+      console.log('token index', index);
+      console.log('got:',resultToken);
+      console.log('exp:', expectToken);
+      throw e;
+    }
   }
 
-  function assertCode(desc, code, expect){
+  function assertCode(desc, code, expect, what){
+    console.warn([code])
     var whites = 0;
     var blacks = 0;
 
     function onToken(type, value, start, stop, white){
-      assertToken('(onToken) ' + desc, {
-        type: type,
-        value: value,
-        start: start,
-        stop: stop,
-        white: white,
-        black: (type !== WHITE ? blacks++ : undefined)
-      }, whites, expect[whites][0], expect[whites][1], expect[whites][2], expect[whites][3], whites, expect[whites][4]);
+//      console.log('onToken:', type, [value], start, stop, white, 'expecting:', expect[whites])
+//      console.log('exp white', expect[whites].length===6 ? expect[whites][5] : whites)
+      assertToken('(onToken) ' + desc,
+        {
+          type: type,
+          value: value,
+          start: start,
+          stop: stop,
+          white: white,
+          black: (type !== WHITE ? blacks++: undefined)
+        },
+        whites,
+        {
+          type: expect[whites][0],
+          value: expect[whites][1],
+          start: expect[whites][2],
+          stop: expect[whites][3],
+          white: expect[whites].length===6 ? expect[whites][5] : whites,
+          black: (type===ASI?expect[whites][4]+1:expect[whites][4]) // ASI doesnt pass on blacks onToken so it wont "stagnate"
+      });
 
       ++whites
     }
 
-    var tokens = Par.parse(code, {saveTokens: true, onToken: onToken, runWithoutFurtherInput:true}).whites;
-    console.log(desc + ':', tokens);
-    expect.forEach(function(arr, i){
-      assertToken(desc, tokens[i], i, arr[0], arr[1], arr[2], arr[3], i, arr[4]);
+    var tokens = Par.parse(code, {saveTokens: true, onToken: what !== STREAM_ONLY && onToken, runWithoutFurtherInput:true}).whites;
+//    console.log(desc + ':', tokens);
+    if (what !== ONTOKEN_ONLY) expect.forEach(function(arr, i){
+      // allow optional white override
+      var white = (arr.length === 6) ? arr[5] : i;
+      assertToken(
+        desc,
+        tokens[i],
+        i,
+        {
+          type: arr[0],
+          value: arr[1],
+          start: arr[2],
+          stop: arr[3],
+          white: white,
+          black: (arr.type===ASI?arr[4]+1:arr[4]) // ASI doesnt pass on blacks onToken so it wont "stagnate"
+        }
+      );
     });
-
+//    console.log('###');
     // do it again with just onToken
+    desc += ', pass 2';
     whites = 0;
     blacks = 0;
-    Par.parse(code, {saveTokens: false, onToken: onToken, runWithoutFurtherInput:true}).whites;
+    if (what !== STREAM_ONLY) Par.parse(code, {saveTokens: false, onToken: onToken, runWithoutFurtherInput:true});
   }
 
-  assertCode('base', "foo ;", [
+  assertCode('base',
+    "foo ;", [
     [IDENTIFIER, 'foo', 0, 3, 0],
-    [WHITE, ' ', 3, 4, undefined],
-    [PUNCTUATOR, ';', 4, 5, 1],
-    [EOF, '', 5, 5, 2]
+    [WHITE,      ' ',   3, 4, U],
+    [PUNCTUATOR, ';',   4, 5, 1],
+    [EOF,        '',    5, 5, 2]
   ]);
 
-  assertCode('newline without space', "a;\nb;", [
-    [IDENTIFIER, 'a', 0, 1, 0],
-    [PUNCTUATOR, ';', 1, 2, 1],
-    [WHITE, '\n', 2, 3, undefined],
-    [IDENTIFIER, 'b', 3, 4, 2],
-    [PUNCTUATOR, ';', 4, 5, 3],
-    [EOF, '', 5, 5, 4]
+  assertCode('newline without space',
+    "a;\nb;", [
+    [IDENTIFIER, 'a',  0, 1, 0],
+    [PUNCTUATOR, ';',  1, 2, 1],
+    [WHITE,      '\n', 2, 3, U],
+    [IDENTIFIER, 'b',  3, 4, 2],
+    [PUNCTUATOR, ';',  4, 5, 3],
+    [EOF,        '',   5, 5, 4]
   ]);
 
-  assertCode('crlf without space', "a;\r\nb;", [
-    [IDENTIFIER, 'a', 0, 1, 0],
-    [PUNCTUATOR, ';', 1, 2, 1],
-    [WHITE, '\r\n', 2, 4, undefined],
-    [IDENTIFIER, 'b', 4, 5, 2],
-    [PUNCTUATOR, ';', 5, 6, 3],
-    [EOF, '', 6, 6, 4]
+  assertCode('crlf without space',
+    "c;\r\nd;", [
+    [IDENTIFIER, 'c',    0, 1, 0],
+    [PUNCTUATOR, ';',    1, 2, 1],
+    [WHITE,      '\r\n', 2, 4, U],
+    [IDENTIFIER, 'd',    4, 5, 2],
+    [PUNCTUATOR, ';',    5, 6, 3],
+    [EOF,        '',     6, 6, 4]
   ]);
 
-  assertCode('newline and space', "a;\n b;", [
-    [IDENTIFIER, 'a', 0, 1, 0],
-    [PUNCTUATOR, ';', 1, 2, 1],
-    [WHITE, '\n', 2, 3, undefined],
-    [WHITE, ' ', 3, 4, undefined],
-    [IDENTIFIER, 'b', 4, 5, 2],
-    [PUNCTUATOR, ';', 5, 6, 3],
-    [EOF, '', 6, 6, 4]
+  assertCode('newline and space',
+    "e;\n f;", [
+    [IDENTIFIER, 'e',  0, 1, 0],
+    [PUNCTUATOR, ';',  1, 2, 1],
+    [WHITE,      '\n', 2, 3, U],
+    [WHITE,      ' ',  3, 4, U],
+    [IDENTIFIER, 'f',  4, 5, 2],
+    [PUNCTUATOR, ';',  5, 6, 3],
+    [EOF,        '',   6, 6, 4]
   ]);
 
-  assertCode('crlf with space', "a;\r\n b;", [
-    [IDENTIFIER, 'a', 0, 1, 0],
-    [PUNCTUATOR, ';', 1, 2, 1],
-    [WHITE, '\r\n', 2, 4, undefined],
-    [WHITE, ' ', 4, 5, undefined],
-    [IDENTIFIER, 'b', 5, 6, 2],
-    [PUNCTUATOR, ';', 6, 7, 3],
-    [EOF, '', 7, 7, 4]
+  assertCode('crlf with space',
+    "g;\r\n h;", [
+    [IDENTIFIER, 'g',    0, 1, 0],
+    [PUNCTUATOR, ';',    1, 2, 1],
+    [WHITE,      '\r\n', 2, 4, U],
+    [WHITE,      ' ',    4, 5, U],
+    [IDENTIFIER, 'h',    5, 6, 2],
+    [PUNCTUATOR, ';',    6, 7, 3],
+    [EOF,        '',     7, 7, 4]
   ]);
 
-  assertCode('newline and space and tab', "a;\n \tb;", [
-    [IDENTIFIER, 'a', 0, 1, 0],
-    [PUNCTUATOR, ';', 1, 2, 1],
-    [WHITE, '\n', 2, 3, undefined],
-    [WHITE, ' ', 3, 4, undefined],
-    [WHITE, '\t', 4, 5, undefined],
-    [IDENTIFIER, 'b', 5, 6, 2],
-    [PUNCTUATOR, ';', 6, 7, 3],
-    [EOF, '', 7, 7, 4]
+  assertCode('newline and space and tab',
+    "i;\n \tj;", [
+    [IDENTIFIER, 'i',  0, 1, 0],
+    [PUNCTUATOR, ';',  1, 2, 1],
+    [WHITE,      '\n', 2, 3, U],
+    [WHITE,      ' ',  3, 4, U],
+    [WHITE,      '\t', 4, 5, U],
+    [IDENTIFIER, 'j',  5, 6, 2],
+    [PUNCTUATOR, ';',  6, 7, 3],
+    [EOF,        '',   7, 7, 4]
   ]);
 
-  assertCode('return with newline should not add asi if followed by semi', "function f(){return\n;}", [
-    [IDENTIFIER, 'function', 0, 8, 0],
-    [WHITE, ' ', 8, 9, undefined],
-    [IDENTIFIER, 'f', 9, 10, 1],
-    [PUNCTUATOR, '(', 10, 11, 2],
-    [PUNCTUATOR, ')', 11, 12, 3],
-    [PUNCTUATOR, '{', 12, 13, 4],
-    [IDENTIFIER, 'return', 13, 19, 5],
-    [WHITE, '\n', 19, 20, undefined],
-    [PUNCTUATOR, ';', 20, 21, 6],
-    [PUNCTUATOR, '}', 21, 22, 7],
-    [EOF, '', 22, 22, 8]
+  assertCode('return with newline should not add asi if followed by semi',
+    "function f(){return\n;}", [
+    [IDENTIFIER, 'function', 0,  8, 0],
+    [WHITE,      ' ',        8,  9, U],
+    [IDENTIFIER, 'f',        9, 10, 1],
+    [PUNCTUATOR, '(',       10, 11, 2],
+    [PUNCTUATOR, ')',       11, 12, 3],
+    [PUNCTUATOR, '{',       12, 13, 4],
+    [IDENTIFIER, 'return',  13, 19, 5],
+    [WHITE,      '\n',      19, 20, U],
+    [PUNCTUATOR, ';',       20, 21, 6],
+    [PUNCTUATOR, '}',       21, 22, 7],
+    [EOF,        '',        22, 22, 8]
   ]);
+
+  assertCode('asi should not change white/black indexes (stream check)',
+    "a\nb/*\n*/c", [
+    [IDENTIFIER, 'a',      0,  1, 0],
+    [WHITE,      '\n',     1,  2, U],
+    [ASI,        '',       2,  2, 1],
+    [IDENTIFIER, 'b',      2,  3, 2],
+    [WHITE,      '/*\n*/', 3,  8, U],
+    [ASI,        '',       8,  8, 3],
+    [IDENTIFIER, 'c',      8,  9, 4],
+    [ASI,        '',       9,  9, 5],
+    [EOF,        '',       9,  9, 6],
+  ], STREAM_ONLY);
+
+  assertCode('asi should not change white/black indexes (onToken check)',
+    "d\ne/*\n*/f", [
+    [IDENTIFIER, 'd',      0,  1, 0, 0],
+    [WHITE,      '\n',     1,  2, U, 1],
+    [IDENTIFIER, 'e',      2,  3, 1, 2],
+    [ASI,        '',      -1, -1, 1, 2],
+    [WHITE,      '/*\n*/', 3,  8, U, 4],
+    [IDENTIFIER, 'f',      8,  9, 3, 5],
+    [ASI,        '',      -1, -1, 3, 5],
+    [EOF,        '',       9,  9, 5, 7],
+    [ASI,        '',      -1, -1, 5, 7]
+  ], ONTOKEN_ONLY);
+
+  assertCode('EOF ASI check (stream check)',
+    "a", [
+    [IDENTIFIER, 'a',      0,  1, 0],
+    [ASI,        '',       1,  1, 1],
+    [EOF,        '',       1,  1, 2],
+  ], STREAM_ONLY);
+
+  assertCode('EOF ASI check (ontoken check)',
+    "a", [
+    [IDENTIFIER, 'a',      0,  1, 0, 0],
+    [EOF,        '',       1,  1, 1, 1],
+    [ASI,        '',      -1, -1, 1, 1],
+  ], ONTOKEN_ONLY);
 
   document.getElementById('result').innerHTML = 'PASS';
   document.getElementById('result').style.color = 'white';
   document.body.style.backgroundColor = 'green';
 } catch(e) {
-  document.getElementById('result').innerHTML = 'FAIL: '+e;
+  document.getElementById('result').innerHTML = 'FAIL: '+e+ '<pre>'+e.stack+'</pre>';
   document.getElementById('result').style.color = 'white';
   document.body.style.backgroundColor = 'red';
 }
