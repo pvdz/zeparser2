@@ -25,7 +25,7 @@ var enableLast = 5;
 var showLast = 10;
 var dirnameBare = '';
 var streamer = false;
-var buildall = false;
+var buildAll = false;
 if (!process.argv[2] || showHelp) {
   if (!showHelp) console.log('(Note: no params found. If you add a param you can name this build and have it auto-added to the gonzales project locally).');
   else {
@@ -82,7 +82,7 @@ if (!process.argv[2] || showHelp) {
         break;
       case 'all':
         console.log('-- producing a streaming parser and regular build');
-        buildall = true;
+        buildAll = true;
         break;
       default:
         console.log('Bailing for unknown flag: '+next);
@@ -108,7 +108,7 @@ var files = [
 ];
 
 console.log("concatting all files...");
-var all = files.map(function(f){
+var code = files.map(function(f){
   console.log('- src/'+f);
 
   var source = fs.readFileSync(ROOT_DIR+'/src/'+f).toString('utf8');
@@ -208,12 +208,12 @@ var all = files.map(function(f){
 }).join('');
 
 // my DSL macros
-all = all
+code = code
   .replace(/^.*\/\/ #zp-build drop line(?: .*)?$/gm, '\n')
   .replace(/(^.*)\.call\(this,\s*(.*)\/\/ #zp-build call(?: .*)?$/gm, '$1($2');
 
 // wrap in nodejs/browser way of exposing an exports object
-all = '(function(exports){'+all+'})(typeof exports === "undefined" ? window : exports);\n';
+code = '(function(exports){'+code+'})(typeof exports === "undefined" ? window : exports);\n';
 
 // Inline all constants. this is not generically "safe", but sufficiently safe for this project. be warned.
 // Simply get all variables with only uppercase letters or underscores. Track any assignments to them.
@@ -223,7 +223,7 @@ all = '(function(exports){'+all+'})(typeof exports === "undefined" ? window : ex
 
 var constants = [];
 var hash = {};
-var tok = Par.parse(all, {saveTokens:true, createBlackStream:true}).tok;
+var tok = Par.parse(code, {saveTokens:true, createBlackStream:true}).tok;
 var wtree = tok.tokens;
 var btree = tok.black;
 
@@ -284,7 +284,7 @@ btree.forEach(function(token){
 });
 
 // reconstruct (note: macros happen at the top because all comments are stripped at this point)
-all = wtree
+code = wtree
   .map(function(t){ return t.value; })
   .join('')
 
@@ -298,23 +298,23 @@ all = wtree
 ;
 
 // post process transform the build into a streaming parser?
-if (streamer && all) {
-  var regular = all;
+if (streamer || buildAll) {
+  var regular = code;
   console.log('Applying Streamer post processing');
   console.log('- eliminate logic');
-  all = eliminateLogic(all);
+  code = eliminateLogic(code);
   console.log('- make freezable');
-  all = makeFreezable(all);
+  code = makeFreezable(code);
 }
 
-if (buildall || !streamer) {
+if (buildAll || !streamer) {
   console.log('Writing regular build to build/zp.js');
-  fs.writeFileSync(BUILD_DIR+'/zp.js', regular || all);
+  fs.writeFileSync(BUILD_DIR+'/zp.js', regular || code);
   console.log('Done!');
 }
-if (buildall || streamer) {
+if (buildAll || streamer) {
   console.log('Writing streaming build to build/zps.js');
-  fs.writeFileSync(BUILD_DIR + '/zps.js', all);
+  fs.writeFileSync(BUILD_DIR + '/zps.js', code);
   console.log('Done!');
 }
 
@@ -353,7 +353,7 @@ if (dirnameBare) {
   files.forEach(function(file){
     fs.createReadStream(ROOT_DIR+'/src/'+file).pipe(fs.createWriteStream(fullDirname+'/'+file));
   });
-  fs.writeFileSync(fullDirname+'/build.js', all);
+  fs.writeFileSync(fullDirname+'/build.js', code);
 
   // update the gonzales config file
   var gonzalesParsers = ROOT_DIR+'/../gonzales/data/zeparsers.js';
