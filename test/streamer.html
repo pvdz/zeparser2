@@ -23,78 +23,128 @@
 
 <script>
 
-  function simple() {
-    console.warn('simple test');
-//    console.log('initializing');
-    var o = Par.parse('var foo', {saveTokens: true});
-//    console.log('starting', o);
-    o.thaw();
-//    console.log('faking');
-    o.thaw('');
-//    console.log('streaming on');
-    o.thaw(' = bar;');
-//    console.log('ending');
-    var p = o.thaw(false);
+  var tests = [
+    function simple() {
+      console.warn('simple test');
+  //    console.log('initializing');
+      var o = Par.parse('var foo', {saveTokens: true});
+  //    console.log('starting', o);
+      o.thaw();
+  //    console.log('faking');
+      o.thaw('');
+  //    console.log('streaming on');
+      o.thaw(' = bar;');
+  //    console.log('ending');
+      var p = o.thaw(false);
 
-    console.log('simple:', p);
-  }
+      console.log('simple:', p);
+    },
 
-  function splitIdent() {
-    console.warn('split identifier test');
-    var o = Par.parse('hel', {saveTokens: true});
-    o.thaw();
-    o.thaw('lo;');
-    var p = o.thaw(false);
-    console.log('split:', p);
-  }
+    function splitIdent() {
+      console.warn('split identifier test');
+      var o = Par.parse('hel', {saveTokens: true});
+      o.thaw();
+      o.thaw('lo;');
+      var p = o.thaw(false);
+      console.log('split:', p);
+    },
 
-  function callbacks() {
-    console.warn('onToken tests');
-    var s = '';
-    var o = Par.parse('function f', {onToken: function(t, v, a, b, n){
-      s += v;
-      console.log(Par[t], [v], a, b, 'n:',n);
-    }});
-    o.thaw();
-    o.thaw('');
-    o.thaw('oo(x) {\n');
-    o.thaw('  /foo/.');
-    o.thaw('test(bar); /');
-    o.thaw('/ dead\n }');
-    o.thaw(false);
+    function callbacks() {
+      console.warn('onToken tests');
+      var s = '';
+      var o = Par.parse('function f', {onToken: function(t, v, a, b, n){
+        s += v;
+        console.log(Par[t], [v], a, b, 'n:',n);
+      }});
+      o.thaw();
+      o.thaw('');
+      o.thaw('oo(x) {\n');
+      o.thaw('  /foo/.');
+      o.thaw('test(bar); /');
+      o.thaw('/ dead\n }');
+      o.thaw(false);
 
-    console.log('parsed:',[s]);
-  }
+      console.log('parsed:',[s]);
+    },
 
-  function compounds() {
-    console.warn('multi-char ambiguous puncs test');
-    var s = '';
-    var o = Par.parse('', {onToken: function(t, v, a, b, n){
-      s += v;
-      console.log(Par[t], [v], a, b, 'n:',n);
-    }});
-    o.thaw();
+    function compounds() {
+      console.warn('multi-char ambiguous puncs test');
+      var s = '';
+      var o = Par.parse('', {onToken: function(t, v, a, b, n){
+        s += v;
+        console.log(Par[t], [v], a, b, 'n:',n);
+      }});
+      o.thaw();
 
-    o.thaw('+');
-    o.thaw('+');
-    o.thaw('a');
-    o.thaw('b');
-    o.thaw(';');
-    o.thaw('x');
-    o.thaw('+');
-    o.thaw('=');
-    o.thaw('y;');
+      o.thaw('+');
+      o.thaw('+');
+      o.thaw('a');
+      o.thaw('b');
+      o.thaw(';');
+      o.thaw('x');
+      o.thaw('+');
+      o.thaw('=');
+      o.thaw('y;');
 
-    o.thaw(false);
-    console.log('parsed:',[s]);
-  }
+      o.thaw(false);
+      console.log('parsed:',[s]);
+    },
+
+    function regexflags() {
+      console.warn('multi broken regex flags test');
+      var s = '';
+      var o = Par.parse('', {onToken: function(t, v, a, b, n){
+        s += v;
+        console.log(Par[t], [v], a, b, 'n:',n);
+      }});
+      o.thaw();
+
+      o.thaw('/foo/');
+      o.thaw('g');
+      o.thaw('i');
+      o.thaw('m');
+
+      o.thaw(false);
+      console.log('parsed:',[s]);
+    },
+
+    function regexuniflags() {
+      console.warn('multi broken regex unicode flags test');
+      var s = '';
+      var o = Par.parse('', {onToken: function(t, v, a, b, n){
+        s += v;
+        console.log(Par[t], [v], a, b, 'n:',n);
+      }});
+      o.thaw();
+
+      o.thaw('/a/\\u0067\\u');
+      o.thaw('006d');
+      o.thaw('i');
+
+      o.thaw(false);
+      console.log('parsed:',[s]);
+    },
+
+    function regexSplit() {
+      console.warn('regex broken before closer');
+      var s = '';
+      var o = Par.parse('', {onToken: function(t, v, a, b, n){
+        s += v;
+        console.log(Par[t], [v], a, b, 'n:',n);
+      }});
+      o.thaw();
+
+      o.thaw('/a');
+      o.thaw('/');
+
+      o.thaw(false);
+      console.log('parsed:',[s]);
+    }
+  ];
 
   try {
 
-    simple();
-    splitIdent();
-    callbacks();
-    compounds();
+    tests.forEach(function(t){ t(); });
 
     document.getElementById('result').innerHTML = 'PASS';
     document.getElementById('result').style.color = 'white';
