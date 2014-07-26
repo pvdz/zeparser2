@@ -290,6 +290,8 @@
       return had;
     },
     /**
+     * TOFIX: we can probably drop this
+     *
      * External api endpoint.
      * Call with new input, then thaw the parser.
      *
@@ -990,7 +992,7 @@
       return REGEX;
     },
     regexBody: function(){
-      var len = this.input.length;
+      var len = this.len;
       // TOFIX: should try to have the regex parser only use pos, not this.pos
       var guard = 100000; // #zp-build drop line
       while (this.pos < len) {
@@ -1015,7 +1017,7 @@
       this.throwSyntaxError('Unterminated regular expression at eof');
     },
     regexClass: function(){
-      var len = this.input.length;
+      var len = this.len;
       var pos = this.pos;
 
       var guard = 100000; // #zp-build drop line
@@ -1099,6 +1101,7 @@
       }
       this.pos = pos;
     },
+    // TOFIX: this should fail the streamer due to cached input, make a test
     regexFlagUniEscape: function(input, pos){
       if (pos >= this.len) this.getMoreInput(REQUIRED);
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
@@ -1169,6 +1172,7 @@
 
       // \uxxxx
       if (c === ORD_BACKSLASH_5C) {
+        // TOFIX: seems the atStart flag is ignored. make a test. (input is always passed on but was removed at the finger print of func)
         this.parseAndValidateUnicodeAsIdentifier(pos, input, false);
         return 6;
       }
@@ -1187,6 +1191,7 @@
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
 
+        // TOFIX: make test case, this should fail the streamer with not enough input
         var u = parseInt(input.slice(pos+2, pos+6), 16);
         var b = u & 0xffdf;
         if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
@@ -1224,7 +1229,7 @@
     },
 
     getNum: function(offset){
-      if (offset >= this.len) throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?';
+      if (offset >= this.len) throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?'; // #zp-build drop line
       return this.input.charCodeAt(this.lastOffset+offset);
     },
 
