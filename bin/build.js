@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// TOFIX: concurrent runs of the streaming parser will probably fail due to the build
+
 var showHelp = process.argv[2] === '--help' || process.argv[2] === '-?' || process.argv[2] === '--?';
 if (!showHelp) console.log("Building...");
 
