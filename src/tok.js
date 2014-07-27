@@ -1071,7 +1071,7 @@
           if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
           var backslash = false;
 
-          // check backslash first so we can replace c with the conanical value of the escape
+          // check backslash first so we can replace c with the canonical value of the escape
           if (c === ORD_BACKSLASH_5C) {
             // only valid here is `\u006` followed by a 7=g 9=i or d=m
             backslash = true;
@@ -1103,13 +1103,14 @@
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
-      var input = this.input; // safe to cache, we dont update it anymore
+      var input = this.input; // safe to cache for the next line (only)
       if (input.charCodeAt(pos) !== ORD_L_U_75 || input.charCodeAt(pos+1) !== ORD_L_0_30 || input.charCodeAt(pos+2) !== ORD_L_0_30 || input.charCodeAt(pos+3) !== ORD_L_6_36) {
         return 0;
       }
+      input = undefined; // protection, should not use cached input here // #zp-build drop line
 
       if (pos+4 >= this.len) this.getMoreInput(REQUIRED);
-      var c = input.charCodeAt(pos+4);
+      var c = this.input.charCodeAt(pos+4);
       if (c === ORD_L_7_37) {
         return ORD_L_G_67;
       }
