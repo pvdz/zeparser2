@@ -2,6 +2,12 @@
 
 This is a JS parser written in JS. It is blazingly faster but doesn't return you a parse tree. It's capable of parsing and validating JS on an OCD level at very high speeds.
 
+Note that this readme is _outdated_ and will be updated soon. Hm where have I heard that before.
+
+More details about what the build script does can be read [in this blog post](http://qfox.nl/weblog/323)
+
+## Goals
+
 There were two goals for this project:
 
 - Write a parser that would parse and validate JS as fast as possible, nothing else
