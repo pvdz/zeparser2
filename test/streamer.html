@@ -26,7 +26,7 @@
 
   var lastDesc = 'simple';
 
-  function one(desc, parts) {
+  function good(desc, parts) {
     return function(){
       lastDesc = desc;
       if (top === window) console.warn(desc);
@@ -40,7 +40,30 @@
       while (parts.length) o.thaw(parts.shift());
 
       o.thaw(false);
-      if (top === window) console.log('parsed:', [s]);
+      if (top === window) console.log('parsed and properly accepted:', [s]);
+    };
+  }
+
+  function bad(desc, parts) {
+    return function(){
+      lastDesc = desc;
+      if (top === window) console.warn(desc);
+      var s = '';
+      var o = Par.parse(parts.shift(), {onToken: function(t, v, a, b, n){
+        s += v;
+        if (top === window) console.log(Par[t], [v], a, b, 'n:', n);
+      }});
+      o.thaw();
+
+      while (parts.length) o.thaw(parts.shift());
+
+      try {
+        o.thaw(false);
+        throw 'Should fail now, did not';
+      } catch (e) {
+        // squash. input is expected to be rejected
+      }
+      if (top === window) console.log('parsed and properly rejected:', [s]);
     };
   }
 
@@ -57,39 +80,54 @@
   }
 
   var tests = [
-    one(
+    good(
       'split identifier',
       ['hel', 'lo']
     ),
 
-    one(
+    good(
       'onToken tests',
       ['function f', '', 'oo(x) {\n', '  /foo/.', 'test(bar); /', '/ dead\n }']
     ),
 
-    one(
+    good(
       'multi-char ambiguous puncs test',
       ['', '+', 'a', 'b', ';', 'x', '+', '=', 'y;']
     ),
 
-    one(
+    good(
       'multi broken regex flags test',
       ['', '/foo/', 'g', 'i', 'm']
     ),
 
-    one(
+    good(
       'multi broken regex unicode flags test',
       ['', '/a/\\u0067\\u', '006d', 'i']
     ),
 
-    one(
+    good(
       'single broken regex unicode flag test',
       ['', '/a/\\u006', '9']
     ),
 
-    one(
+    good(
       'broken regex class with nul char',
       ['', '/[\0', ']/']
+    ),
+
+    good(
+      'empty program',
+      ['']
+    ),
+
+    bad(
+      'empty program',
+      ['foo/']
+    ),
+
+    good(
+      'identifier stuff',
+      ['\\u0061', 'b', 'ar;']
     ),
   ];
 
