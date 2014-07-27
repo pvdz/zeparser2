@@ -590,6 +590,10 @@
       // this is currently causing the top test to fail
       this.parseAndValidateUnicodeAsIdentifier(this.pos, true); // TOFIX: replace bool with constant, figure out why dropping input here only doesnt affect tests (missing test)
       this.pos += 6;
+
+      // parseIdentifierRest assumes the first char still needs to be consumed, if we dont rewind the next char is consumed unchecked
+      --this.pos;
+
       this.pos = this.parseIdentifierRest();
       return IDENTIFIER;
     },
@@ -1129,7 +1133,6 @@
     },
     parseIdentifierRest: function(){
       // also used by regex flag parser!
-
       var start = this.lastOffset; // #zp-build drop line
       var pos = this.pos + 1;
 
@@ -1150,20 +1153,21 @@
         var guard2 = 100000; // #zp-build drop line
         while (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
           if (useGuards) if (!--guard2) throw 'loop security'; // #zp-build drop line
+
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
           c = this.input.charCodeAt(pos);
           b = c & 0xffdf;
         }
 
-        var delta = this.parseOtherIdentifierParts(c, pos, this.input);
+        var delta = this.parseOtherIdentifierParts(c, pos);
         if (!delta) break;
         pos += delta;
       }
 
       return pos;
     },
-
-    parseOtherIdentifierParts: function(c, pos, input){
+// TOFIX: general: put dev checks on every `pos>=len` that throw if pos>len since that's probably a bug
+    parseOtherIdentifierParts: function(c, pos){
       // dont use ?: here; for build
       if (c >= ORD_L_0_30) { if (c <= ORD_L_9_39 || c === ORD_LODASH_5F) return 1; }
       else if (c === ORD_$_24) return 1;
