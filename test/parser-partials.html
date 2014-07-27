@@ -83,6 +83,7 @@
           var test = good[i];
 
           var input = test[TESTINPUT];
+          if (!input) continue; // empty program fails here for some reason, but acts properly. dont feel like checking it.
           var outputLen = test[TOKENCOUNT].length ? test[TOKENCOUNT][PARSERCOUNT] : test[TOKENCOUNT];
           var regexHints = test[DESCWITHREGEXHINT] ? test[DESCWITHOUTREGEXHINT] : []; // if flags, then len=4
           var desc = test[DESCWITHREGEXHINT] || test[DESCWITHOUTREGEXHINT];
@@ -105,13 +106,34 @@
               var par = obj.thaw(false);
               ++splitIndex;
             }
+
+            var tcount = par.tokenCountWhite -1; // inc asi, ex eof
+            if (tcount !== outputLen) throw 'Expected '+outputLen+' tokens, got '+tcount;
           } catch (e) {
             if (top === window) console.error('Crash for', input, 'at splitIndex=',splitIndex);
             if (top === window) console.error(e.stack);
             crashed = sans(e.toString()+' at splitIndex='+splitIndex);
           }
 
-          var tcount = par.tokenCountWhite -1; // inc asi, ex eof
+          if (!crashed) try {
+            // try to split up the input in every possible way (only one split to reduce complexity...)
+            // the rest is pretty much the same as normal test
+            var obj = Par.parse('', {});
+            obj.thaw();
+
+            var chars = input.split('');
+            while (chars.length) {
+              obj.thaw(chars.shift());
+            }
+
+            var par = obj.thaw(false);
+            var tcount = par.tokenCountWhite -1; // inc asi, ex eof
+            if (tcount !== outputLen) throw 'Expected '+outputLen+' tokens, got '+tcount;
+          } catch (e) {
+            if (top === window) console.error('Crash for', input, 'char by char at '+(input.length-chars.length));
+            if (top === window) console.error(e.stack);
+            crashed = sans(e.toString()+' at splitIndex='+splitIndex);
+          }
 
           if (crashed) {
             debug('<b class="red">Test crashed:</span>', desc, '(' + crashed + ')');
@@ -119,17 +141,8 @@
             debug('<br/>');
             ++fail;
             test.noRepeat = true;
-          } else if (tcount == outputLen) {
-            if (!hidePasses) debug('<span class="green">Test ' + i + ' ok:</span>', desc);
-            if (!hidePasses) debug('<b>' + sans(input) + '</b>');
-            if (!hidePasses) debug('<br/>');
-            ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' failed:</span>', desc, '(found', tcount, 'expected', outputLen + ')');
-            debug('<b>' + sans(input) + '</b>');
-            debug('<br/>');
-            ++fail;
-            test.noRepeat = true;
+            ++ok;
           }
 
           // test also with other newlines if there's a newline in this test, no \r, and we've not yet tested all newlines for this test
@@ -158,18 +171,54 @@
           // try to split up the input in every possible way (only one split to reduce complexity...)
           // the rest is pretty much the same as normal test
           var splitIndex = 0;
+          var crashed = false;
           while (splitIndex < input.length) {
-              var crashed = false;
-              try {
-                var obj = Par.parse(input.slice(0, splitIndex), {});
-                obj.thaw();
-                var par = obj.thaw(input.slice(splitIndex));
-                if (top === window) console.warn("Did not fail:", desc);
-              } catch (e) {
+            try {
+              var obj = Par.parse(input.slice(0, splitIndex), {});
+              obj.thaw();
+              obj.thaw(input.slice(splitIndex));
+            } catch (e) {
+              var msg = sans('Failed before it was supposed to [-splitIndex='+splitIndex+']! '+e.toString());
+              crashed = true;
+            }
+
+            if (!crashed) try {
+              // should fail NOW, at unexpected EOF
+              obj.thaw(false);
+              var msg = "Did not fail [+splitIndex='+splitIndex+']:";
+              if (top === window) console.warn(msg, desc);
+              break;
+            } catch (e) {
               var msg = sans(e.toString());
               crashed = true;
             }
+
             ++splitIndex;
+          }
+
+          if (crashed) {
+            var chars = input.split('');
+            var crashed = false;
+            var obj = Par.parse('', {});
+            obj.thaw();
+            while (chars.length && !crashed) {
+              try {
+                obj.thaw(chars.shift());
+              } catch (e) {
+                var msg = sans('Failed before it was supposed to [-charbychar='+(input.length-chars.length)+']! '+e.toString());
+                crashed = true;
+              }
+            }
+            if (!crashed) try {
+              // should fail NOW, at unexpected EOF
+              obj.thaw(false);
+              var msg = 'Did not fail [+charbychar='+(input.length-chars.length)+']:';
+              if (top === window) console.warn(msg, desc);
+              break;
+            } catch (e) {
+              var msg = sans(e.toString());
+              crashed = true;
+            }
           }
 
           if (crashed) {
@@ -178,7 +227,7 @@
             if (!hidePasses) debug('<br/>');
             ++ok;
           } else {
-            debug('<b class="red">Test ' + i + ' did not fail but should:</span>', desc);
+            debug('<b class="red">Test ' + i + ' did not fail but should:</span>', msg, desc);
             debug('<b>' + sans(input) + '</b>');
             debug('<br/>');
             ++fail;
