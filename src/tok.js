@@ -587,7 +587,8 @@
     },
 
     parseBackslash: function(){
-      this.parseAndValidateUnicodeAsIdentifier(this.pos, this.input, true); // TOFIX: eliminate bool
+      // this is currently causing the top test to fail
+      this.parseAndValidateUnicodeAsIdentifier(this.pos, true); // TOFIX: replace bool with constant, figure out why dropping input here only doesnt affect tests (missing test)
       this.pos += 6;
       this.pos = this.parseIdentifierRest();
       return IDENTIFIER;
@@ -1170,7 +1171,7 @@
       // \uxxxx
       if (c === ORD_BACKSLASH_5C) {
         // TOFIX: seems the atStart flag is ignored. make a test. (input is always passed on but was removed at the finger print of func)
-        this.parseAndValidateUnicodeAsIdentifier(pos, input, false);
+        this.parseAndValidateUnicodeAsIdentifier(pos, false);
         return 6;
       }
 
@@ -1184,12 +1185,12 @@
       return 0;
     },
 
-    parseAndValidateUnicodeAsIdentifier: function(pos, input, atStart){
+    parseAndValidateUnicodeAsIdentifier: function(pos, atStart){
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      if (input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
+      if (this.input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
 
         // TOFIX: make test case, this should fail the streamer with not enough input
-        var u = parseInt(input.slice(pos+2, pos+6), 16);
+        var u = parseInt(this.input.slice(pos+2, pos+6), 16);
         var b = u & 0xffdf;
         if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
           return true;
