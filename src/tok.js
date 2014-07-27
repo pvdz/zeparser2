@@ -1014,13 +1014,15 @@
       }
     },
     regexClass: function(){
-      var len = this.len;
       var pos = this.pos;
 
       var guard = 100000; // #zp-build drop line
       while (true) {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
-        if (pos >= this.len) this.getMoreInput(REQUIRED);
+        if (pos >= this.len && !this.getMoreInput(OPTIONALLY)) {
+          this.throwSyntaxError('Unterminated regular expression');
+        }
+
         var c = this.input.charCodeAt(pos++);
 
         if (c === ORD_CLOSE_SQUARE_5D) {
@@ -1040,8 +1042,6 @@
           }
         } else if (c === ORD_LF_0A || c === ORD_CR_0D || (c ^ ORD_PS_2028) <= 1) { // c === ORD_PS || c === ORD_LS
           this.throwSyntaxError('Illegal newline in regex char class');
-        } else if (!c && pos >= len) { // !c can still be \0
-          this.throwSyntaxError('Unterminated regular expression');
         }
       }
     },
