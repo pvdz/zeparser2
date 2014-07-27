@@ -29,17 +29,16 @@
       var had = false;
 
       if (!this_tok_reachedEof) {
-        var len = this_tok_input.length;
 
         do {
 
-          had = this_tok_waitForInput('need backup, nao!');
+          had = this_tok_waitForInput();
+        } while (had !== false && !had.length);
 
-          if (had) {
-            this_tok_input += had;
-            this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
-          }
-        } while (had !== false && len === this_tok_input.length);
+        if (had) {
+          this_tok_input += had;
+          this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+        }
       }
 
       if (had === false) {
@@ -275,8 +274,13 @@
       return false;
     }
   function this_tok_parseBackslash(){
-      this_tok_parseAndValidateUnicodeAsIdentifier(this_tok_pos, this_tok_input, true); // TOFIX: eliminate bool
+      // this is currently causing the top test to fail
+      this_tok_parseAndValidateUnicodeAsIdentifier(this_tok_pos, true); // TOFIX: replace bool with constant, figure out why dropping input here only doesnt affect tests (missing test)
       this_tok_pos += 6;
+
+      // parseIdentifierRest assumes the first char still needs to be consumed, if we dont rewind the next char is consumed unchecked
+      --this_tok_pos;
+
       this_tok_pos = this_tok_parseIdentifierRest();
       return 13;
     }
@@ -538,7 +542,6 @@
       return pos+1;
     }
   function this_tok_parseUnicodeEscapeBody(pos){
-
       if (pos >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
@@ -669,16 +672,15 @@
       return 8;
     }
   function this_tok_regexBody(){
-      var len = this_tok_input.length;
       // TOFIX: should try to have the regex parser only use pos, not this.pos
 
-      while (this_tok_pos < len) {
+      while (true) {
 
-        if (this_tok_pos >= this_tok_len) this_tok_getMoreInput(false);
+        if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(false)) this_tok_throwSyntaxError('Unterminated regular expression at eof');
         var c = this_tok_input.charCodeAt(this_tok_pos++);
 
         if (c === 0x5c) { // backslash
-          if (this_tok_pos >= this_tok_len) this_tok_getMoreInput(false);
+          if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(false)) this_tok_throwSyntaxError('Unterminated regular expression escape at eof');
           var d = this_tok_input.charCodeAt(this_tok_pos++);
           if (d === 0x0A || d === 0x0D || (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             this_tok_throwSyntaxError('Newline can not be escaped in regular expression');
@@ -690,16 +692,16 @@
           this_tok_throwSyntaxError('Newline can not be escaped in regular expression ['+c+']');
         }
       }
-
-      this_tok_throwSyntaxError('Unterminated regular expression at eof');
     }
   function this_tok_regexClass(){
-      var len = this_tok_input.length;
       var pos = this_tok_pos;
 
       while (true) {
 
-        if (pos >= this_tok_len) this_tok_getMoreInput(false);
+        if (pos >= this_tok_len && !this_tok_getMoreInput(false)) {
+          this_tok_throwSyntaxError('Unterminated regular expression');
+        }
+
         var c = this_tok_input.charCodeAt(pos++);
 
         if (c === 0x5d) {
@@ -719,8 +721,6 @@
           }
         } else if (c === 0x0A || c === 0x0D || (c ^ 0x2028) <= 1) { // c === ORD_PS || c === ORD_LS
           this_tok_throwSyntaxError('Illegal newline in regex char class');
-        } else if (!c && pos >= len) { // !c can still be \0
-          this_tok_throwSyntaxError('Unterminated regular expression');
         }
       }
     }
@@ -750,11 +750,11 @@
 
           var backslash = false;
 
-          // check backslash first so we can replace c with the conanical value of the escape
+          // check backslash first so we can replace c with the canonical value of the escape
           if (c === 0x5c) {
             // only valid here is `\u006` followed by a 7=g 9=i or d=m
             backslash = true;
-            c = this_tok_regexFlagUniEscape(this_tok_input, pos + 1);
+            c = this_tok_regexFlagUniEscape(pos + 1);
           }
 
           if (c === 0x67) {
@@ -777,17 +777,18 @@
       }
       this_tok_pos = pos;
     }
-  function this_tok_regexFlagUniEscape(input, pos){
+  function this_tok_regexFlagUniEscape(pos){
       if (pos >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+3 >= this_tok_len) this_tok_getMoreInput(false);
+      var input = this_tok_input; // safe to cache for the next line (only)
       if (input.charCodeAt(pos) !== 0x75 || input.charCodeAt(pos+1) !== 0x30 || input.charCodeAt(pos+2) !== 0x30 || input.charCodeAt(pos+3) !== 0x36) {
         return 0;
       }
 
       if (pos+4 >= this_tok_len) this_tok_getMoreInput(false);
-      var c = input.charCodeAt(pos+4);
+      var c = this_tok_input.charCodeAt(pos+4);
       if (c === 0x37) {
         return 0x67;
       }
@@ -826,21 +827,22 @@
           b = c & 0xffdf;
         }
 
-        var delta = this_tok_parseOtherIdentifierParts(c, pos, this_tok_input);
+        var delta = this_tok_parseOtherIdentifierParts(c, pos);
         if (!delta) break;
         pos += delta;
       }
 
       return pos;
     }
-  function this_tok_parseOtherIdentifierParts(c, pos, input){
+  function this_tok_parseOtherIdentifierParts(c, pos){
       // dont use ?: here; for build
       if (c >= 0x30) { if (c <= 0x39 || c === 0x5f) return 1; }
       else if (c === 0x24) return 1;
 
       // \uxxxx
       if (c === 0x5c) {
-        this_tok_parseAndValidateUnicodeAsIdentifier(pos, input, false);
+        // TOFIX: seems the atStart flag is ignored. make a test. (input is always passed on but was removed at the finger print of func)
+        this_tok_parseAndValidateUnicodeAsIdentifier(pos, false);
         return 6;
       }
 
@@ -853,11 +855,12 @@
 
       return 0;
     }
-  function this_tok_parseAndValidateUnicodeAsIdentifier(pos, input, atStart){
+  function this_tok_parseAndValidateUnicodeAsIdentifier(pos, atStart){
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      if (input.charCodeAt(pos + 1) === 0x75 && this_tok_parseUnicodeEscapeBody(pos + 2)) {
+      if (this_tok_input.charCodeAt(pos + 1) === 0x75 && this_tok_parseUnicodeEscapeBody(pos + 2)) {
 
-        var u = parseInt(input.slice(pos+2, pos+6), 16);
+        // parseUnicodeEscapeBody will ensure enough input for this slice
+        var u = parseInt(this_tok_input.slice(pos+2, pos+6), 16);
         var b = u & 0xffdf;
         if (b >= 0x41 && b <= 0x5a) {
           return true;
@@ -892,7 +895,7 @@
 //      return val;
     }
   function this_tok_getNum(offset){
-      if (offset >= this_tok_len) throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?';
+
       return this_tok_input.charCodeAt(this_tok_lastOffset+offset);
     }
   function this_tok_throwSyntaxError(message){

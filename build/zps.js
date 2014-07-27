@@ -24,8 +24,8 @@ var this_tok_input =  '';
 var step = 1;
 var v0;
 var f0;
-var had, len, A;
-return function(thawValue){
+var had, A;
+return function inside_this_tok_getMoreInput(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -33,30 +33,29 @@ had = false;
 if (!(!this_tok_reachedEof)) { step = 3; continue; }
 step = 2;
 case 2:
-len = this_tok_input.length;
-// do start [black=114]
+// do start [black=107]
 case 5:
 step = 7;
-return (frozen = true), ('need backup, nao!'||undefined);
+return (frozen = true), (undefined);
 case 7:
 had = thawValue;
-if (!(had)) { step = 9; continue; }
+           A = had !== false ;
+if (!A) { step = 9; continue; }
 step = 8;
 case 8:
-this_tok_input += had;
-            this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+ A =  !had.length; 
 step = 9;
 case 9:
-   A = had !== false ;
-if (!A) { step = 12; continue; }
+if (A) { step = 5; continue; } // jump to start of loop [black=107]
+// do end [black=107]
+step = 6;
+case 6:
+if (!(had)) { step = 12; continue; }
 step = 11;
 case 11:
- A =  len === this_tok_input.length; 
-step = 12;
+this_tok_input += had;
+          this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
 case 12:
-if (A) { step = 5; continue; } // jump to start of loop [black=114]
-// do end [black=114]
-case 6:
 step = 3;
 case 3:
 if (!(had === false)) { step = 15; continue; }
@@ -65,13 +64,13 @@ case 14:
 // if there was no more input, next time skip the freeze part
         this_tok_reachedEof = true;
         if (!(mustHaveMore)) { step = 18; continue; }
-step = 17;
 case 17:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Unexpected EOF'))(thawValue);
+ step = 20; case 20:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Unexpected EOF'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 20;
-case 20:
+step = 21;
+case 21:
 case 18:
 step = 15;
 case 15:
@@ -84,7 +83,7 @@ return;
 }
   function this_tok_updateInput(input){
 var step = 1;
-return function(thawValue){
+return function inside_this_tok_updateInput(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -98,7 +97,7 @@ return;
 }
   function this_tok_waitForInput(){
 var step = 1;
-return function(thawValue){
+return function inside_this_tok_waitForInput(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -115,18 +114,18 @@ var step = 1;
 var v0;
 var f0;
 var equals;
-return function(thawValue){
+return function inside_this_tok_nextExprIfNum(thawValue){
   while (true) {
     switch (step) {
       case 1:
 equals = this_tok_firstTokenChar === num;
       if (!(equals)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_next(true))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
 return equals;
@@ -141,7 +140,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var equals;
-return function(thawValue){
+return function inside_this_tok_nextPuncIfString(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -154,12 +153,12 @@ step = 3;
 case 3:
  equals = v0 === str;
       if (!(equals)) { step = 5; continue; }
-step = 4;
 case 4:
- v1 = (f1 = f1 || this_tok_next(false))(thawValue);
+ step = 7; case 7:
+v1 = (f1 = f1 || this_tok_next(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 7:
+case 8:
 step = 5;
 case 5:
 return equals;
@@ -174,7 +173,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var equals;
-return function(thawValue){
+return function inside_this_tok_nextExprIfString(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -187,12 +186,12 @@ step = 3;
 case 3:
  equals = v0 === str;
       if (!(equals)) { step = 5; continue; }
-step = 4;
 case 4:
- v1 = (f1 = f1 || this_tok_next(true))(thawValue);
+ step = 7; case 7:
+v1 = (f1 = f1 || this_tok_next(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 7:
+case 8:
 step = 5;
 case 5:
 return equals;
@@ -206,7 +205,7 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_tok_mustBeNum(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -220,13 +219,13 @@ else f0 = null;
 step = 6;
 case 6:
 return v0;
-step = 3;
 case 3:
+step = 7; case 7:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('Expected char=' + String.fromCharCode(num) + ' ('+num+') got=' + String.fromCharCode(this_tok_firstTokenChar)+' ('+this_tok_firstTokenChar+')'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 7;
-case 7:
+step = 8;
+case 8:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -237,7 +236,7 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_tok_mustBeIdentifier(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -251,13 +250,13 @@ else f0 = null;
 step = 6;
 case 6:
 return v0;
-step = 3;
 case 3:
+step = 7; case 7:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('Expecting current type to be IDENTIFIER but is '+typeToString[this_tok_lastType]+' ('+this_tok_lastType+')'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 7;
-case 7:
+step = 8;
+case 8:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -268,7 +267,7 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_tok_mustBeString(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -290,18 +289,18 @@ step = 8;
 case 8:
 return v1;
 case 5:
-step = 10;
-case 10:
+step = 11;
+case 11:
 v3 = (f3 = f3 || this_tok_getLastValue())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 11;
-case 11:
+case 12:
+step = 9; case 9:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Expecting current value to be ['+str+'] is ['+v3+']'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 9;
-case 9:
+step = 10;
+case 10:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -313,7 +312,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var options, saveTokens, onToken, tokens, type, token;
-return function(thawValue){
+return function inside_this_tok_next(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -322,7 +321,7 @@ options = this_tok_options;
        saveTokens = options.saveTokens;
        onToken = options.onToken;
        tokens = this_tok_tokens;
-// do start [black=479]
+// do start [black=470]
 case 2:
 step = 4;
 case 4:
@@ -358,8 +357,8 @@ onToken(type, v2, this_tok_lastOffset, this_tok_pos, this_tok_tokenCountAll);
 step = 12;
 case 12:
 ++this_tok_tokenCountAll;
-       if (type === 18) { step = 2; continue; } // jump to start of loop [black=479]
-// do end [black=479]
+       if (type === 18) { step = 2; continue; } // jump to start of loop [black=470]
+// do end [black=470]
 step = 3;
 case 3:
 if (!(saveTokens)) { step = 17; continue; }
@@ -386,7 +385,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var count, type, A;
-return function(thawValue){
+return function inside_this_tok_nextWhiteAfterNumber(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -414,12 +413,12 @@ case 7:
 step = 8;
 case 8:
 if (!A) { step = 11; continue; }
-step = 10;
 case 10:
+step = 13; case 13:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('Must be at least one whitespace token between numbers and identifiers or other numbers'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 13:
+case 14:
 step = 11;
 case 11:
 return type;
@@ -434,7 +433,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var fullStart, A, nextChar, type;
-return function(thawValue){
+return function inside_this_tok_nextAnyToken(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -483,7 +482,7 @@ var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
 var b, A;
-return function(thawValue){
+return function inside_this_tok_nextTokenDeterminator(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -549,7 +548,7 @@ var step = 1;
 var v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var switchValue, matched, fellThrough;
-return function(thawValue){
+return function inside_this_tok_nextTokenDeterminator_a(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -782,12 +781,13 @@ step = 50;
 case 50:
 if (!fellThrough && matched) { step = 51; continue; }
 // cannot be unicode because it's < ORD_L_A and ORD_L_A_UC
-          v14 = (f14 = f14 || this_tok_throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']'))(thawValue);
+          step = 52; case 52:
+v14 = (f14 = f14 || this_tok_throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']'))(thawValue);
 if (frozen) return v14;
 else f14 = null;
-step = 52;
-case 52:
-// switch end [black=883]
+step = 53;
+case 53:
+// switch end [black=874]
 step = 1;
 case 1:
 return;
@@ -801,7 +801,7 @@ var step = 1;
 var v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var switchValue, matched, fellThrough;
-return function(thawValue){
+return function inside_this_tok_nextTokenDeterminator_b(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -988,7 +988,7 @@ else f10 = null;
 step = 41;
 case 41:
 return v10;
-// switch end [black=1103]
+// switch end [black=1094]
 step = 1;
 case 1:
 return;
@@ -1001,7 +1001,7 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_tok_parseOtherUnicode(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1028,13 +1028,13 @@ else f1 = null;
 step = 11;
 case 11:
 return v1;
-step = 8;
 case 8:
+step = 12; case 12:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Unexpected character in token scanner... fixme! [' + c + ']'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 12;
-case 12:
+step = 13;
+case 13:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -1044,7 +1044,7 @@ return;
   function this_tok_isExoticWhitespace(c){
 var step = 1;
 var switchValue, matched, fellThrough;
-return function(thawValue){
+return function inside_this_tok_isExoticWhitespace(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1153,7 +1153,7 @@ return true;
 // switch-case jump-target from last case-test (if fail)
 step = 20;
 case 20:
-// switch end [black=1340]
+// switch end [black=1331]
 step = 1;
 case 1:
 return false;
@@ -1167,24 +1167,28 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_tok_parseBackslash(thawValue){
   while (true) {
     switch (step) {
       case 1:
-v0 = (f0 = f0 || this_tok_parseAndValidateUnicodeAsIdentifier(this_tok_pos, this_tok_input, true))(thawValue);
+// this is currently causing the top test to fail
+      step = 2; case 2:
+v0 = (f0 = f0 || this_tok_parseAndValidateUnicodeAsIdentifier(this_tok_pos, true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
- // TOFIX: eliminate bool
-      this_tok_pos += 6;
 step = 3;
 case 3:
+ // TOFIX: replace bool with constant, figure out why dropping input here only doesnt affect tests (missing test)
+      this_tok_pos += 6;
+// parseIdentifierRest assumes the first char still needs to be consumed, if we dont rewind the next char is consumed unchecked
+      --this_tok_pos;
+step = 4;
+case 4:
 v1 = (f1 = f1 || this_tok_parseIdentifierRest())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 4;
-case 4:
+step = 5;
+case 5:
 this_tok_pos = v1;
       return 13;
 return;
@@ -1198,62 +1202,62 @@ var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
 var d;
-return function(thawValue){
+return function inside_this_tok_parseFwdSlash(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(this_tok_pos+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
  d = this_tok_input.charCodeAt(this_tok_pos+1);
-      if (!(d === 0x2f)) { step = 7; continue; }
-case 6:
-step = 9;
-case 9:
+      if (!(d === 0x2f)) { step = 8; continue; }
+case 7:
+step = 10;
+case 10:
 v1 = (f1 = f1 || this_tok_parseSingleComment())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 10;
-case 10:
-return v1;
-step = 7;
-case 7:
-if (!(d === 0x2a)) { step = 12; continue; }
+step = 11;
 case 11:
-step = 14;
-case 14:
+return v1;
+step = 8;
+case 8:
+if (!(d === 0x2a)) { step = 13; continue; }
+case 12:
+step = 15;
+case 15:
 v2 = (f2 = f2 || this_tok_parseMultiComment())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 15;
-case 15:
-return v2;
-step = 12;
-case 12:
-if (!(expressionStart)) { step = 17; continue; }
+step = 16;
 case 16:
-step = 19;
-case 19:
+return v2;
+step = 13;
+case 13:
+if (!(expressionStart)) { step = 18; continue; }
+case 17:
+step = 20;
+case 20:
 v3 = (f3 = f3 || this_tok_parseRegex())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 20;
-case 20:
-return v3;
-case 17:
 step = 21;
 case 21:
+return v3;
+case 18:
+step = 22;
+case 22:
 v4 = (f4 = f4 || this_tok_parseDivPunctuator(d))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 22;
-case 22:
+step = 23;
+case 23:
 return v4;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -1266,7 +1270,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var pos, A, crlf;
-return function(thawValue){
+return function inside_this_tok_parseCR(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1274,29 +1278,29 @@ return function(thawValue){
       // consume it for the CRLF case. this is completely optional.
 pos = this_tok_pos;
       if (!(pos+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
   A = pos+1 < this_tok_len ;
-if (!A) { step = 7; continue; }
-step = 6;
-case 6:
- A =  this_tok_input.charCodeAt(pos+1); 
+if (!A) { step = 8; continue; }
 step = 7;
 case 7:
+ A =  this_tok_input.charCodeAt(pos+1); 
+step = 8;
+case 8:
  crlf = (A) === 0x0A ? 1 : 0;
-step = 9;
-case 9:
+step = 10;
+case 10:
 v1 = (f1 = f1 || this_tok_parseVerifiedNewline(pos + crlf, crlf))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 10;
-case 10:
+step = 11;
+case 11:
 return v1;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -1307,7 +1311,7 @@ return;
   function this_tok_parseVerifiedNewline(pos, extraForCrlf){
 var step = 1;
 var input, tokens, saveTokens, onToken, count, c, A, s, v;
-return function(thawValue){
+return function inside_this_tok_parseVerifiedNewline(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1323,13 +1327,13 @@ input = this_tok_input; // normally we dont cache input, but its okay here since
       // overhead by directly checking for spaces and tabs first.
       // note: first loop consumes the verified newline.
 // only check for EOF, get new input elsewhere, no need to stream here
-// while start [black=1629]
+// while start [black=1621]
 step = 2;
 case 2:
 if (!(!(++pos < this_tok_len))) { step = 5; continue; }
 step = 4;
 case 4:
-// break to loop [black=1629] end
+// break to loop [black=1621] end
 step = 3;
 continue;
 case 5:
@@ -1344,7 +1348,7 @@ case 8:
 if (!A) { step = 11; continue; }
 step = 10;
 case 10:
-// break to loop [black=1629] end
+// break to loop [black=1621] end
 step = 3;
 continue;
 case 11:
@@ -1367,10 +1371,10 @@ step = 17;
 case 17:
 extraForCrlf = 0; // only first iteration char is newline
         ++count;
-// back to start of while [black=1629]
+// back to start of while [black=1621]
 step = 2;
 continue
-// end of while [black=1629]
+// end of while [black=1621]
 case 3:
 this_tok_tokenCountAll = count;
       this_tok_lastOffset = pos-(1+extraForCrlf);
@@ -1387,19 +1391,19 @@ var step = 1;
 var v0;
 var f0;
 var pos, d, A;
-return function(thawValue){
+return function inside_this_tok_parseSameOrCompound(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // |&-+
 pos = this_tok_pos+1;
       if (!(pos >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
  d = this_tok_input.charCodeAt(pos);
@@ -1411,12 +1415,12 @@ case 3:
 //      this.pos += 1 + (d === c | d === ORD_IS_3D);
 //      this.pos += 1 + !(d-c && d-ORD_IS_3D);
 A = d === c ;
-if (!(!A)) { step = 7; continue; }
-step = 6;
-case 6:
- A =  d === 0x3d; 
+if (!(!A)) { step = 8; continue; }
 step = 7;
 case 7:
+ A =  d === 0x3d; 
+step = 8;
+case 8:
 this_tok_pos = pos + ((A) ? 1 : 0);
 return 9;
 return;
@@ -1430,44 +1434,44 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var len, offset;
-return function(thawValue){
+return function inside_this_tok_parseEqualSigns(thawValue){
   while (true) {
     switch (step) {
       case 1:
 len = 1;
        offset = this_tok_lastOffset;
       if (!(offset+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
-if (!(this_tok_input.charCodeAt(offset+1) === 0x3d)) { step = 7; continue; }
-step = 6;
-case 6:
-if (!(offset+2 >= this_tok_len)) { step = 10; continue; }
-step = 9;
-case 9:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v1;
-else f1 = null;
-case 12:
-step = 10;
-case 10:
-if (!(this_tok_input.charCodeAt(offset+2) === 0x3d)) { step = 14; continue; }
-step = 13;
-case 13:
- len = 3;
-step = 15;
-continue;
-case 14:
- len = 2;
-case 15:
+if (!(this_tok_input.charCodeAt(offset+1) === 0x3d)) { step = 8; continue; }
 step = 7;
 case 7:
+if (!(offset+2 >= this_tok_len)) { step = 11; continue; }
+case 10:
+ step = 13; case 13:
+v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+if (frozen) return v1;
+else f1 = null;
+case 14:
+step = 11;
+case 11:
+if (!(this_tok_input.charCodeAt(offset+2) === 0x3d)) { step = 16; continue; }
+step = 15;
+case 15:
+ len = 3;
+step = 17;
+continue;
+case 16:
+ len = 2;
+case 17:
+step = 8;
+case 8:
 this_tok_pos += len;
       return 9;
 return;
@@ -1481,81 +1485,81 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var len, offset, d, e, A;
-return function(thawValue){
+return function inside_this_tok_parseLtgtPunctuator(thawValue){
   while (true) {
     switch (step) {
       case 1:
 len = 1;
        offset = this_tok_lastOffset;
       if (!(offset+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
  d = this_tok_input.charCodeAt(offset+1);
-      if (!(d === 0x3d)) { step = 7; continue; }
-step = 6;
-case 6:
- len = 2;
-step = 8;
-continue;
+      if (!(d === 0x3d)) { step = 8; continue; }
+step = 7;
 case 7:
- if (!(d === c)) { step = 10; continue; }
+ len = 2;
 step = 9;
-case 9:
-len = 2;
-        if (!(offset+2 >= this_tok_len)) { step = 13; continue; }
-step = 12;
-case 12:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v1;
-else f1 = null;
-case 15:
-step = 13;
-case 13:
- e = this_tok_input.charCodeAt(offset+2);
-        if (!(e === 0x3d)) { step = 17; continue; }
-step = 16;
-case 16:
- len = 3;
-step = 18;
 continue;
-case 17:
-   A = e === c ;
-if (!A) { step = 20; continue; }
-step = 19;
-case 19:
- A =  c !== 0x3c; 
-step = 20;
-case 20:
-if (!A) { step = 23; continue; }
-step = 22;
-case 22:
-len = 3;
-          if (!(offset+3 >= this_tok_len)) { step = 26; continue; }
-step = 25;
-case 25:
- v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v2;
-else f2 = null;
-case 28:
-step = 26;
-case 26:
-if (!(this_tok_input.charCodeAt(offset+3) === 0x3d)) { step = 30; continue; }
-step = 29;
-case 29:
- len = 4;
-case 30:
-step = 23;
-case 23:
-case 18:
 case 8:
+ if (!(d === c)) { step = 11; continue; }
 step = 10;
 case 10:
+len = 2;
+        if (!(offset+2 >= this_tok_len)) { step = 14; continue; }
+case 13:
+ step = 16; case 16:
+v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+if (frozen) return v1;
+else f1 = null;
+case 17:
+step = 14;
+case 14:
+ e = this_tok_input.charCodeAt(offset+2);
+        if (!(e === 0x3d)) { step = 19; continue; }
+step = 18;
+case 18:
+ len = 3;
+step = 20;
+continue;
+case 19:
+   A = e === c ;
+if (!A) { step = 22; continue; }
+step = 21;
+case 21:
+ A =  c !== 0x3c; 
+step = 22;
+case 22:
+if (!A) { step = 25; continue; }
+step = 24;
+case 24:
+len = 3;
+          if (!(offset+3 >= this_tok_len)) { step = 28; continue; }
+case 27:
+ step = 30; case 30:
+v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+if (frozen) return v2;
+else f2 = null;
+case 31:
+step = 28;
+case 28:
+if (!(this_tok_input.charCodeAt(offset+3) === 0x3d)) { step = 33; continue; }
+step = 32;
+case 32:
+ len = 4;
+case 33:
+step = 25;
+case 25:
+case 20:
+case 9:
+step = 11;
+case 11:
 this_tok_pos += len;
       return 9;
 return;
@@ -1569,26 +1573,26 @@ var step = 1;
 var v0;
 var f0;
 var len;
-return function(thawValue){
+return function inside_this_tok_parseCompoundAssignment(thawValue){
   while (true) {
     switch (step) {
       case 1:
 len = 1;
       if (!(this_tok_pos+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
-if (!(this_tok_input.charCodeAt(this_tok_pos+1) === 0x3d)) { step = 7; continue; }
-step = 6;
-case 6:
- len = 2;
+if (!(this_tok_input.charCodeAt(this_tok_pos+1) === 0x3d)) { step = 8; continue; }
 step = 7;
 case 7:
+ len = 2;
+step = 8;
+case 8:
 this_tok_pos += len;
       return 9;
 return;
@@ -1599,7 +1603,7 @@ return;
 }
   function this_tok_parseDivPunctuator(d){
 var step = 1;
-return function(thawValue){
+return function inside_this_tok_parseDivPunctuator(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1627,13 +1631,13 @@ var step = 1;
 var v0;
 var f0;
 var pos, A, c;
-return function(thawValue){
+return function inside_this_tok_parseSingleComment(thawValue){
   while (true) {
     switch (step) {
       case 1:
 pos = this_tok_pos + 1;
 // note: although we _know_ a newline will happen next; explicitly checking for it is slower than not.
-// do start [black=2246]
+// do start [black=2238]
 step = 2;
 case 2:
 A = ++pos >= this_tok_len ;
@@ -1652,7 +1656,7 @@ case 5:
 if (!A) { step = 10; continue; }
 step = 9;
 case 9:
-// break to loop [black=2246] end
+// break to loop [black=2238] end
 step = 3;
 continue;
 case 10:
@@ -1679,13 +1683,13 @@ case 19:
 if (!A) { step = 22; continue; }
 step = 21;
 case 21:
-// break to loop [black=2246] end
+// break to loop [black=2238] end
 step = 3;
 continue; // c !== ORD_PS && c !== ORD_LS
 step = 22;
 case 22:
- if (true) { step = 2; continue; } // jump to start of loop [black=2246]
-// do end [black=2246]
+ if (true) { step = 2; continue; } // jump to start of loop [black=2238]
+// do end [black=2238]
 step = 3;
 case 3:
 this_tok_pos = pos;
@@ -1725,7 +1729,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var pos, noNewline, c, d, A;
-return function(thawValue){
+return function inside_this_tok_parseMultiComment(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1733,86 +1737,87 @@ pos = this_tok_pos + 2;
 noNewline = true;
        c = 0;
       if (!(pos >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
  d = this_tok_input.charCodeAt(pos);
-// while start [black=2432]
-step = 6;
-case 6:
-if (!(!(d))) { step = 9; continue; }
-step = 8;
-case 8:
-// break to loop [black=2432] end
+// while start [black=2424]
 step = 7;
-continue;
+case 7:
+if (!(!(d))) { step = 10; continue; }
+step = 9;
 case 9:
+// break to loop [black=2424] end
+step = 8;
+continue;
+case 10:
 c = d;
-        if (!(++pos >= this_tok_len)) { step = 12; continue; }
-step = 11;
-case 11:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+        if (!(++pos >= this_tok_len)) { step = 13; continue; }
+case 12:
+ step = 15; case 15:
+v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 14:
-step = 12;
-case 12:
+case 16:
+step = 13;
+case 13:
 d = this_tok_input.charCodeAt(pos);
 A = c === 0x2a ;
-if (!A) { step = 16; continue; }
-step = 15;
-case 15:
+if (!A) { step = 18; continue; }
+step = 17;
+case 17:
  A =  d === 0x2f; 
-step = 16;
-case 16:
-if (!A) { step = 19; continue; }
 step = 18;
 case 18:
+if (!A) { step = 21; continue; }
+step = 20;
+case 20:
 this_tok_pos = pos+1;
           // yes I hate the double negation, but it saves doing ! above
-          if (!(!noNewline)) { step = 22; continue; }
-step = 21;
-case 21:
+          if (!(!noNewline)) { step = 24; continue; }
+step = 23;
+case 23:
  this_tok_lastNewline = true;
-step = 22;
-case 22:
-return 18;
-step = 19;
-case 19:
-if (!(noNewline)) { step = 25; continue; }
 step = 24;
 case 24:
+return 18;
+step = 21;
+case 21:
+if (!(noNewline)) { step = 27; continue; }
+step = 26;
+case 26:
    A = c === 0x0D ;
-if (!(!A)) { step = 28; continue; }
-step = 27;
-case 27:
+if (!(!A)) { step = 30; continue; }
+step = 29;
+case 29:
  A =  c === 0x0A ;  
-step = 28;
-case 28:
-if (!(!A)) { step = 31; continue; }
 step = 30;
 case 30:
+if (!(!A)) { step = 33; continue; }
+step = 32;
+case 32:
  A =  (c ^ 0x2028) <= 1; 
-step = 31;
-case 31:
+step = 33;
+case 33:
 noNewline = !(A); // c === ORD_PS || c === ORD_LS
-step = 25;
-case 25:
-// back to start of while [black=2432]
-step = 6;
+step = 27;
+case 27:
+// back to start of while [black=2424]
+step = 7;
 continue
-// end of while [black=2432]
-case 7:
+// end of while [black=2424]
+case 8:
+step = 35; case 35:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Unterminated multi line comment found'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 33;
-case 33:
+step = 36;
+case 36:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -1823,7 +1828,7 @@ return;
 var step = 1;
 var v0;
 var f0;
-return function(thawValue){
+return function inside_this_tok_parseSingleString(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1845,7 +1850,7 @@ return;
 var step = 1;
 var v0;
 var f0;
-return function(thawValue){
+return function inside_this_tok_parseDoubleString(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -1868,98 +1873,98 @@ var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
 var pos, c, A;
-return function(thawValue){
+return function inside_this_tok_parseString(thawValue){
   while (true) {
     switch (step) {
       case 1:
 pos = this_tok_pos + 1;
-// do start [black=2628]
+// do start [black=2620]
 step = 2;
 case 2:
 if (!(pos >= this_tok_len)) { step = 5; continue; }
-step = 4;
 case 4:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 7; case 7:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 7:
+case 8:
 step = 5;
 case 5:
  c = this_tok_input.charCodeAt(pos++);
-if (!(c === targetChar)) { step = 9; continue; }
-step = 8;
-case 8:
+if (!(c === targetChar)) { step = 10; continue; }
+step = 9;
+case 9:
 this_tok_pos = pos;
           return 10;
 // &8: all newlines and backslash have their 4th bit set (prevents additional checks for 63%)
-step = 9;
-case 9:
-if (!((c & 8) === 8)) { step = 12; continue; }
-step = 11;
-case 11:
-if (!(c === 0x5c)) { step = 15; continue; }
-case 14:
-step = 17;
-case 17:
+step = 10;
+case 10:
+if (!((c & 8) === 8)) { step = 13; continue; }
+step = 12;
+case 12:
+if (!(c === 0x5c)) { step = 16; continue; }
+case 15:
+step = 18;
+case 18:
 v1 = (f1 = f1 || this_tok_parseStringEscape(pos))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 18;
-case 18:
+step = 19;
+case 19:
 pos = v1;
             // c&83<3: it's a filter :) all newlines have their 5th bit set and 7th bit unset.
             // none of them have first AND second bit set. this filters about 95%
             // ftr: c&80 filters 84%, c&3<3 filters 75%. together they filter 95% :)
-step = 16;
+step = 17;
 continue;
-case 15:
+case 16:
    A = (c & 83) < 3 ;
-if (!A) { step = 20; continue; }
-step = 19;
-case 19:
-   A = c === 0x0A ;
-if (!(!A)) { step = 23; continue; }
-step = 22;
-case 22:
- A =  c === 0x0D ;  
-step = 23;
-case 23:
-if (!(!A)) { step = 26; continue; }
-step = 25;
-case 25:
- A =  c === 0x2028 ;  
-step = 26;
-case 26:
-if (!(!A)) { step = 29; continue; }
-step = 28;
-case 28:
- A =  c === 0x2029; 
-step = 29;
-case 29:
-A =  (A); 
+if (!A) { step = 21; continue; }
 step = 20;
 case 20:
-if (!A) { step = 32; continue; }
-step = 31;
-case 31:
+   A = c === 0x0A ;
+if (!(!A)) { step = 24; continue; }
+step = 23;
+case 23:
+ A =  c === 0x0D ;  
+step = 24;
+case 24:
+if (!(!A)) { step = 27; continue; }
+step = 26;
+case 26:
+ A =  c === 0x2028 ;  
+step = 27;
+case 27:
+if (!(!A)) { step = 30; continue; }
+step = 29;
+case 29:
+ A =  c === 0x2029; 
+step = 30;
+case 30:
+A =  (A); 
+step = 21;
+case 21:
+if (!A) { step = 33; continue; }
+case 32:
+step = 35; case 35:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('No newlines in strings!'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 34;
-case 34:
-case 32:
-case 16:
-step = 12;
-case 12:
- if (c) { step = 2; continue; } // jump to start of loop [black=2628]
-// do end [black=2628]
-step = 3;
+step = 36;
+case 36:
+case 33:
+case 17:
+step = 13;
+case 13:
+ if (c) { step = 2; continue; } // jump to start of loop [black=2620]
+// do end [black=2620]
 case 3:
+step = 37; case 37:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Unterminated string found'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 35;
-case 35:
+step = 38;
+case 38:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -1971,130 +1976,132 @@ var step = 1;
 var v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var c, A;
-return function(thawValue){
+return function inside_this_tok_parseStringEscape(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(pos >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
  c = this_tok_input.charCodeAt(pos);
 // unicode escapes
-      if (!(c === 0x75)) { step = 7; continue; }
-case 6:
-step = 9;
-case 9:
+      if (!(c === 0x75)) { step = 8; continue; }
+case 7:
+step = 10;
+case 10:
 v1 = (f1 = f1 || this_tok_parseUnicodeEscapeBody(pos+1))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 10;
-case 10:
-if (!(v1)) { step = 12; continue; }
 step = 11;
 case 11:
- pos += 4;
-step = 13;
-continue;
+if (!(v1)) { step = 13; continue; }
+step = 12;
 case 12:
- v2 = (f2 = f2 || this_tok_throwSyntaxError('Invalid unicode escape'))(thawValue);
+ pos += 4;
+step = 14;
+continue;
+case 13:
+ step = 15; case 15:
+v2 = (f2 = f2 || this_tok_throwSyntaxError('Invalid unicode escape'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 14;
-case 14:
+step = 16;
+case 16:
 // line continuation; skip windows newlines as if they're one char
-case 13:
-step = 8;
+case 14:
+step = 9;
 continue;
-case 7:
- if (!(c === 0x0D)) { step = 16; continue; }
-step = 15;
-case 15:
+case 8:
+ if (!(c === 0x0D)) { step = 18; continue; }
+step = 17;
+case 17:
 // keep in mind, we are already skipping a char. no need to check
         // for other line terminators here. we are merely checking to see
         // whether we need to skip an additional character for CRLF.
-        if (!(pos+1 >= this_tok_len)) { step = 19; continue; }
-step = 18;
-case 18:
- v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
+        if (!(pos+1 >= this_tok_len)) { step = 21; continue; }
+case 20:
+ step = 23; case 23:
+v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v3;
 else f3 = null;
+case 24:
+step = 21;
 case 21:
-step = 19;
-case 19:
-if (!(this_tok_input.charCodeAt(pos+1) === 0x0A)) { step = 23; continue; }
-step = 22;
-case 22:
- ++pos;
-      // hex escapes
-case 23:
-step = 17;
-continue;
-case 16:
- if (!(c === 0x78)) { step = 26; continue; }
+if (!(this_tok_input.charCodeAt(pos+1) === 0x0A)) { step = 26; continue; }
 step = 25;
 case 25:
-if (!(pos+1 >= this_tok_len)) { step = 29; continue; }
+ ++pos;
+      // hex escapes
+case 26:
+step = 19;
+continue;
+case 18:
+ if (!(c === 0x78)) { step = 29; continue; }
 step = 28;
 case 28:
- v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
+if (!(pos+1 >= this_tok_len)) { step = 32; continue; }
+case 31:
+ step = 34; case 34:
+v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-case 31:
-step = 29;
-case 29:
-if (!(pos+2 >= this_tok_len)) { step = 33; continue; }
+case 35:
 step = 32;
 case 32:
- v5 = (f5 = f5 || this_tok_getMoreInput(false))(thawValue);
+if (!(pos+2 >= this_tok_len)) { step = 37; continue; }
+case 36:
+ step = 39; case 39:
+v5 = (f5 = f5 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 35;
-case 35:
-case 33:
-step = 36;
-case 36:
+step = 40;
+case 40:
+case 37:
+step = 41;
+case 41:
 v6 = (f6 = f6 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 37;
-case 37:
+step = 42;
+case 42:
  A = v6 ;
-if (!A) { step = 39; continue; }
-case 38:
-step = 41;
-case 41:
+if (!A) { step = 44; continue; }
+case 43:
+step = 46;
+case 46:
 v7 = (f7 = f7 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 42;
-case 42:
+step = 47;
+case 47:
 A =  v7; 
-step = 39;
-case 39:
-if (!A) { step = 44; continue; }
-step = 43;
-case 43:
- pos += 2;
-step = 45;
-continue;
+step = 44;
 case 44:
- v8 = (f8 = f8 || this_tok_throwSyntaxError('Invalid hex escape'))(thawValue);
+if (!A) { step = 49; continue; }
+step = 48;
+case 48:
+ pos += 2;
+step = 50;
+continue;
+case 49:
+ step = 51; case 51:
+v8 = (f8 = f8 || this_tok_throwSyntaxError('Invalid hex escape'))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-step = 46;
-case 46:
-case 45:
-step = 8;
-case 8:
-case 17:
-step = 26;
-case 26:
+step = 52;
+case 52:
+case 50:
+step = 9;
+case 9:
+case 19:
+step = 29;
+case 29:
 return pos+1;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -2107,91 +2114,91 @@ var step = 1;
 var v7, v6, v5, v4, v3, v2, v1, v0;
 var f7, f6, f5, f4, f3, f2, f1, f0;
 var input, A;
-return function(thawValue){
+return function inside_this_tok_parseUnicodeEscapeBody(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(pos >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
-if (!(pos+1 >= this_tok_len)) { step = 7; continue; }
-step = 6;
-case 6:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+if (!(pos+1 >= this_tok_len)) { step = 8; continue; }
+case 7:
+ step = 10; case 10:
+v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 9:
-step = 7;
-case 7:
-if (!(pos+2 >= this_tok_len)) { step = 11; continue; }
-step = 10;
-case 10:
- v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+case 11:
+step = 8;
+case 8:
+if (!(pos+2 >= this_tok_len)) { step = 13; continue; }
+case 12:
+ step = 15; case 15:
+v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
+case 16:
+step = 13;
 case 13:
-step = 11;
-case 11:
-if (!(pos+3 >= this_tok_len)) { step = 15; continue; }
-step = 14;
-case 14:
- v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
+if (!(pos+3 >= this_tok_len)) { step = 18; continue; }
+case 17:
+ step = 20; case 20:
+v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 17:
-step = 15;
-case 15:
- input = this_tok_input; // cache input now, it wont change any further
+case 21:
 step = 18;
 case 18:
+ input = this_tok_input; // cache input now, it wont change any further
+step = 22;
+case 22:
 v4 = (f4 = f4 || this_tok_parseHexDigit(input.charCodeAt(pos)))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 19;
-case 19:
- A = v4 ;
-if (!A) { step = 21; continue; }
-case 20:
 step = 23;
 case 23:
+ A = v4 ;
+if (!A) { step = 25; continue; }
+case 24:
+step = 27;
+case 27:
 v5 = (f5 = f5 || this_tok_parseHexDigit(input.charCodeAt(pos+1)))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 24;
-case 24:
-A =  v5 ;  
-step = 21;
-case 21:
-if (!A) { step = 26; continue; }
-case 25:
 step = 28;
 case 28:
+A =  v5 ;  
+step = 25;
+case 25:
+if (!A) { step = 30; continue; }
+case 29:
+step = 32;
+case 32:
 v6 = (f6 = f6 || this_tok_parseHexDigit(input.charCodeAt(pos+2)))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 29;
-case 29:
-A =  v6 ;  
-step = 26;
-case 26:
-if (!A) { step = 31; continue; }
-case 30:
 step = 33;
 case 33:
+A =  v6 ;  
+step = 30;
+case 30:
+if (!A) { step = 35; continue; }
+case 34:
+step = 37;
+case 37:
 v7 = (f7 = f7 || this_tok_parseHexDigit(input.charCodeAt(pos+3)))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 34;
-case 34:
+step = 38;
+case 38:
 A =  v7; 
-step = 31;
-case 31:
+step = 35;
+case 35:
 return A;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -2202,7 +2209,7 @@ return;
   function this_tok_parseHexDigit(c){
 var step = 1;
 var A;
-return function(thawValue){
+return function inside_this_tok_parseHexDigit(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -2253,39 +2260,39 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var c, A;
-return function(thawValue){
+return function inside_this_tok_parseLeadingDot(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(this_tok_pos+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
  c = this_tok_input.charCodeAt(this_tok_pos+1);
 A = c >= 0x30 ;
-if (!A) { step = 7; continue; }
-step = 6;
-case 6:
- A =  c <= 0x39; 
+if (!A) { step = 8; continue; }
 step = 7;
 case 7:
-if (!A) { step = 10; continue; }
-case 9:
-step = 12;
-case 12:
+ A =  c <= 0x39; 
+step = 8;
+case 8:
+if (!A) { step = 11; continue; }
+case 10:
+step = 13;
+case 13:
 v1 = (f1 = f1 || this_tok_parseAfterDot(this_tok_pos+2))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 13;
-case 13:
+step = 14;
+case 14:
 return v1;
-step = 10;
-case 10:
+step = 11;
+case 11:
 ++this_tok_pos;
       return 9;
 return;
@@ -2299,7 +2306,7 @@ var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
 var A, d;
-return function(thawValue){
+return function inside_this_tok_parseLeadingZero(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -2338,52 +2345,53 @@ if (!A) { step = 14; continue; }
 step = 13;
 case 13:
   // x or X
-        v1 = (f1 = f1 || this_tok_parseHexNumber())(thawValue);
+        step = 16; case 16:
+v1 = (f1 = f1 || this_tok_parseHexNumber())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 16:
+case 17:
 step = 15;
 continue;
 case 14:
- if (!(d === 0x2e)) { step = 18; continue; }
-step = 17;
-case 17:
+ if (!(d === 0x2e)) { step = 19; continue; }
+case 18:
+step = 21; case 21:
 v2 = (f2 = f2 || this_tok_parseAfterDot(this_tok_pos+2))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 20:
-step = 19;
-continue;
-case 18:
-   A = d <= 0x39 ;
-if (!A) { step = 22; continue; }
-step = 21;
-case 21:
- A =  d >= 0x30; 
-step = 22;
 case 22:
-if (!A) { step = 25; continue; }
+step = 20;
+continue;
+case 19:
+   A = d <= 0x39 ;
+if (!A) { step = 24; continue; }
+step = 23;
+case 23:
+ A =  d >= 0x30; 
 step = 24;
 case 24:
+if (!A) { step = 27; continue; }
+case 26:
+step = 29; case 29:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Invalid octal literal'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 27:
-step = 26;
-continue;
-case 25:
+case 30:
 step = 28;
-case 28:
+continue;
+case 27:
+step = 31;
+case 31:
 v4 = (f4 = f4 || this_tok_parseExponent(d, this_tok_pos+1))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 29;
-case 29:
+step = 32;
+case 32:
 this_tok_pos = v4;
-case 26:
+case 28:
 case 15:
-step = 19;
-case 19:
+step = 20;
+case 20:
 return 7;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -2396,13 +2404,13 @@ var step = 1;
 var v0;
 var f0;
 var pos, A, c;
-return function(thawValue){
+return function inside_this_tok_parseHexNumber(thawValue){
   while (true) {
     switch (step) {
       case 1:
 pos = this_tok_pos + 1;
 // (could use OR, eliminate casing branch)
-// do start [black=3546]
+// do start [black=3538]
 step = 2;
 case 2:
 A = ++pos >= this_tok_len ;
@@ -2421,7 +2429,7 @@ case 5:
 if (!A) { step = 10; continue; }
 step = 9;
 case 9:
-// break to loop [black=3546] end
+// break to loop [black=3538] end
 step = 3;
 continue;
 case 10:
@@ -2460,8 +2468,8 @@ case 25:
 A =  (A); 
 step = 22;
 case 22:
-if (A) { step = 2; continue; } // jump to start of loop [black=3546]
-// do end [black=3546]
+if (A) { step = 2; continue; } // jump to start of loop [black=3538]
+// do end [black=3538]
 step = 3;
 case 3:
 this_tok_pos = pos;
@@ -2477,13 +2485,13 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var pos, A, c;
-return function(thawValue){
+return function inside_this_tok_parseDecimalNumber(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // just encountered a 1-9 as the start of a token...
 pos = this_tok_pos;
-// do start [black=3750]
+// do start [black=3742]
 step = 2;
 case 2:
 A = ++pos >= this_tok_len ;
@@ -2502,7 +2510,7 @@ case 5:
 if (!A) { step = 10; continue; }
 step = 9;
 case 9:
-// break to loop [black=3750] end
+// break to loop [black=3742] end
 step = 3;
 continue;
 case 10:
@@ -2514,8 +2522,8 @@ case 12:
  A =  c <= 0x39; 
 step = 13;
 case 13:
-if (A) { step = 2; continue; } // jump to start of loop [black=3750]
-// do end [black=3750]
+if (A) { step = 2; continue; } // jump to start of loop [black=3742]
+// do end [black=3742]
 step = 3;
 case 3:
 if (!(c === 0x2e)) { step = 16; continue; }
@@ -2549,7 +2557,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var A, c;
-return function(thawValue){
+return function inside_this_tok_parseAfterDot(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -2569,7 +2577,7 @@ case 3:
 if (!A) { step = 8; continue; }
 step = 7;
 case 7:
-// do start [black=3911]
+// do start [black=3903]
 step = 10;
 case 10:
    c = this_tok_input.charCodeAt(pos);
@@ -2599,8 +2607,8 @@ case 19:
 A =  (A); 
 step = 16;
 case 16:
-if (A) { step = 10; continue; } // jump to start of loop [black=3911]
-// do end [black=3911]
+if (A) { step = 10; continue; } // jump to start of loop [black=3903]
+// do end [black=3903]
 case 11:
 case 8:
 step = 23;
@@ -2624,7 +2632,7 @@ var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
 var A;
-return function(thawValue){
+return function inside_this_tok_parseExponent(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -2639,124 +2647,125 @@ if (!A) { step = 6; continue; }
 step = 5;
 case 5:
 if (!(++pos >= this_tok_len)) { step = 9; continue; }
-step = 8;
 case 8:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 11; case 11:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 11:
+case 12:
 step = 9;
 case 9:
 c = this_tok_input.charCodeAt(pos);
         // sign is optional (especially for plus)
           A = c === 0x2d ;
-if (!(!A)) { step = 13; continue; }
-step = 12;
-case 12:
- A =  c === 0x2b; 
+if (!(!A)) { step = 14; continue; }
 step = 13;
 case 13:
-if (!A) { step = 16; continue; }
-step = 15;
-case 15:
-if (!(++pos >= this_tok_len)) { step = 19; continue; }
-step = 18;
-case 18:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v1;
-else f1 = null;
-step = 21;
-case 21:
- // must have at least one char after +-
-step = 19;
-case 19:
-c = this_tok_input.charCodeAt(pos);
-// first digit is mandatory
+ A =  c === 0x2b; 
+step = 14;
+case 14:
+if (!A) { step = 17; continue; }
 step = 16;
 case 16:
-  A = c >= 0x30 ;
-if (!A) { step = 23; continue; }
-step = 22;
-case 22:
- A =  c <= 0x39; 
+if (!(++pos >= this_tok_len)) { step = 20; continue; }
+case 19:
+ step = 22; case 22:
+v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+if (frozen) return v1;
+else f1 = null;
 step = 23;
 case 23:
-if (!A) { step = 26; continue; }
+ // must have at least one char after +-
+step = 20;
+case 20:
+c = this_tok_input.charCodeAt(pos);
+// first digit is mandatory
+step = 17;
+case 17:
+  A = c >= 0x30 ;
+if (!A) { step = 25; continue; }
+step = 24;
+case 24:
+ A =  c <= 0x39; 
 step = 25;
 case 25:
+if (!A) { step = 28; continue; }
+step = 27;
+case 27:
 A = ++pos >= this_tok_len ;
-if (!A) { step = 29; continue; }
-case 28:
-step = 31;
-case 31:
+if (!A) { step = 31; continue; }
+case 30:
+step = 33;
+case 33:
 v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 32;
-case 32:
-A =  !v2; 
-step = 29;
-case 29:
-if (!A) { step = 34; continue; }
-step = 33;
-case 33:
- return pos;
 step = 34;
 case 34:
-c = this_tok_input.charCodeAt(pos);
-step = 27;
-continue;
-case 26:
- v3 = (f3 = f3 || this_tok_throwSyntaxError('Missing required digits after exponent'))(thawValue);
-if (frozen) return v3;
-else f3 = null;
+A =  !v2; 
+step = 31;
+case 31:
+if (!A) { step = 36; continue; }
+step = 35;
+case 35:
+ return pos;
 step = 36;
 case 36:
-// rest is optional
-step = 27;
-case 27:
-// while start [black=4234]
-step = 37;
-case 37:
-  A = c >= 0x30 ;
-if (!A) { step = 40; continue; }
+c = this_tok_input.charCodeAt(pos);
+step = 29;
+continue;
+case 28:
+ step = 38; case 38:
+v3 = (f3 = f3 || this_tok_throwSyntaxError('Missing required digits after exponent'))(thawValue);
+if (frozen) return v3;
+else f3 = null;
 step = 39;
 case 39:
- A =  c <= 0x39; 
+// rest is optional
+step = 29;
+case 29:
+// while start [black=4226]
 step = 40;
 case 40:
-if (!(!A)) { step = 43; continue; }
+  A = c >= 0x30 ;
+if (!A) { step = 43; continue; }
 step = 42;
 case 42:
-// break to loop [black=4234] end
-step = 38;
-continue;
+ A =  c <= 0x39; 
+step = 43;
 case 43:
-A = ++pos >= this_tok_len ;
-if (!A) { step = 46; continue; }
+if (!(!A)) { step = 46; continue; }
+step = 45;
 case 45:
-step = 48;
+// break to loop [black=4226] end
+step = 41;
+continue;
+case 46:
+A = ++pos >= this_tok_len ;
+if (!A) { step = 49; continue; }
 case 48:
+step = 51;
+case 51:
 v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
+step = 52;
+case 52:
+A =  !v4; 
 step = 49;
 case 49:
-A =  !v4; 
-step = 46;
-case 46:
-if (!A) { step = 51; continue; }
-step = 50;
-case 50:
+if (!A) { step = 54; continue; }
+step = 53;
+case 53:
  return pos;
-step = 51;
-case 51:
+step = 54;
+case 54:
 c = this_tok_input.charCodeAt(pos);
-// back to start of while [black=4234]
-step = 37;
+// back to start of while [black=4226]
+step = 40;
 continue
-// end of while [black=4234]
-case 38:
+// end of while [black=4226]
+case 41:
 step = 6;
 case 6:
 return pos;
@@ -2770,7 +2779,7 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_tok_parseRegex(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -2783,16 +2792,17 @@ return function(thawValue){
       // /foo(?!foo)bar/
       // /foo\dbar/
       this_tok_pos++;
-      v0 = (f0 = f0 || this_tok_regexBody())(thawValue);
+      step = 2; case 2:
+v0 = (f0 = f0 || this_tok_regexBody())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_tok_regexFlags())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return 8;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -2802,128 +2812,141 @@ return;
 }
   function this_tok_regexBody(){
 var step = 1;
-var v5, v4, v3, v2, v1, v0;
-var f5, f4, f3, f2, f1, f0;
-var len, c, d, A;
-return function(thawValue){
+var v6, v5, v4, v3, v2, v1, v0;
+var f6, f5, f4, f3, f2, f1, f0;
+var A, c, d;
+return function inside_this_tok_regexBody(thawValue){
   while (true) {
     switch (step) {
       case 1:
-len = this_tok_input.length;
-      // TOFIX: should try to have the regex parser only use pos, not this.pos
-// while start [black=4360]
+// TOFIX: should try to have the regex parser only use pos, not this.pos
+// while start [black=4345]
 step = 2;
 case 2:
-if (!(!(this_tok_pos < len))) { step = 5; continue; }
-step = 4;
+A = this_tok_pos >= this_tok_len ;
+if (!A) { step = 5; continue; }
 case 4:
-// break to loop [black=4360] end
-step = 3;
-continue;
-case 5:
-if (!(this_tok_pos >= this_tok_len)) { step = 8; continue; }
 step = 7;
 case 7:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 10:
 step = 8;
 case 8:
- c = this_tok_input.charCodeAt(this_tok_pos++);
-if (!(c === 0x5c)) { step = 12; continue; }
-step = 11;
-case 11:
-  // backslash
-          if (!(this_tok_pos >= this_tok_len)) { step = 15; continue; }
-step = 14;
-case 14:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+A =  !v0; 
+step = 5;
+case 5:
+if (!A) { step = 10; continue; }
+case 9:
+ step = 12; case 12:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('Unterminated regular expression at eof'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
+case 13:
+step = 10;
+case 10:
+ c = this_tok_input.charCodeAt(this_tok_pos++);
+if (!(c === 0x5c)) { step = 15; continue; }
+step = 14;
+case 14:
+  // backslash
+            A = this_tok_pos >= this_tok_len ;
+if (!A) { step = 18; continue; }
 case 17:
-step = 15;
-case 15:
- d = this_tok_input.charCodeAt(this_tok_pos++);
-            A = d === 0x0A ;
-if (!(!A)) { step = 19; continue; }
-step = 18;
-case 18:
- A =  d === 0x0D ;  
-step = 19;
-case 19:
-if (!(!A)) { step = 22; continue; }
-step = 21;
-case 21:
- A =  (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/; 
-step = 22;
-case 22:
-if (!A) { step = 25; continue; }
-step = 24;
-case 24:
-v2 = (f2 = f2 || this_tok_throwSyntaxError('Newline can not be escaped in regular expression'))(thawValue);
+step = 20;
+case 20:
+v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 27;
-case 27:
-case 25:
-step = 13;
-continue;
-case 12:
- if (!(c === 0x2f)) { step = 29; continue; }
-step = 28;
-case 28:
- return;
-step = 30;
-continue;
-case 29:
- if (!(c === 0x5b)) { step = 32; continue; }
-step = 31;
-case 31:
- v3 = (f3 = f3 || this_tok_regexClass())(thawValue);
+step = 21;
+case 21:
+A =  !v2; 
+step = 18;
+case 18:
+if (!A) { step = 23; continue; }
+case 22:
+ step = 25; case 25:
+v3 = (f3 = f3 || this_tok_throwSyntaxError('Unterminated regular expression escape at eof'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 34:
-step = 33;
-continue;
-case 32:
-   A = c === 0x0A ;
-if (!(!A)) { step = 36; continue; }
-step = 35;
-case 35:
- A =  c === 0x0D ;  
-step = 36;
-case 36:
-if (!(!A)) { step = 39; continue; }
-step = 38;
-case 38:
- A =  (c ^ 0x2028) <= 1 /*c === ORD_PS || c === ORD_LS*/; 
-step = 39;
-case 39:
-if (!A) { step = 42; continue; }
-step = 41;
-case 41:
-v4 = (f4 = f4 || this_tok_throwSyntaxError('Newline can not be escaped in regular expression ['+c+']'))(thawValue);
+case 26:
+step = 23;
+case 23:
+ d = this_tok_input.charCodeAt(this_tok_pos++);
+            A = d === 0x0A ;
+if (!(!A)) { step = 28; continue; }
+step = 27;
+case 27:
+ A =  d === 0x0D ;  
+step = 28;
+case 28:
+if (!(!A)) { step = 31; continue; }
+step = 30;
+case 30:
+ A =  (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/; 
+step = 31;
+case 31:
+if (!A) { step = 34; continue; }
+case 33:
+step = 36; case 36:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Newline can not be escaped in regular expression'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 44;
-case 44:
-case 42:
-step = 13;
-case 13:
-case 30:
-step = 33;
-case 33:
-// back to start of while [black=4360]
-step = 2;
-continue
-// end of while [black=4360]
-case 3:
-v5 = (f5 = f5 || this_tok_throwSyntaxError('Unterminated regular expression at eof'))(thawValue);
+step = 37;
+case 37:
+case 34:
+step = 16;
+continue;
+case 15:
+ if (!(c === 0x2f)) { step = 39; continue; }
+step = 38;
+case 38:
+ return;
+step = 40;
+continue;
+case 39:
+ if (!(c === 0x5b)) { step = 42; continue; }
+case 41:
+ step = 44; case 44:
+v5 = (f5 = f5 || this_tok_regexClass())(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 45;
 case 45:
+step = 43;
+continue;
+case 42:
+   A = c === 0x0A ;
+if (!(!A)) { step = 47; continue; }
+step = 46;
+case 46:
+ A =  c === 0x0D ;  
+step = 47;
+case 47:
+if (!(!A)) { step = 50; continue; }
+step = 49;
+case 49:
+ A =  (c ^ 0x2028) <= 1 /*c === ORD_PS || c === ORD_LS*/; 
+step = 50;
+case 50:
+if (!A) { step = 53; continue; }
+case 52:
+step = 55; case 55:
+v6 = (f6 = f6 || this_tok_throwSyntaxError('Newline can not be escaped in regular expression ['+c+']'))(thawValue);
+if (frozen) return v6;
+else f6 = null;
+step = 56;
+case 56:
+case 53:
+step = 16;
+case 16:
+case 40:
+step = 43;
+case 43:
+// back to start of while [black=4345]
+step = 2;
+continue
+// end of while [black=4345]
+case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -2934,125 +2957,119 @@ return;
 var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
-var len, pos, c, d, A;
-return function(thawValue){
+var pos, A, c, d;
+return function inside_this_tok_regexClass(thawValue){
   while (true) {
     switch (step) {
       case 1:
-len = this_tok_input.length;
-       pos = this_tok_pos;
-// while start [black=4599]
+pos = this_tok_pos;
+// while start [black=4615]
 step = 2;
 case 2:
-if (!(pos >= this_tok_len)) { step = 5; continue; }
-step = 4;
+A = pos >= this_tok_len ;
+if (!A) { step = 5; continue; }
 case 4:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+step = 7;
+case 7:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 7:
-step = 5;
-case 5:
- c = this_tok_input.charCodeAt(pos++);
-if (!(c === 0x5d)) { step = 9; continue; }
 step = 8;
 case 8:
-this_tok_pos = pos;
-          return;
-step = 9;
+A =  !v0; 
+step = 5;
+case 5:
+if (!A) { step = 10; continue; }
 case 9:
-if (!(c === 0x5c)) { step = 12; continue; }
-step = 11;
-case 11:
-// there's a historical dispute over whether backslashes in regex classes
-          // add a slash or its next char. ES5 settled it to "it's an escape".
-          if (!(this_tok_options.regexNoClassEscape)) { step = 15; continue; }
-step = 14;
-case 14:
-if (!(pos >= this_tok_len)) { step = 18; continue; }
-step = 17;
-case 17:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+step = 12; case 12:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('Unterminated regular expression'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
+case 13:
+step = 10;
+case 10:
+ c = this_tok_input.charCodeAt(pos++);
+if (!(c === 0x5d)) { step = 15; continue; }
+step = 14;
+case 14:
+this_tok_pos = pos;
+          return;
+step = 15;
+case 15:
+if (!(c === 0x5c)) { step = 18; continue; }
+step = 17;
+case 17:
+// there's a historical dispute over whether backslashes in regex classes
+          // add a slash or its next char. ES5 settled it to "it's an escape".
+          if (!(this_tok_options.regexNoClassEscape)) { step = 21; continue; }
+step = 20;
 case 20:
-step = 18;
-case 18:
- d = this_tok_input.charCodeAt(pos++);
-              A = d === 0x0A ;
-if (!(!A)) { step = 22; continue; }
-step = 21;
-case 21:
- A =  d === 0x0D ;  
-step = 22;
-case 22:
-if (!(!A)) { step = 25; continue; }
-step = 24;
-case 24:
- A =  (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/; 
-step = 25;
-case 25:
-if (!A) { step = 28; continue; }
-step = 27;
-case 27:
-v2 = (f2 = f2 || this_tok_throwSyntaxError('Newline can not be escaped in regular expression'))(thawValue);
+if (!(pos >= this_tok_len)) { step = 24; continue; }
+case 23:
+ step = 26; case 26:
+v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 30;
-case 30:
+case 27:
+step = 24;
+case 24:
+ d = this_tok_input.charCodeAt(pos++);
+              A = d === 0x0A ;
+if (!(!A)) { step = 29; continue; }
+step = 28;
 case 28:
-case 15:
-step = 13;
-continue;
-case 12:
-   A = c === 0x0A ;
+ A =  d === 0x0D ;  
+step = 29;
+case 29:
 if (!(!A)) { step = 32; continue; }
 step = 31;
 case 31:
- A =  c === 0x0D ;  
+ A =  (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/; 
 step = 32;
 case 32:
-if (!(!A)) { step = 35; continue; }
-step = 34;
+if (!A) { step = 35; continue; }
 case 34:
- A =  (c ^ 0x2028) <= 1; 
-step = 35;
-case 35:
-if (!A) { step = 38; continue; }
-step = 37;
-case 37:
-  // c === ORD_PS || c === ORD_LS
-          v3 = (f3 = f3 || this_tok_throwSyntaxError('Illegal newline in regex char class'))(thawValue);
+step = 37; case 37:
+v3 = (f3 = f3 || this_tok_throwSyntaxError('Newline can not be escaped in regular expression'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 40:
-step = 39;
-continue;
+step = 38;
 case 38:
-   A = !c ;
-if (!A) { step = 42; continue; }
-step = 41;
-case 41:
- A =  pos >= len; 
+case 35:
+case 21:
+step = 19;
+continue;
+case 18:
+   A = c === 0x0A ;
+if (!(!A)) { step = 40; continue; }
+step = 39;
+case 39:
+ A =  c === 0x0D ;  
+step = 40;
+case 40:
+if (!(!A)) { step = 43; continue; }
 step = 42;
 case 42:
-if (!A) { step = 45; continue; }
-step = 44;
-case 44:
-  // !c can still be \0
-          v4 = (f4 = f4 || this_tok_throwSyntaxError('Unterminated regular expression'))(thawValue);
+ A =  (c ^ 0x2028) <= 1; 
+step = 43;
+case 43:
+if (!A) { step = 46; continue; }
+step = 45;
+case 45:
+  // c === ORD_PS || c === ORD_LS
+          step = 48; case 48:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Illegal newline in regex char class'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 47;
-case 47:
-case 45:
-case 39:
-step = 13;
-case 13:
-// back to start of while [black=4599]
+step = 49;
+case 49:
+case 46:
+step = 19;
+case 19:
+// back to start of while [black=4615]
 step = 2;
 continue
-// end of while [black=4599]
+// end of while [black=4615]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3065,7 +3082,7 @@ var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
 var pos, g, m, i, A, c, backslash;
-return function(thawValue){
+return function inside_this_tok_regexFlags(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3109,11 +3126,11 @@ if (!A) { step = 13; continue; }
 step = 12;
 case 12:
 c = this_tok_input.charCodeAt(pos);
-// while start [black=4930]
+// while start [black=4937]
 step = 15;
 case 15:
 backslash = false;
-// check backslash first so we can replace c with the conanical value of the escape
+// check backslash first so we can replace c with the canonical value of the escape
           if (!(c === 0x5c)) { step = 18; continue; }
 step = 17;
 case 17:
@@ -3121,7 +3138,7 @@ case 17:
             backslash = true;
 step = 20;
 case 20:
-v2 = (f2 = f2 || this_tok_regexFlagUniEscape(this_tok_input, pos + 1))(thawValue);
+v2 = (f2 = f2 || this_tok_regexFlagUniEscape(pos + 1))(thawValue);
 if (frozen) return v2;
 else f2 = null;
 step = 21;
@@ -3168,7 +3185,7 @@ m = true;
 step = 36;
 continue;
 case 35:
-// break to loop [black=4930] end
+// break to loop [black=4937] end
 step = 16;
 continue;
 case 24:
@@ -3197,15 +3214,15 @@ case 44:
 if (!A) { step = 49; continue; }
 step = 48;
 case 48:
-// break to loop [black=4930] end
+// break to loop [black=4937] end
 step = 16;
 continue;
 case 49:
 c = this_tok_input.charCodeAt(pos);
-// back to start of while [black=4930]
+// back to start of while [black=4937]
 step = 15;
 continue
-// end of while [black=4930]
+// end of while [black=4937]
 case 16:
 step = 13;
 case 13:
@@ -3216,104 +3233,105 @@ return;
     }
   };
 }
-  function this_tok_regexFlagUniEscape(input, pos){
+  function this_tok_regexFlagUniEscape(pos){
 var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
-var A, c;
-return function(thawValue){
+var input, A, c;
+return function inside_this_tok_regexFlagUniEscape(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(pos >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
-if (!(pos+1 >= this_tok_len)) { step = 7; continue; }
-step = 6;
-case 6:
- v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+if (!(pos+1 >= this_tok_len)) { step = 8; continue; }
+case 7:
+ step = 10; case 10:
+v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 9:
-step = 7;
-case 7:
-if (!(pos+2 >= this_tok_len)) { step = 11; continue; }
-step = 10;
-case 10:
- v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+case 11:
+step = 8;
+case 8:
+if (!(pos+2 >= this_tok_len)) { step = 13; continue; }
+case 12:
+ step = 15; case 15:
+v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
+case 16:
+step = 13;
 case 13:
-step = 11;
-case 11:
-if (!(pos+3 >= this_tok_len)) { step = 15; continue; }
-step = 14;
-case 14:
- v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
+if (!(pos+3 >= this_tok_len)) { step = 18; continue; }
+case 17:
+ step = 20; case 20:
+v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 17:
-step = 15;
-case 15:
-  A = input.charCodeAt(pos) !== 0x75 ;
-if (!(!A)) { step = 19; continue; }
+case 21:
 step = 18;
 case 18:
- A =  input.charCodeAt(pos+1) !== 0x30 ;  
-step = 19;
-case 19:
-if (!(!A)) { step = 22; continue; }
-step = 21;
-case 21:
- A =  input.charCodeAt(pos+2) !== 0x30 ;  
+ input = this_tok_input; // safe to cache for the next line (only)
+        A = input.charCodeAt(pos) !== 0x75 ;
+if (!(!A)) { step = 23; continue; }
 step = 22;
 case 22:
-if (!(!A)) { step = 25; continue; }
-step = 24;
-case 24:
- A =  input.charCodeAt(pos+3) !== 0x36; 
+ A =  input.charCodeAt(pos+1) !== 0x30 ;  
+step = 23;
+case 23:
+if (!(!A)) { step = 26; continue; }
 step = 25;
 case 25:
-if (!A) { step = 28; continue; }
-step = 27;
-case 27:
-return 0;
+ A =  input.charCodeAt(pos+2) !== 0x30 ;  
+step = 26;
+case 26:
+if (!(!A)) { step = 29; continue; }
 step = 28;
 case 28:
-if (!(pos+4 >= this_tok_len)) { step = 31; continue; }
-step = 30;
-case 30:
- v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v4;
-else f4 = null;
-case 33:
+ A =  input.charCodeAt(pos+3) !== 0x36; 
+step = 29;
+case 29:
+if (!A) { step = 32; continue; }
 step = 31;
 case 31:
- c = input.charCodeAt(pos+4);
-      if (!(c === 0x37)) { step = 35; continue; }
-step = 34;
+return 0;
+step = 32;
+case 32:
+if (!(pos+4 >= this_tok_len)) { step = 35; continue; }
 case 34:
-return 0x67;
+ step = 37; case 37:
+v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
+if (frozen) return v4;
+else f4 = null;
+case 38:
 step = 35;
 case 35:
-if (!(c === 0x39)) { step = 38; continue; }
-step = 37;
-case 37:
-return 0x69;
-step = 38;
-case 38:
-if (!(c === 0x64)) { step = 41; continue; }
+ c = this_tok_input.charCodeAt(pos+4);
+      if (!(c === 0x37)) { step = 40; continue; }
+step = 39;
+case 39:
+return 0x67;
 step = 40;
 case 40:
+if (!(c === 0x39)) { step = 43; continue; }
+step = 42;
+case 42:
+return 0x69;
+step = 43;
+case 43:
+if (!(c === 0x64)) { step = 46; continue; }
+step = 45;
+case 45:
 return 0x6D;
-step = 41;
-case 41:
+step = 46;
+case 46:
 return 0;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3325,7 +3343,7 @@ return;
 var step = 1;
 var v0;
 var f0;
-return function(thawValue){
+return function inside_this_tok_parseIdentifier(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3349,14 +3367,14 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var pos, A, c, b, delta;
-return function(thawValue){
+return function inside_this_tok_parseIdentifierRest(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // also used by regex flag parser!
 pos = this_tok_pos + 1;
 // note: statements in this loop are the second most executed statements
-// while start [black=5332]
+// while start [black=5340]
 step = 2;
 case 2:
 // sequential lower case letters are very common, 5:2
@@ -3377,13 +3395,13 @@ case 5:
 if (!A) { step = 10; continue; }
 step = 9;
 case 9:
-// break to loop [black=5332] end
+// break to loop [black=5340] end
 step = 3;
 continue;
 case 10:
  c = this_tok_input.charCodeAt(pos);
          b = c & 0xffdf;
-// while start [black=5390]
+// while start [black=5398]
 step = 12;
 case 12:
   A = b >= 0x41 ;
@@ -3396,7 +3414,7 @@ case 15:
 if (!(!A)) { step = 18; continue; }
 step = 17;
 case 17:
-// break to loop [black=5390] end
+// break to loop [black=5398] end
 step = 13;
 continue;
 case 18:
@@ -3416,20 +3434,20 @@ case 21:
 if (!A) { step = 26; continue; }
 step = 25;
 case 25:
-// break to loop [black=5390] end
+// break to loop [black=5398] end
 step = 13;
 continue;
 case 26:
 c = this_tok_input.charCodeAt(pos);
           b = c & 0xffdf;
-// back to start of while [black=5390]
+// back to start of while [black=5398]
 step = 12;
 continue
-// end of while [black=5390]
+// end of while [black=5398]
 case 13:
 step = 28;
 case 28:
-v2 = (f2 = f2 || this_tok_parseOtherIdentifierParts(c, pos, this_tok_input))(thawValue);
+v2 = (f2 = f2 || this_tok_parseOtherIdentifierParts(c, pos))(thawValue);
 if (frozen) return v2;
 else f2 = null;
 step = 29;
@@ -3438,15 +3456,15 @@ case 29:
         if (!(!delta)) { step = 31; continue; }
 step = 30;
 case 30:
-// break to loop [black=5332] end
+// break to loop [black=5340] end
 step = 3;
 continue;
 case 31:
 pos += delta;
-// back to start of while [black=5332]
+// back to start of while [black=5340]
 step = 2;
 continue
-// end of while [black=5332]
+// end of while [black=5340]
 case 3:
 return pos;
 return;
@@ -3455,12 +3473,12 @@ return;
     }
   };
 }
-  function this_tok_parseOtherIdentifierParts(c, pos, input){
+  function this_tok_parseOtherIdentifierParts(c, pos){
 var step = 1;
 var v0;
 var f0;
 var A;
-return function(thawValue){
+return function inside_this_tok_parseOtherIdentifierParts(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3494,25 +3512,27 @@ case 12:
 if (!(c === 0x5c)) { step = 15; continue; }
 step = 14;
 case 14:
-v0 = (f0 = f0 || this_tok_parseAndValidateUnicodeAsIdentifier(pos, input, false))(thawValue);
+// TOFIX: seems the atStart flag is ignored. make a test. (input is always passed on but was removed at the finger print of func)
+        step = 17; case 17:
+v0 = (f0 = f0 || this_tok_parseAndValidateUnicodeAsIdentifier(pos, false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 17;
-case 17:
+step = 18;
+case 18:
 return 6;
 step = 15;
 case 15:
-if (!(c > 127)) { step = 19; continue; }
-step = 18;
-case 18:
-if (!(uniRegex.test(String.fromCharCode(c)))) { step = 22; continue; }
-step = 21;
-case 21:
-return 1;
-// dont throw; could be PS/LS...
-case 22:
+if (!(c > 127)) { step = 20; continue; }
 step = 19;
 case 19:
+if (!(uniRegex.test(String.fromCharCode(c)))) { step = 23; continue; }
+step = 22;
+case 22:
+return 1;
+// dont throw; could be PS/LS...
+case 23:
+step = 20;
+case 20:
 return 0;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3520,108 +3540,110 @@ return;
     }
   };
 }
-  function this_tok_parseAndValidateUnicodeAsIdentifier(pos, input, atStart){
+  function this_tok_parseAndValidateUnicodeAsIdentifier(pos, atStart){
 var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
 var A, u, b;
-return function(thawValue){
+return function inside_this_tok_parseAndValidateUnicodeAsIdentifier(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(pos+1 >= this_tok_len)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
+case 6:
 step = 3;
 case 3:
-  A = input.charCodeAt(pos + 1) === 0x75 ;
-if (!A) { step = 7; continue; }
-case 6:
-step = 9;
-case 9:
+  A = this_tok_input.charCodeAt(pos + 1) === 0x75 ;
+if (!A) { step = 8; continue; }
+case 7:
+step = 10;
+case 10:
 v1 = (f1 = f1 || this_tok_parseUnicodeEscapeBody(pos + 2))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 10;
-case 10:
-A =  v1; 
-step = 7;
-case 7:
-if (!A) { step = 12; continue; }
 step = 11;
 case 11:
-u = parseInt(input.slice(pos+2, pos+6), 16);
+A =  v1; 
+step = 8;
+case 8:
+if (!A) { step = 13; continue; }
+step = 12;
+case 12:
+// parseUnicodeEscapeBody will ensure enough input for this slice
+         u = parseInt(this_tok_input.slice(pos+2, pos+6), 16);
          b = u & 0xffdf;
           A = b >= 0x41 ;
-if (!A) { step = 15; continue; }
-step = 14;
-case 14:
- A =  b <= 0x5a; 
+if (!A) { step = 16; continue; }
 step = 15;
 case 15:
-if (!A) { step = 18; continue; }
-step = 17;
-case 17:
-return true;
+ A =  b <= 0x5a; 
+step = 16;
+case 16:
+if (!A) { step = 19; continue; }
 step = 18;
 case 18:
+return true;
+step = 19;
+case 19:
   A = u >= 0x30 ;
-if (!A) { step = 21; continue; }
-step = 20;
-case 20:
- A =  u <= 0x39; 
+if (!A) { step = 22; continue; }
 step = 21;
 case 21:
-if (!A) { step = 24; continue; }
-step = 23;
-case 23:
-if (!(atStart)) { step = 27; continue; }
-step = 26;
-case 26:
- v2 = (f2 = f2 || this_tok_throwSyntaxError('Digit not allowed at start of identifier, not even escaped'))(thawValue);
-if (frozen) return v2;
-else f2 = null;
-case 29:
-step = 27;
-case 27:
-return true;
+ A =  u <= 0x39; 
+step = 22;
+case 22:
+if (!A) { step = 25; continue; }
 step = 24;
 case 24:
-  A = u === 0x5f ;
-if (!(!A)) { step = 31; continue; }
-step = 30;
-case 30:
- A =  u === 0x24; 
-step = 31;
+if (!(atStart)) { step = 28; continue; }
+case 27:
+ step = 30; case 30:
+v2 = (f2 = f2 || this_tok_throwSyntaxError('Digit not allowed at start of identifier, not even escaped'))(thawValue);
+if (frozen) return v2;
+else f2 = null;
 case 31:
-if (!A) { step = 34; continue; }
+step = 28;
+case 28:
+return true;
+step = 25;
+case 25:
+  A = u === 0x5f ;
+if (!(!A)) { step = 33; continue; }
+step = 32;
+case 32:
+ A =  u === 0x24; 
 step = 33;
 case 33:
+if (!A) { step = 36; continue; }
+step = 35;
+case 35:
 return true;
-step = 34;
-case 34:
-if (!(uniRegex.test(String.fromCharCode(u)))) { step = 37; continue; }
 step = 36;
 case 36:
+if (!(uniRegex.test(String.fromCharCode(u)))) { step = 39; continue; }
+step = 38;
+case 38:
 return true;
-step = 37;
-case 37:
+case 39:
+step = 41; case 41:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Encountered \\u escape ('+u+') but the char is not a valid identifier part'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 39:
-step = 12;
-case 12:
+case 42:
+step = 13;
+case 13:
 this_tok_pos = pos;
-      v4 = (f4 = f4 || this_tok_throwSyntaxError('Unexpected backslash inside identifier'))(thawValue);
+      step = 43; case 43:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Unexpected backslash inside identifier'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 40;
-case 40:
+step = 44;
+case 44:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -3630,7 +3652,7 @@ return;
 }
   function this_tok_getLastValue(){
 var step = 1;
-return function(thawValue){
+return function inside_this_tok_getLastValue(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3651,16 +3673,10 @@ return;
 }
   function this_tok_getNum(offset){
 var step = 1;
-return function(thawValue){
+return function inside_this_tok_getNum(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(offset >= this_tok_len)) { step = 3; continue; }
-step = 2;
-case 2:
- throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?';
-step = 3;
-case 3:
 return this_tok_input.charCodeAt(this_tok_lastOffset+offset);
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3671,7 +3687,7 @@ return;
   function this_tok_throwSyntaxError(message){
 var step = 1;
 var pos, inp;
-return function(thawValue){
+return function inside_this_tok_throwSyntaxError(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3797,51 +3813,53 @@ var v2, v1, v0;
 var f2, f1, f0;
 var frob = this.frozenObject;
 var A;
-return function(thawValue){
+return function inside_this_par_run(thawValue){
 frozen = false;
   while (true) {
     switch (step) {
       case 1:
 // prepare
-      v0 = (f0 = f0 || this_tok_next(true))(thawValue);
+      step = 2; case 2:
+v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) {
           frob.frozen = true;
           frob.value = v0;
           return v0;
         }
 else f0 = null;
-step = 2;
-case 2:
+step = 3;
+case 3:
 // go!
-      v1 = (f1 = f1 || this_par_parseStatements(false, '', false, ''))(thawValue);
+      step = 4; case 4:
+v1 = (f1 = f1 || this_par_parseStatements(false, '', false, ''))(thawValue);
 if (frozen) {
           frob.frozen = true;
           frob.value = v1;
           return v1;
         }
 else f1 = null;
-step = 3;
-case 3:
-A = this_tok_pos !== this_tok_len ;
-if (!(!A)) { step = 5; continue; }
-step = 4;
-case 4:
- A =  this_tok_lastType !== 14; 
 step = 5;
 case 5:
-if (!A) { step = 8; continue; }
+A = this_tok_pos !== this_tok_len ;
+if (!(!A)) { step = 7; continue; }
+step = 6;
+case 6:
+ A =  this_tok_lastType !== 14; 
 step = 7;
 case 7:
- v2 = (f2 = f2 || this_tok_throwSyntaxError('Did not complete parsing..'))(thawValue);
+if (!A) { step = 10; continue; }
+case 9:
+ step = 12; case 12:
+v2 = (f2 = f2 || this_tok_throwSyntaxError('Did not complete parsing..'))(thawValue);
 if (frozen) {
           frob.frozen = true;
           frob.value = v2;
           return v2;
         }
 else f2 = null;
+case 13:
+step = 10;
 case 10:
-step = 8;
-case 8:
 return (frob.frozen = false, frob.value =  {
         par: this,
         tok: this_par_tok,
@@ -3861,12 +3879,12 @@ return;
 var step = 1;
 var v0;
 var f0;
-return function(thawValue){
+return function inside_this_par_parseStatements(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // note: statements are optional, this function might not parse anything
-// while start [black=6501]
+// while start [black=6492]
 case 2:
 step = 4;
 case 4:
@@ -3878,14 +3896,14 @@ case 5:
 if (!(!(v0))) { step = 7; continue; }
 step = 6;
 case 6:
-// break to loop [black=6501] end
+// break to loop [black=6492] end
 step = 3;
 continue;
 case 7:
-// back to start of while [black=6501]
+// back to start of while [black=6492]
 step = 2;
 continue
-// end of while [black=6501]
+// end of while [black=6492]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3897,28 +3915,28 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseStatement(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(this_tok_lastType === 13)) { step = 3; continue; }
-step = 2;
 case 2:
+step = 5; case 5:
 v0 = (f0 = f0 || this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 5;
-case 5:
+step = 6;
+case 6:
 return true;
 // can be false for close curly and eof
 case 3:
-step = 6;
-case 6:
+step = 7;
+case 7:
 v1 = (f1 = f1 || this_par_parseNonIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, optional))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 7;
-case 7:
+step = 8;
+case 8:
 return v1;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3931,7 +3949,7 @@ var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
 var c;
-return function(thawValue){
+return function inside_this_par_parseNonIdentifierStatement(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3941,42 +3959,43 @@ step = 2;
 case 2:
   // 65.6%
         if (!(!optional)) { step = 6; continue; }
-step = 5;
 case 5:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Expected more input..'))(thawValue);
+ step = 8; case 8:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Expected more input..'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 8;
-case 8:
+step = 9;
+case 9:
  // {if(x)}
 step = 6;
 case 6:
 return false;
 step = 3;
 case 3:
-if (!(c === 0x7b)) { step = 10; continue; }
-step = 9;
-case 9:
+if (!(c === 0x7b)) { step = 11; continue; }
+step = 10;
+case 10:
   // 33.2%
-        v1 = (f1 = f1 || this_tok_next(true))(thawValue);
+        step = 13; case 13:
+v1 = (f1 = f1 || this_tok_next(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 12;
-case 12:
+case 14:
+step = 15; case 15:
 v2 = (f2 = f2 || this_par_parseBlock(true, inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 13;
-case 13:
+step = 16;
+case 16:
 return true;
-case 10:
-step = 14;
-case 14:
+case 11:
+step = 17;
+case 17:
 v3 = (f3 = f3 || this_par_parseNonIdentifierStatementNonCurly(c, optional))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 15;
-case 15:
+step = 18;
+case 18:
 return v3;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3989,7 +4008,7 @@ var step = 1;
 var v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var A, type;
-return function(thawValue){
+return function inside_this_par_parseNonIdentifierStatementNonCurly(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -3998,152 +4017,156 @@ if (!(c === 0x28)) { step = 3; continue; }
 step = 2;
 case 2:
   // 56%
-        v0 = (f0 = f0 || this_par_parseExpressionStatement())(thawValue);
+        step = 5; case 5:
+v0 = (f0 = f0 || this_par_parseExpressionStatement())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 5;
-case 5:
+step = 6;
+case 6:
 return true;
 step = 3;
 case 3:
-if (!(c === 0x3b)) { step = 7; continue; }
-step = 6;
-case 6:
-  // 26% empty statement
-        // this shouldnt occur very often, but they still do.
-        v1 = (f1 = f1 || this_tok_next(true))(thawValue);
-if (frozen) return v1;
-else f1 = null;
-step = 9;
-case 9:
-return true;
+if (!(c === 0x3b)) { step = 8; continue; }
 step = 7;
 case 7:
-  A = c === 0x2b ;
-if (!(!A)) { step = 11; continue; }
-step = 10;
-case 10:
- A =  c === 0x2d; 
+  // 26% empty statement
+        // this shouldnt occur very often, but they still do.
+        step = 10; case 10:
+v1 = (f1 = f1 || this_tok_next(true))(thawValue);
+if (frozen) return v1;
+else f1 = null;
 step = 11;
 case 11:
-if (!A) { step = 14; continue; }
+return true;
+step = 8;
+case 8:
+  A = c === 0x2b ;
+if (!(!A)) { step = 13; continue; }
+step = 12;
+case 12:
+ A =  c === 0x2d; 
 step = 13;
 case 13:
+if (!A) { step = 16; continue; }
+step = 15;
+case 15:
   // 5% 3%
-step = 16;
-case 16:
+step = 18;
+case 18:
 v2 = (f2 = f2 || this_tok_getNum(1))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 17;
-case 17:
- A = v2 === c ;
-if (!(!A)) { step = 19; continue; }
-step = 18;
-case 18:
- A =  this_tok_lastLen === 1; 
 step = 19;
 case 19:
-if (!A) { step = 22; continue; }
+ A = v2 === c ;
+if (!(!A)) { step = 21; continue; }
+step = 20;
+case 20:
+ A =  this_tok_lastLen === 1; 
 step = 21;
 case 21:
+if (!A) { step = 24; continue; }
+case 23:
+step = 26; case 26:
 v3 = (f3 = f3 || this_par_parseExpressionStatement())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 24;
-case 24:
+step = 27;
+case 27:
 return true;
-step = 22;
-case 22:
+case 24:
+step = 28; case 28:
 v4 = (f4 = f4 || this_tok_throwSyntaxError('Statement cannot start with binary op'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-case 25:
-step = 14;
-case 14:
+case 29:
+step = 16;
+case 16:
  type = this_tok_lastType;
 // rare
         A = type === 10 ;
-if (!(!A)) { step = 27; continue; }
-step = 26;
-case 26:
- A =  c === 0x5b; 
-step = 27;
-case 27:
-if (!A) { step = 30; continue; }
-step = 29;
-case 29:
-  // 4% 2%
-        v5 = (f5 = f5 || this_par_parseExpressionStatement())(thawValue);
-if (frozen) return v5;
-else f5 = null;
-step = 32;
-case 32:
-return true;
-// almost never
+if (!(!A)) { step = 31; continue; }
 step = 30;
 case 30:
-if (!(c === 0x21)) { step = 34; continue; }
+ A =  c === 0x5b; 
+step = 31;
+case 31:
+if (!A) { step = 34; continue; }
 step = 33;
 case 33:
+  // 4% 2%
+        step = 36; case 36:
+v5 = (f5 = f5 || this_par_parseExpressionStatement())(thawValue);
+if (frozen) return v5;
+else f5 = null;
+step = 37;
+case 37:
+return true;
+// almost never
+step = 34;
+case 34:
+if (!(c === 0x21)) { step = 39; continue; }
+step = 38;
+case 38:
   // 2%
-        if (!(this_tok_lastLen === 1)) { step = 37; continue; }
-step = 36;
-case 36:
+        if (!(this_tok_lastLen === 1)) { step = 42; continue; }
+case 41:
+step = 44; case 44:
 v6 = (f6 = f6 || this_par_parseExpressionStatement())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 39;
-case 39:
+step = 45;
+case 45:
 return true;
-step = 37;
-case 37:
+case 42:
+step = 46; case 46:
 v7 = (f7 = f7 || this_tok_throwSyntaxError('Statement cannot start with binary op'))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 40;
-case 40:
-// now you're just running tests
-step = 34;
-case 34:
-  A = type === 7 ;
-if (!(!A)) { step = 42; continue; }
-step = 41;
-case 41:
- A =  c === 0x7e ;  
-step = 42;
-case 42:
-if (!(!A)) { step = 45; continue; }
-step = 44;
-case 44:
- A =  type === 8; 
-step = 45;
-case 45:
-if (!A) { step = 48; continue; }
 step = 47;
 case 47:
+// now you're just running tests
+step = 39;
+case 39:
+  A = type === 7 ;
+if (!(!A)) { step = 49; continue; }
+step = 48;
+case 48:
+ A =  c === 0x7e ;  
+step = 49;
+case 49:
+if (!(!A)) { step = 52; continue; }
+step = 51;
+case 51:
+ A =  type === 8; 
+step = 52;
+case 52:
+if (!A) { step = 55; continue; }
+step = 54;
+case 54:
   // 1% 0% 0%
-        v8 = (f8 = f8 || this_par_parseExpressionStatement())(thawValue);
+        step = 57; case 57:
+v8 = (f8 = f8 || this_par_parseExpressionStatement())(thawValue);
 if (frozen) return v8;
 else f8 = null;
-step = 50;
-case 50:
+step = 58;
+case 58:
 return true;
 // note: need this check because EOF is always valid at the end of the
       // program and, I think, will always trigger once, of course.
-step = 48;
-case 48:
-if (!(!optional)) { step = 52; continue; }
-step = 51;
-case 51:
- v9 = (f9 = f9 || this_tok_throwSyntaxError('Expected more input..'))(thawValue);
+step = 55;
+case 55:
+if (!(!optional)) { step = 60; continue; }
+case 59:
+ step = 62; case 62:
+v9 = (f9 = f9 || this_tok_throwSyntaxError('Expected more input..'))(thawValue);
 if (frozen) return v9;
 else f9 = null;
-step = 54;
-case 54:
+step = 63;
+case 63:
 // EOF (I dont think there's any other valid reason?)
-step = 52;
-case 52:
+step = 60;
+case 60:
 return false;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -4156,7 +4179,7 @@ var step = 1;
 var v17, v16, v15, v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var value, len, c;
-return function(thawValue){
+return function inside_this_par_parseIdentifierStatement(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -4438,13 +4461,13 @@ case 101:
 step = 108;
 case 108:
 // this function _must_ parse _something_, if we parsed nothing, it's an expression statement or labeled statement
-step = 5;
 case 5:
+step = 120; case 120:
 v17 = (f17 = f17 || this_par_parseExpressionOrLabel(value, inFunction, inLoop, inSwitch, labelSet, freshLabels))(thawValue);
 if (frozen) return v17;
 else f17 = null;
-step = 120;
-case 120:
+step = 121;
+case 121:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4455,25 +4478,26 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseStatementHeader(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_mustBeNum(0x28, true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseExpressions())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_tok_mustBeNum(0x29, true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+step = 7;
+case 7:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4485,7 +4509,7 @@ var step = 1;
 var v7, v6, v5, v4, v3, v2, v1, v0;
 var f7, f6, f5, f4, f3, f2, f1, f0;
 var A;
-return function(thawValue){
+return function inside_this_par_parseVar(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -4493,71 +4517,73 @@ return function(thawValue){
       // - foo
       // - foo=bar
       // - ,foo=bar
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
-// do start [black=7365]
+step = 3;
 case 3:
-step = 5;
-case 5:
+// do start [black=7356]
+case 4:
+step = 6;
+case 6:
 v1 = (f1 = f1 || this_par_isReservedIdentifier(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 6;
-case 6:
-if (!(v1)) { step = 8; continue; }
 step = 7;
 case 7:
- v2 = (f2 = f2 || this_tok_throwSyntaxError('Var name is reserved'))(thawValue);
+if (!(v1)) { step = 9; continue; }
+case 8:
+ step = 11; case 11:
+v2 = (f2 = f2 || this_tok_throwSyntaxError('Var name is reserved'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 10:
-step = 8;
-case 8:
+step = 12;
+case 12:
+case 9:
+step = 13; case 13:
 v3 = (f3 = f3 || this_tok_mustBeIdentifier(true))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 11;
-case 11:
+step = 14;
+case 14:
 A = this_tok_firstTokenChar === 0x3d ;
-if (!A) { step = 13; continue; }
-step = 12;
-case 12:
- A =  this_tok_lastLen === 1; 
-step = 13;
-case 13:
 if (!A) { step = 16; continue; }
 step = 15;
 case 15:
+ A =  this_tok_lastLen === 1; 
+step = 16;
+case 16:
+if (!A) { step = 19; continue; }
+case 18:
+step = 21; case 21:
 v4 = (f4 = f4 || this_tok_next(true))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 18;
-case 18:
+case 22:
+step = 23; case 23:
 v5 = (f5 = f5 || this_par_parseExpression())(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 19;
+step = 24;
+case 24:
 case 19:
-case 16:
-step = 20;
-case 20:
+step = 25;
+case 25:
 v6 = (f6 = f6 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 21;
-case 21:
-if(v6) { step = 3; continue; } // jump to start of loop [black=7365]
-// do end [black=7365]
-step = 4;
-case 4:
+step = 26;
+case 26:
+if(v6) { step = 4; continue; } // jump to start of loop [black=7356]
+// do end [black=7356]
+case 5:
+step = 27; case 27:
 v7 = (f7 = f7 || this_par_parseSemi())(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 22;
-case 22:
+step = 28;
+case 28:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4569,12 +4595,12 @@ var step = 1;
 var v6, v5, v4, v3, v2, v1, v0;
 var f6, f5, f4, f3, f2, f1, f0;
 var vars, A;
-return function(thawValue){
+return function inside_this_par_parseVarPartNoIn(thawValue){
   while (true) {
     switch (step) {
       case 1:
 vars = 0;
-// do start [black=7462]
+// do start [black=7453]
 case 2:
 step = 4;
 case 4:
@@ -4585,55 +4611,56 @@ step = 5;
 case 5:
 if (!(v0)) { step = 7; continue; }
 case 6:
-step = 10;
-case 10:
+step = 11;
+case 11:
 v2 = (f2 = f2 || this_tok_getLastValue())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 11;
-case 11:
+case 12:
+step = 9; case 9:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('Var name ['+v2+'] is reserved'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 9:
-step = 7;
+step = 10;
+case 10:
 case 7:
+step = 13; case 13:
 v3 = (f3 = f3 || this_tok_mustBeIdentifier(true))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 12;
-case 12:
-++vars;
-A = this_tok_firstTokenChar === 0x3d ;
-if (!A) { step = 14; continue; }
-step = 13;
-case 13:
- A =  this_tok_lastLen === 1; 
 step = 14;
 case 14:
-if (!A) { step = 17; continue; }
+++vars;
+A = this_tok_firstTokenChar === 0x3d ;
+if (!A) { step = 16; continue; }
+step = 15;
+case 15:
+ A =  this_tok_lastLen === 1; 
 step = 16;
 case 16:
+if (!A) { step = 19; continue; }
+case 18:
+step = 21; case 21:
 v4 = (f4 = f4 || this_tok_next(true))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 19;
-case 19:
+case 22:
+step = 23; case 23:
 v5 = (f5 = f5 || this_par_parseExpressionNoIn())(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 20;
-case 20:
-case 17:
-step = 21;
-case 21:
+step = 24;
+case 24:
+case 19:
+step = 25;
+case 25:
 v6 = (f6 = f6 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 22;
-case 22:
-if(v6) { step = 2; continue; } // jump to start of loop [black=7462]
-// do end [black=7462]
+step = 26;
+case 26:
+if(v6) { step = 2; continue; } // jump to start of loop [black=7453]
+// do end [black=7453]
 step = 3;
 case 3:
 return vars === 1;
@@ -4647,47 +4674,48 @@ return;
 var step = 1;
 var v5, v4, v3, v2, v1, v0;
 var f5, f4, f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseIf(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // if (<exprs>) <stmt>
       // if (<exprs>) <stmt> else <stmt>
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseStatementHeader())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false, ''))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 4:
-step = 5;
-case 5:
+case 7:
+step = 8;
+case 8:
 v3 = (f3 = f3 || this_tok_getLastValue())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 6;
-case 6:
-if (!(v3 === 'else')) { step = 8; continue; }
-step = 7;
-case 7:
+step = 9;
+case 9:
+if (!(v3 === 'else')) { step = 11; continue; }
+case 10:
+step = 13; case 13:
 v4 = (f4 = f4 || this_tok_next(true))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 10;
-case 10:
+case 14:
+step = 15; case 15:
 v5 = (f5 = f5 || this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false, ''))(thawValue);
 if (frozen) return v5;
 else f5 = null;
+case 16:
+step = 11;
 case 11:
-step = 8;
-case 8:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4699,66 +4727,67 @@ var step = 1;
 var v6, v5, v4, v3, v2, v1, v0;
 var f6, f5, f4, f3, f2, f1, f0;
 var B, A;
-return function(thawValue){
+return function inside_this_par_parseDo(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // do <stmt> while ( <exprs> ) ;
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
- // do
-        B =  inLoop ;
-if (!(!B)) { step = 4; continue; }
 step = 3;
 case 3:
- B =  ' '; 
+ // do
+        B =  inLoop ;
+if (!(!B)) { step = 5; continue; }
 step = 4;
 case 4:
+ B =  ' '; 
+case 5:
+step = 7; case 7:
 v1 = (f1 = f1 || this_par_parseStatement(inFunction,B, inSwitch, labelSet, false, ''))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 6;
-case 6:
+case 8:
+step = 9; case 9:
 v2 = (f2 = f2 || this_tok_mustBeString('while', false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 7;
-case 7:
+case 10:
+step = 11; case 11:
 v3 = (f3 = f3 || this_tok_mustBeNum(0x28, true))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 8;
-case 8:
+case 12:
+step = 13; case 13:
 v4 = (f4 = f4 || this_par_parseExpressions())(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 9;
-case 9:
+case 14:
+step = 15; case 15:
 v5 = (f5 = f5 || this_tok_mustBeNum(0x29, true))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 10;
-case 10:
+step = 16;
+case 16:
 // spec requires the semi but browsers made it optional
         A = this_par_options.requireDoWhileSemi ;
-if (!(!A)) { step = 12; continue; }
-step = 11;
-case 11:
+if (!(!A)) { step = 18; continue; }
+step = 17;
+case 17:
  A =  this_tok_firstTokenChar === 0x3b; 
-step = 12;
-case 12:
-if (!A) { step = 15; continue; }
-step = 14;
-case 14:
+step = 18;
+case 18:
+if (!A) { step = 21; continue; }
+case 20:
+step = 23; case 23:
 v6 = (f6 = f6 || this_par_parseSemi())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-case 17:
-step = 15;
-case 15:
+case 24:
+step = 21;
+case 21:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4770,33 +4799,34 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var B;
-return function(thawValue){
+return function inside_this_par_parseWhile(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // while ( <exprs> ) <stmt>
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseStatementHeader())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
-B =  inLoop ;
-if (!(!B)) { step = 5; continue; }
-step = 4;
-case 4:
- B =  ' '; 
 step = 5;
 case 5:
+B =  inLoop ;
+if (!(!B)) { step = 7; continue; }
+step = 6;
+case 6:
+ B =  ' '; 
+case 7:
+step = 9; case 9:
 v2 = (f2 = f2 || this_par_parseStatement(inFunction,B, inSwitch, labelSet, false, ''))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 7;
-case 7:
+step = 10;
+case 10:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4808,7 +4838,7 @@ var step = 1;
 var v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var validForInLhs, A, B;
-return function(thawValue){
+return function inside_this_par_parseFor(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -4816,164 +4846,167 @@ return function(thawValue){
       // for ( var <idntf> in <exprs> ) <stmt>
       // for ( var <idntf> = <expr-no-in> in <exprs> ) <stmt>
       // for ( <expr-no-in> ; <expr> ; <expr> ) <stmt>
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+step = 3;
+case 3:
  // for
-      v1 = (f1 = f1 || this_tok_mustBeNum(0x28, true))(thawValue);
+      step = 4; case 4:
+v1 = (f1 = f1 || this_tok_mustBeNum(0x28, true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 3:
-step = 4;
-case 4:
+case 5:
+step = 6;
+case 6:
 v2 = (f2 = f2 || this_tok_nextExprIfNum(0x3b))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 5;
-case 5:
-if (!(v2)) { step = 7; continue; }
-step = 6;
-case 6:
- v3 = (f3 = f3 || this_par_parseForEachHeader())(thawValue);
+step = 7;
+case 7:
+if (!(v2)) { step = 9; continue; }
+case 8:
+ step = 11; case 11:
+v3 = (f3 = f3 || this_par_parseForEachHeader())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 9;
-case 9:
+step = 12;
+case 12:
  // empty first expression in for-each
-step = 8;
+step = 10;
 continue;
-case 7:
+case 9:
 validForInLhs;
 A = this_tok_firstTokenChar === 0x76 ;
-if (!A) { step = 11; continue; }
-case 10:
-step = 13;
+if (!A) { step = 14; continue; }
 case 13:
+step = 16;
+case 16:
 v4 = (f4 = f4 || this_tok_nextPuncIfString('var'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
+step = 17;
+case 17:
+A =  v4; 
 step = 14;
 case 14:
-A =  v4; 
-step = 11;
-case 11:
-if (!A) { step = 16; continue; }
-case 15:
-step = 18;
+if (!A) { step = 19; continue; }
 case 18:
+step = 21;
+case 21:
 v5 = (f5 = f5 || this_par_parseVarPartNoIn())(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 19;
-case 19:
+step = 22;
+case 22:
 validForInLhs = v5;
         // expression_s_ because it might be regular for-loop...
         // (though if it isn't, it can't have more than one expr)
-step = 17;
-continue;
-case 16:
 step = 20;
-case 20:
+continue;
+case 19:
+step = 23;
+case 23:
 v6 = (f6 = f6 || this_par_parseExpressionsNoIn())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 21;
-case 21:
+step = 24;
+case 24:
 validForInLhs = v6;
-case 17:
-step = 22;
-case 22:
+case 20:
+step = 25;
+case 25:
 v7 = (f7 = f7 || this_tok_nextExprIfNum(0x3b))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 23;
-case 23:
-if (!(v7)) { step = 25; continue; }
-step = 24;
-case 24:
- v8 = (f8 = f8 || this_par_parseForEachHeader())(thawValue);
+step = 26;
+case 26:
+if (!(v7)) { step = 28; continue; }
+case 27:
+ step = 30; case 30:
+v8 = (f8 = f8 || this_par_parseForEachHeader())(thawValue);
 if (frozen) return v8;
 else f8 = null;
-case 27:
-step = 26;
-continue;
-case 25:
-   A = this_tok_firstTokenChar !== 0x69 ;
-if (!(!A)) { step = 29; continue; }
-case 28:
-step = 31;
 case 31:
+step = 29;
+continue;
+case 28:
+   A = this_tok_firstTokenChar !== 0x69 ;
+if (!(!A)) { step = 33; continue; }
+case 32:
+step = 35;
+case 35:
 v9 = (f9 = f9 || this_tok_getNum(1))(thawValue);
 if (frozen) return v9;
 else f9 = null;
-step = 32;
-case 32:
-A =  v9 !== 0x6e ;  
-step = 29;
-case 29:
-if (!(!A)) { step = 34; continue; }
-step = 33;
-case 33:
- A =  this_tok_lastLen !== 2; 
-step = 34;
-case 34:
-if (!A) { step = 37; continue; }
 step = 36;
 case 36:
- v10 = (f10 = f10 || this_tok_throwSyntaxError('Expected `in` or `;` here..'))(thawValue);
-if (frozen) return v10;
-else f10 = null;
-case 39:
-step = 38;
-continue;
+A =  v9 !== 0x6e ;  
+step = 33;
+case 33:
+if (!(!A)) { step = 38; continue; }
+step = 37;
 case 37:
-   A = !validForInLhs ;
-if (!A) { step = 41; continue; }
-step = 40;
-case 40:
- A =  this_par_options.strictForInCheck; 
-step = 41;
-case 41:
-if (!A) { step = 44; continue; }
-step = 43;
-case 43:
- v11 = (f11 = f11 || this_tok_throwSyntaxError('Encountered illegal for-in lhs'))(thawValue);
-if (frozen) return v11;
-else f11 = null;
-case 46:
-step = 45;
-continue;
-case 44:
- v12 = (f12 = f12 || this_par_parseForInHeader())(thawValue);
-if (frozen) return v12;
-else f12 = null;
-step = 47;
-case 47:
-case 45:
+ A =  this_tok_lastLen !== 2; 
 step = 38;
 case 38:
-case 26:
-step = 8;
-case 8:
+if (!A) { step = 41; continue; }
+case 40:
+ step = 43; case 43:
+v10 = (f10 = f10 || this_tok_throwSyntaxError('Expected `in` or `;` here..'))(thawValue);
+if (frozen) return v10;
+else f10 = null;
+case 44:
+step = 42;
+continue;
+case 41:
+   A = !validForInLhs ;
+if (!A) { step = 46; continue; }
+step = 45;
+case 45:
+ A =  this_par_options.strictForInCheck; 
+step = 46;
+case 46:
+if (!A) { step = 49; continue; }
+case 48:
+ step = 51; case 51:
+v11 = (f11 = f11 || this_tok_throwSyntaxError('Encountered illegal for-in lhs'))(thawValue);
+if (frozen) return v11;
+else f11 = null;
+case 52:
+step = 50;
+continue;
+case 49:
+ step = 53; case 53:
+v12 = (f12 = f12 || this_par_parseForInHeader())(thawValue);
+if (frozen) return v12;
+else f12 = null;
+step = 54;
+case 54:
+case 50:
+step = 42;
+case 42:
+case 29:
+case 10:
+step = 55; case 55:
 v13 = (f13 = f13 || this_tok_mustBeNum(0x29, true))(thawValue);
 if (frozen) return v13;
 else f13 = null;
-step = 48;
-case 48:
+step = 56;
+case 56:
 B =  inLoop ;
-if (!(!B)) { step = 50; continue; }
-step = 49;
-case 49:
+if (!(!B)) { step = 58; continue; }
+step = 57;
+case 57:
  B =  ' '; 
-step = 50;
-case 50:
+case 58:
+step = 60; case 60:
 v14 = (f14 = f14 || this_par_parseStatement(inFunction,B, inSwitch, labelSet, false, ''))(thawValue);
 if (frozen) return v14;
 else f14 = null;
-step = 52;
-case 52:
+step = 61;
+case 61:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -4984,26 +5017,27 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseForEachHeader(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // <expr> ; <expr> ) <stmt>
+step = 2; case 2:
 v0 = (f0 = f0 || this_par_parseOptionalExpressions())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_tok_mustBeNum(0x3b, true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_par_parseOptionalExpressions())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+step = 7;
+case 7:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5014,22 +5048,24 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseForInHeader(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // in <exprs> ) <stmt>
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
- // `in` validated by `parseFor`
-      v1 = (f1 = f1 || this_par_parseExpressions())(thawValue);
-if (frozen) return v1;
-else f1 = null;
 step = 3;
 case 3:
+ // `in` validated by `parseFor`
+      step = 4; case 4:
+v1 = (f1 = f1 || this_par_parseExpressions())(thawValue);
+if (frozen) return v1;
+else f1 = null;
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5041,7 +5077,7 @@ var step = 1;
 var v6, v5, v4, v3, v2, v1, v0;
 var f6, f5, f4, f3, f2, f1, f0;
 var type, A, label;
-return function(thawValue){
+return function inside_this_par_parseContinue(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5049,85 +5085,86 @@ return function(thawValue){
       // continue <idntf> ;
       // newline right after keyword = asi
 if (!(!inLoop)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only continue in a loop'))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only continue in a loop'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 5;
-case 5:
-case 3:
 step = 6;
 case 6:
+case 3:
+step = 7;
+case 7:
 v1 = (f1 = f1 || this_tok_next(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 7;
-case 7:
- type = v1; // token after continue cannot be a regex, either way.
-A = type === 13 ;
-if (!A) { step = 9; continue; }
 step = 8;
 case 8:
- A =  !this_tok_lastNewline; 
+ type = v1; // token after continue cannot be a regex, either way.
+A = type === 13 ;
+if (!A) { step = 10; continue; }
 step = 9;
 case 9:
-if (!A) { step = 12; continue; }
-case 11:
-step = 14;
-case 14:
+ A =  !this_tok_lastNewline; 
+step = 10;
+case 10:
+if (!A) { step = 13; continue; }
+case 12:
+step = 15;
+case 15:
 v2 = (f2 = f2 || this_tok_getLastValue())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 15;
-case 15:
- label = v2;
-          A = !labelSet ;
-if (!(!A)) { step = 17; continue; }
 step = 16;
 case 16:
- A =  labelSet.indexOf(' '+label+' ') < 0; 
+ label = v2;
+          A = !labelSet ;
+if (!(!A)) { step = 18; continue; }
 step = 17;
 case 17:
-if (!A) { step = 20; continue; }
-step = 19;
-case 19:
+ A =  labelSet.indexOf(' '+label+' ') < 0; 
+step = 18;
+case 18:
+if (!A) { step = 21; continue; }
+case 20:
+step = 23; case 23:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 22:
-step = 20;
-case 20:
-  A = !inLoop ;
-if (!(!A)) { step = 24; continue; }
-step = 23;
-case 23:
- A =  inLoop.indexOf(' '+label+' ') < 0; 
-step = 24;
 case 24:
-if (!A) { step = 27; continue; }
+step = 21;
+case 21:
+  A = !inLoop ;
+if (!(!A)) { step = 26; continue; }
+step = 25;
+case 25:
+ A =  inLoop.indexOf(' '+label+' ') < 0; 
 step = 26;
 case 26:
+if (!A) { step = 29; continue; }
+case 28:
+step = 31; case 31:
 v4 = (f4 = f4 || this_tok_throwSyntaxError('Label ['+label+'] is not a valid label for this loop'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
+step = 32;
+case 32:
 case 29:
-step = 27;
-case 27:
+step = 33; case 33:
 v5 = (f5 = f5 || this_tok_next(true))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 30;
-case 30:
+step = 34;
+case 34:
  // label (already validated)
 // continue without a label. note that this doesnt "allow" non-identifiers since it'll require a semi/asi next.
-step = 12;
-case 12:
+case 13:
+step = 35; case 35:
 v6 = (f6 = f6 || this_par_parseSemi())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 31;
-case 31:
+step = 36;
+case 36:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5139,7 +5176,7 @@ var step = 1;
 var v5, v4, v3, v2, v1, v0;
 var f5, f4, f3, f2, f1, f0;
 var type, A, label;
-return function(thawValue){
+return function inside_this_par_parseBreak(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5177,52 +5214,54 @@ if (!A) { step = 14; continue; }
 step = 13;
 case 13:
 // break without label
-          v1 = (f1 = f1 || this_tok_throwSyntaxError('Break without value only in loops or switches'))(thawValue);
+          step = 16; case 16:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('Break without value only in loops or switches'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 16;
-case 16:
+step = 17;
+case 17:
 case 14:
 step = 9;
 continue;
 case 8:
-step = 17;
-case 17:
+step = 18;
+case 18:
 v2 = (f2 = f2 || this_tok_getLastValue())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 18;
-case 18:
- label = v2;
-          A = !labelSet ;
-if (!(!A)) { step = 20; continue; }
 step = 19;
 case 19:
- A =  labelSet.indexOf(' '+label+' ') < 0; 
+ label = v2;
+          A = !labelSet ;
+if (!(!A)) { step = 21; continue; }
 step = 20;
 case 20:
-if (!A) { step = 23; continue; }
-step = 22;
-case 22:
+ A =  labelSet.indexOf(' '+label+' ') < 0; 
+step = 21;
+case 21:
+if (!A) { step = 24; continue; }
+case 23:
+step = 26; case 26:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Label ['+label+'] not found in label set ['+labelSet+']'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 25:
-step = 23;
-case 23:
+step = 27;
+case 27:
+case 24:
+step = 28; case 28:
 v4 = (f4 = f4 || this_tok_next(true))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 26;
-case 26:
+step = 29;
+case 29:
  // label (already validated)
-step = 9;
 case 9:
+step = 30; case 30:
 v5 = (f5 = f5 || this_par_parseSemi())(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 27;
-case 27:
+step = 31;
+case 31:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5234,7 +5273,7 @@ var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
 var A;
-return function(thawValue){
+return function inside_this_par_parseReturn(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5249,33 +5288,35 @@ case 2:
 step = 3;
 case 3:
 if (!A) { step = 6; continue; }
-step = 5;
 case 5:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only return in a function'))(thawValue);
+ step = 8; case 8:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only return in a function'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 8:
-step = 6;
+step = 9;
+case 9:
 case 6:
+step = 10; case 10:
 v1 = (f1 = f1 || this_tok_next(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 9;
-case 9:
-if (!(!this_tok_lastNewline)) { step = 11; continue; }
-step = 10;
-case 10:
- v2 = (f2 = f2 || this_par_parseOptionalExpressions())(thawValue);
-if (frozen) return v2;
-else f2 = null;
-case 13:
 step = 11;
 case 11:
+if (!(!this_tok_lastNewline)) { step = 13; continue; }
+case 12:
+ step = 15; case 15:
+v2 = (f2 = f2 || this_par_parseOptionalExpressions())(thawValue);
+if (frozen) return v2;
+else f2 = null;
+step = 16;
+case 16:
+case 13:
+step = 17; case 17:
 v3 = (f3 = f3 || this_par_parseSemi())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 14;
-case 14:
+step = 18;
+case 18:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5286,35 +5327,37 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseThrow(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // throw <exprs> ;
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
-if (!(this_tok_lastNewline)) { step = 4; continue; }
 step = 3;
 case 3:
- v1 = (f1 = f1 || this_tok_throwSyntaxError('No newline allowed directly after a throw, ever'))(thawValue);
+if (!(this_tok_lastNewline)) { step = 5; continue; }
+case 4:
+ step = 7; case 7:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('No newline allowed directly after a throw, ever'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 6:
-step = 4;
-case 4:
+step = 8;
+case 8:
+case 5:
+step = 9; case 9:
 v2 = (f2 = f2 || this_par_parseExpressions())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 7;
-case 7:
+case 10:
+step = 11; case 11:
 v3 = (f3 = f3 || this_par_parseSemi())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 8;
-case 8:
+step = 12;
+case 12:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5326,112 +5369,114 @@ var step = 1;
 var v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var value, defaults, A;
-return function(thawValue){
+return function inside_this_par_parseSwitch(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // switch ( <exprs> ) { <switchbody> }
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseStatementHeader())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_tok_mustBeNum(0x7b, true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 4:
-step = 5;
-case 5:
+case 7:
+step = 8;
+case 8:
 v3 = (f3 = f3 || this_tok_getLastValue())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 6;
-case 6:
+step = 9;
+case 9:
  value = v3;
        defaults = 0;
-      if (!(value === 'default')) { step = 8; continue; }
-step = 7;
-case 7:
- ++defaults;
-step = 8;
-case 8:
-  A = value !== 'case' ;
-if (!A) { step = 11; continue; }
+      if (!(value === 'default')) { step = 11; continue; }
 step = 10;
 case 10:
- A =  !defaults ;  
+ ++defaults;
 step = 11;
 case 11:
+  A = value !== 'case' ;
 if (!A) { step = 14; continue; }
 step = 13;
 case 13:
- A =  value !== '}'; 
+ A =  !defaults ;  
 step = 14;
 case 14:
 if (!A) { step = 17; continue; }
 step = 16;
 case 16:
- v4 = (f4 = f4 || this_tok_throwSyntaxError('Switch body must begin with case or default or be empty'))(thawValue);
-if (frozen) return v4;
-else f4 = null;
-case 19:
+ A =  value !== '}'; 
 step = 17;
 case 17:
-// while start [black=8627]
+if (!A) { step = 20; continue; }
+case 19:
+ step = 22; case 22:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Switch body must begin with case or default or be empty'))(thawValue);
+if (frozen) return v4;
+else f4 = null;
+case 23:
+step = 20;
 case 20:
-step = 22;
-case 22:
+// while start [black=8618]
+case 24:
+step = 26;
+case 26:
 v5 = (f5 = f5 || this_par_parseStatement(inFunction, inLoop, true, labelSet, true, ''))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 23;
-case 23:
-if (!(!(v5))) { step = 25; continue; }
-step = 24;
-case 24:
-// break to loop [black=8627] end
-step = 21;
-continue;
-case 25:
-// switches are quite infrequent so this overhead is okay, compared ot the alternatives
 step = 27;
 case 27:
+if (!(!(v5))) { step = 29; continue; }
+step = 28;
+case 28:
+// break to loop [black=8618] end
+step = 25;
+continue;
+case 29:
+// switches are quite infrequent so this overhead is okay, compared ot the alternatives
+step = 31;
+case 31:
 v6 = (f6 = f6 || this_tok_getLastValue())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 28;
-case 28:
- A = v6 === 'default' ;
-if (!A) { step = 30; continue; }
-step = 29;
-case 29:
- A =  ++defaults > 1; 
-step = 30;
-case 30:
-if (!A) { step = 33; continue; }
 step = 32;
 case 32:
- v7 = (f7 = f7 || this_tok_throwSyntaxError('Only one default allowed per switch'))(thawValue);
-if (frozen) return v7;
-else f7 = null;
-case 35:
+ A = v6 === 'default' ;
+if (!A) { step = 34; continue; }
 step = 33;
 case 33:
-// back to start of while [black=8627]
-step = 20;
+ A =  ++defaults > 1; 
+step = 34;
+case 34:
+if (!A) { step = 37; continue; }
+case 36:
+ step = 39; case 39:
+v7 = (f7 = f7 || this_tok_throwSyntaxError('Only one default allowed per switch'))(thawValue);
+if (frozen) return v7;
+else f7 = null;
+case 40:
+step = 37;
+case 37:
+// back to start of while [black=8618]
+step = 24;
 continue
-// end of while [black=8627]
-case 21:
+// end of while [black=8618]
+case 25:
+step = 41; case 41:
 v8 = (f8 = f8 || this_tok_mustBeNum(0x7d, true))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-step = 36;
-case 36:
+step = 42;
+case 42:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5442,34 +5487,35 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseCase(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(!inSwitch)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only use case in a switch'))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only use case in a switch'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-case 5:
-step = 3;
+step = 6;
+case 6:
 case 3:
+step = 7; case 7:
 v1 = (f1 = f1 || this_tok_next(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 6;
-case 6:
+case 8:
+step = 9; case 9:
 v2 = (f2 = f2 || this_par_parseExpressions())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 7;
-case 7:
+case 10:
+step = 11; case 11:
 v3 = (f3 = f3 || this_tok_mustBeNum(0x3a, false))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 8;
-case 8:
+step = 12;
+case 12:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5480,31 +5526,31 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseDefault(thawValue){
   while (true) {
     switch (step) {
       case 1:
 if (!(!inSwitch)) { step = 3; continue; }
-step = 2;
 case 2:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only use default in a switch'))(thawValue);
+ step = 5; case 5:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only use default in a switch'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 5;
-case 5:
+step = 6;
+case 6:
  // cant really hit this right now because label checks supersede it
-step = 3;
 case 3:
+step = 7; case 7:
 v1 = (f1 = f1 || this_tok_next(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 6;
-case 6:
+case 8:
+step = 9; case 9:
 v2 = (f2 = f2 || this_tok_mustBeNum(0x3a, false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 7;
-case 7:
+step = 10;
+case 10:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5516,43 +5562,45 @@ var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
 var count;
-return function(thawValue){
+return function inside_this_par_parseTry(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // try { <stmts> } catch ( <idntf> ) { <stmts> }
       // try { <stmts> } finally { <stmts> }
       // try { <stmts> } catch ( <idntf> ) { <stmts> } finally { <stmts> }
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 count = this_tok_tokenCountAll;
-      v2 = (f2 = f2 || this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet))(thawValue);
+      step = 6; case 6:
+v2 = (f2 = f2 || this_par_parseCatch(inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+case 7:
+step = 8; case 8:
 v3 = (f3 = f3 || this_par_parseFinally(inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 5;
-case 5:
-if (!(count === this_tok_tokenCountAll)) { step = 7; continue; }
-step = 6;
-case 6:
- v4 = (f4 = f4 || this_tok_throwSyntaxError('Try must have at least a catch or finally block or both'))(thawValue);
+step = 9;
+case 9:
+if (!(count === this_tok_tokenCountAll)) { step = 11; continue; }
+case 10:
+ step = 13; case 13:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Try must have at least a catch or finally block or both'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-case 9:
-step = 7;
-case 7:
+case 14:
+step = 11;
+case 11:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5564,7 +5612,7 @@ var step = 1;
 var v7, v6, v5, v4, v3, v2, v1, v0;
 var f7, f6, f5, f4, f3, f2, f1, f0;
 var type;
-return function(thawValue){
+return function inside_this_par_parseCatch(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5597,36 +5645,39 @@ else f2 = null;
 step = 13;
 case 13:
 if (!(v2)) { step = 15; continue; }
-step = 14;
 case 14:
- v3 = (f3 = f3 || this_tok_throwSyntaxError('Catch scope var name is reserved'))(thawValue);
+ step = 17; case 17:
+v3 = (f3 = f3 || this_tok_throwSyntaxError('Catch scope var name is reserved'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 17:
-step = 15;
+step = 18;
+case 18:
 case 15:
+step = 19; case 19:
 v4 = (f4 = f4 || this_tok_next(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-case 18:
+case 20:
 step = 11;
 continue;
 case 10:
+step = 21; case 21:
 v5 = (f5 = f5 || this_tok_throwSyntaxError('Missing catch scope variable'))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-case 19:
-step = 11;
+step = 22;
+case 22:
 case 11:
+step = 23; case 23:
 v6 = (f6 = f6 || this_tok_mustBeNum(0x29, false))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 20;
-case 20:
+case 24:
+step = 25; case 25:
 v7 = (f7 = f7 || this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-case 21:
+case 26:
 step = 5;
 case 5:
 return;
@@ -5639,7 +5690,7 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseFinally(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5652,12 +5703,12 @@ else f0 = null;
 step = 3;
 case 3:
 if (!(v0)) { step = 5; continue; }
-step = 4;
 case 4:
+step = 7; case 7:
 v1 = (f1 = f1 || this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 7:
+case 8:
 step = 5;
 case 5:
 return;
@@ -5670,21 +5721,22 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseDebugger(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // debugger ;
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseSemi())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5695,26 +5747,27 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseWith(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // with ( <exprs> ) <stmts>
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseStatementHeader())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_par_parseStatement(inFunction, inLoop, inSwitch, labelSet, false, ''))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+step = 7;
+case 7:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5726,7 +5779,7 @@ var step = 1;
 var v6, v5, v4, v3, v2, v1, v0;
 var f6, f5, f4, f3, f2, f1, f0;
 var type;
-return function(thawValue){
+return function inside_this_par_parseFunction(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5752,42 +5805,43 @@ step = 8;
 case 8:
 if (!(v1)) { step = 10; continue; }
 case 9:
-step = 13;
-case 13:
+step = 14;
+case 14:
 v3 = (f3 = f3 || this_tok_getLastValue())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 14;
-case 14:
+case 15:
+step = 12; case 12:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Function name ['+v3+'] is reserved'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 12:
-step = 10;
+step = 13;
+case 13:
 case 10:
+step = 16; case 16:
 v4 = (f4 = f4 || this_tok_next(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-case 15:
+case 17:
 step = 6;
 continue;
 case 5:
- if (!(forFunctionDeclaration)) { step = 17; continue; }
-step = 16;
-case 16:
+ if (!(forFunctionDeclaration)) { step = 19; continue; }
+case 18:
+step = 21; case 21:
 v5 = (f5 = f5 || this_tok_throwSyntaxError('Function declaration requires a name'))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 19;
-case 19:
+step = 22;
+case 22:
 case 6:
-step = 17;
-case 17:
+case 19:
+step = 23; case 23:
 v6 = (f6 = f6 || this_par_parseFunctionRemainder(2, forFunctionDeclaration))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 20;
-case 20:
+step = 24;
+case 24:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5798,30 +5852,31 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseFunctionRemainder(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_mustBeNum(0x28, false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseParameters(paramCount))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_tok_mustBeNum(0x29, false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+case 7:
+step = 8; case 8:
 v3 = (f3 = f3 || this_par_parseCompleteBlock(nextExpr, true, '', false, ''))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 5;
-case 5:
+step = 9;
+case 9:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5832,7 +5887,7 @@ return;
 var step = 1;
 var v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseParameters(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -5841,113 +5896,116 @@ if (!(this_tok_lastType === 13)) { step = 3; continue; }
 step = 2;
 case 2:
 if (!(paramCount === 0)) { step = 6; continue; }
-step = 5;
 case 5:
- v0 = (f0 = f0 || this_tok_throwSyntaxError('Getters have no parameters'))(thawValue);
+ step = 8; case 8:
+v0 = (f0 = f0 || this_tok_throwSyntaxError('Getters have no parameters'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 8;
-case 8:
-case 6:
 step = 9;
 case 9:
+case 6:
+step = 10;
+case 10:
 v1 = (f1 = f1 || this_par_isReservedIdentifier(false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 10;
-case 10:
-if (!(v1)) { step = 12; continue; }
 step = 11;
 case 11:
- v2 = (f2 = f2 || this_tok_throwSyntaxError('Function param name is reserved.'))(thawValue);
+if (!(v1)) { step = 13; continue; }
+case 12:
+ step = 15; case 15:
+v2 = (f2 = f2 || this_tok_throwSyntaxError('Function param name is reserved.'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 14:
-step = 12;
-case 12:
+step = 16;
+case 16:
+case 13:
+step = 17; case 17:
 v3 = (f3 = f3 || this_tok_next(true))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 15;
-case 15:
-// there are only two valid next tokens; either a comma or a closing paren
-// while start [black=9154]
-case 16:
 step = 18;
 case 18:
+// there are only two valid next tokens; either a comma or a closing paren
+// while start [black=9145]
+case 19:
+step = 21;
+case 21:
 v4 = (f4 = f4 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 19;
-case 19:
-if (!(!(v4))) { step = 21; continue; }
-step = 20;
-case 20:
-// break to loop [black=9154] end
-step = 17;
-continue;
-case 21:
-if (!(paramCount === 1)) { step = 24; continue; }
+step = 22;
+case 22:
+if (!(!(v4))) { step = 24; continue; }
 step = 23;
 case 23:
- v5 = (f5 = f5 || this_tok_throwSyntaxError('Setters have exactly one param'))(thawValue);
+// break to loop [black=9145] end
+step = 20;
+continue;
+case 24:
+if (!(paramCount === 1)) { step = 27; continue; }
+case 26:
+ step = 29; case 29:
+v5 = (f5 = f5 || this_tok_throwSyntaxError('Setters have exactly one param'))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 26;
-case 26:
-// param name
-step = 24;
-case 24:
-if (!(this_tok_lastType === 13)) { step = 28; continue; }
-case 27:
 step = 30;
 case 30:
+// param name
+step = 27;
+case 27:
+if (!(this_tok_lastType === 13)) { step = 32; continue; }
+case 31:
+step = 34;
+case 34:
 v6 = (f6 = f6 || this_par_isReservedIdentifier(false))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 31;
-case 31:
-if (!(v6)) { step = 33; continue; }
-step = 32;
-case 32:
- v7 = (f7 = f7 || this_tok_throwSyntaxError('Function param name is reserved'))(thawValue);
+step = 35;
+case 35:
+if (!(v6)) { step = 37; continue; }
+case 36:
+ step = 39; case 39:
+v7 = (f7 = f7 || this_tok_throwSyntaxError('Function param name is reserved'))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-case 35:
-step = 33;
-case 33:
+step = 40;
+case 40:
+case 37:
+step = 41; case 41:
 v8 = (f8 = f8 || this_tok_next(false))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-case 36:
-step = 29;
+case 42:
+step = 33;
 continue;
-case 28:
+case 32:
+step = 43; case 43:
 v9 = (f9 = f9 || this_tok_throwSyntaxError('Missing func param name'))(thawValue);
 if (frozen) return v9;
 else f9 = null;
-case 37:
-step = 29;
-case 29:
-// back to start of while [black=9154]
-step = 16;
+case 44:
+step = 33;
+case 33:
+// back to start of while [black=9145]
+step = 19;
 continue
-// end of while [black=9154]
-case 17:
+// end of while [black=9145]
+case 20:
 step = 4;
 continue;
 case 3:
- if (!(paramCount === 1)) { step = 39; continue; }
-step = 38;
-case 38:
+ if (!(paramCount === 1)) { step = 46; continue; }
+case 45:
+step = 48; case 48:
 v10 = (f10 = f10 || this_tok_throwSyntaxError('Setters have exactly one param'))(thawValue);
 if (frozen) return v10;
 else f10 = null;
-step = 41;
-case 41:
+step = 49;
+case 49:
 case 4:
-step = 39;
-case 39:
+step = 46;
+case 46:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5958,23 +6016,25 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseBlock(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_par_parseStatements(inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+step = 3;
+case 3:
 // note: this parsing method is also used for functions. the only case where
       // the closing curly can be followed by a division rather than a regex lit
       // is with a function expression. that's why we needed to make it a parameter
-      v1 = (f1 = f1 || this_tok_mustBeNum(0x7d, nextExpr))(thawValue);
+      step = 4; case 4:
+v1 = (f1 = f1 || this_tok_mustBeNum(0x7d, nextExpr))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -5985,20 +6045,21 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseCompleteBlock(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_mustBeNum(0x7b, true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseBlock(nextExpr, inFunction, inLoop, inSwitch, labelSet))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6009,7 +6070,7 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseSemi(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6036,13 +6097,13 @@ if (!(v1)) { step = 10; continue; }
 step = 9;
 case 9:
  return 15;
-step = 10;
 case 10:
+step = 12; case 12:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Unable to parse semi, unable to apply ASI'))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 12;
-case 12:
+step = 13;
+case 13:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6054,7 +6115,7 @@ var step = 1;
 var v0;
 var f0;
 var A;
-return function(thawValue){
+return function inside_this_par_parseAsi(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6095,7 +6156,7 @@ return;
   function this_par_addAsi(){
 var step = 1;
 var pos, options, white, black, oldTop, asi;
-return function(thawValue){
+return function inside_this_par_addAsi(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6143,20 +6204,21 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseExpressionStatement(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_par_parseExpressions())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseSemi())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6168,7 +6230,7 @@ var step = 1;
 var v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var identifier, assignable, count, labelSpaced, D, F;
-return function(thawValue){
+return function inside_this_par_parseExpressionOrLabel(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6193,102 +6255,106 @@ step = 5;
 case 5:
  assignable = v1;
 count = this_tok_tokenCountAll;
-      v2 = (f2 = f2 || this_par_parseAssignments(assignable))(thawValue);
+      step = 6; case 6:
+v2 = (f2 = f2 || this_par_parseAssignments(assignable))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 6;
-case 6:
-// note: no need for grouped assignment check here (we cannot be in a group right now)
-      v3 = (f3 = f3 || this_par_parseNonAssignments())(thawValue);
-if (frozen) return v3;
-else f3 = null;
 step = 7;
 case 7:
-if (!(this_tok_firstTokenChar === 0x3a)) { step = 9; continue; }
-step = 8;
-case 8:
-if (!(this_tok_tokenCountAll !== count)) { step = 12; continue; }
-step = 11;
-case 11:
- v4 = (f4 = f4 || this_tok_throwSyntaxError('Unexpected colon encountered'))(thawValue);
+// note: no need for grouped assignment check here (we cannot be in a group right now)
+      step = 8; case 8:
+v3 = (f3 = f3 || this_par_parseNonAssignments())(thawValue);
+if (frozen) return v3;
+else f3 = null;
+step = 9;
+case 9:
+if (!(this_tok_firstTokenChar === 0x3a)) { step = 11; continue; }
+step = 10;
+case 10:
+if (!(this_tok_tokenCountAll !== count)) { step = 14; continue; }
+case 13:
+ step = 16; case 16:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Unexpected colon encountered'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
+case 17:
+step = 14;
 case 14:
-step = 12;
-case 12:
-if (!(!assignable)) { step = 16; continue; }
-step = 15;
-case 15:
- v5 = (f5 = f5 || this_tok_throwSyntaxError('Label ['+identifier+'] is a reserved keyword'))(thawValue);
+if (!(!assignable)) { step = 19; continue; }
+case 18:
+ step = 21; case 21:
+v5 = (f5 = f5 || this_tok_throwSyntaxError('Label ['+identifier+'] is a reserved keyword'))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-case 18:
-step = 16;
-case 16:
- labelSpaced = labelName + ' ';
-        if (!(labelSet.indexOf(' ' + labelSpaced) >= 0)) { step = 20; continue; }
+case 22:
 step = 19;
 case 19:
- v6 = (f6 = f6 || this_tok_throwSyntaxError('Label ['+identifier+'] is already defined'))(thawValue);
+ labelSpaced = labelName + ' ';
+        if (!(labelSet.indexOf(' ' + labelSpaced) >= 0)) { step = 24; continue; }
+case 23:
+ step = 26; case 26:
+v6 = (f6 = f6 || this_tok_throwSyntaxError('Label ['+identifier+'] is already defined'))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-case 22:
-step = 20;
-case 20:
+step = 27;
+case 27:
+case 24:
+step = 28; case 28:
 v7 = (f7 = f7 || this_tok_next(true))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 23;
-case 23:
-if (!(inLoop)) { step = 25; continue; }
-step = 24;
-case 24:
- inLoop += labelSpaced; // these are the only valid jump targets for `continue`
-step = 25;
-case 25:
-  D = labelSet ;
-if (!(!D)) { step = 28; continue; }
-step = 27;
-case 27:
- D =  ' '; 
-step = 28;
-case 28:
-  F = freshLabels;
-if (!(!F)) { step = 31; continue; }
+step = 29;
+case 29:
+if (!(inLoop)) { step = 31; continue; }
 step = 30;
 case 30:
- F = ' '; 
+ inLoop += labelSpaced; // these are the only valid jump targets for `continue`
 step = 31;
 case 31:
+  D = labelSet ;
+if (!(!D)) { step = 34; continue; }
+step = 33;
+case 33:
+ D =  ' '; 
+step = 34;
+case 34:
+  F = freshLabels;
+if (!(!F)) { step = 37; continue; }
+step = 36;
+case 36:
+ F = ' '; 
+case 37:
+step = 39; case 39:
 v8 = (f8 = f8 || this_par_parseStatement(inFunction, inLoop, inSwitch, (D)+labelSpaced, false, (F)+labelSpaced))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-case 33:
-step = 10;
+case 40:
+step = 12;
 continue;
-case 9:
-step = 34;
-case 34:
+case 11:
+step = 41;
+case 41:
 v9 = (f9 = f9 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v9;
 else f9 = null;
-step = 35;
-case 35:
-if (!(v9)) { step = 37; continue; }
-step = 36;
-case 36:
- v10 = (f10 = f10 || this_par_parseExpressions())(thawValue);
+step = 42;
+case 42:
+if (!(v9)) { step = 44; continue; }
+case 43:
+ step = 46; case 46:
+v10 = (f10 = f10 || this_par_parseExpressions())(thawValue);
 if (frozen) return v10;
 else f10 = null;
-case 39:
-step = 37;
-case 37:
+step = 47;
+case 47:
+case 44:
+step = 48; case 48:
 v11 = (f11 = f11 || this_par_parseSemi())(thawValue);
 if (frozen) return v11;
 else f11 = null;
-case 40:
-step = 10;
-case 10:
+case 49:
+step = 12;
+case 12:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6300,47 +6366,49 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var tokCount;
-return function(thawValue){
+return function inside_this_par_parseOptionalExpressions(thawValue){
   while (true) {
     switch (step) {
       case 1:
 tokCount = this_tok_tokenCountAll;
-      v0 = (f0 = f0 || this_par_parseExpressionOptional())(thawValue);
+      step = 2; case 2:
+v0 = (f0 = f0 || this_par_parseExpressionOptional())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
-if (!(tokCount !== this_tok_tokenCountAll)) { step = 4; continue; }
 step = 3;
 case 3:
-// while start [black=9794]
-case 6:
-step = 8;
-case 8:
+if (!(tokCount !== this_tok_tokenCountAll)) { step = 5; continue; }
+step = 4;
+case 4:
+// while start [black=9785]
+case 7:
+step = 9;
+case 9:
 v1 = (f1 = f1 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 9;
-case 9:
-if (!(!(v1))) { step = 11; continue; }
 step = 10;
 case 10:
-// break to loop [black=9794] end
-step = 7;
-continue;
+if (!(!(v1))) { step = 12; continue; }
+step = 11;
 case 11:
+// break to loop [black=9785] end
+step = 8;
+continue; 
+case 12:
+step = 14; case 14:
 v2 = (f2 = f2 || this_par_parseExpression())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 13;
-case 13:
-// back to start of while [black=9794]
-step = 6;
+step = 15;
+case 15:
+// back to start of while [black=9785]
+step = 7;
 continue
-// end of while [black=9794]
-case 7:
-step = 4;
-case 4:
+// end of while [black=9785]
+case 8:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6352,7 +6420,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var groupAssignable;
-return function(thawValue){
+return function inside_this_par_parseExpressions(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6365,7 +6433,7 @@ else f0 = null;
 step = 3;
 case 3:
  groupAssignable = v0;
-// while start [black=9832]
+// while start [black=9823]
 case 4:
 step = 6;
 case 6:
@@ -6377,20 +6445,21 @@ case 7:
 if (!(!(v1))) { step = 9; continue; }
 step = 8;
 case 8:
-// break to loop [black=9832] end
+// break to loop [black=9823] end
 step = 5;
-continue;
+continue; 
 case 9:
+step = 11; case 11:
 v2 = (f2 = f2 || this_par_parseExpression())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 11;
-case 11:
+step = 12;
+case 12:
 groupAssignable = 0;
-// back to start of while [black=9832]
+// back to start of while [black=9823]
 step = 4;
 continue
-// end of while [black=9832]
+// end of while [black=9823]
 case 5:
 return groupAssignable;
 return;
@@ -6404,7 +6473,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var tokCount, groupAssignable;
-return function(thawValue){
+return function inside_this_par_parseExpression(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6420,12 +6489,12 @@ case 3:
  groupAssignable = v0;
 // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
       if (!(tokCount === this_tok_tokenCountAll)) { step = 5; continue; }
-step = 4;
 case 4:
- v1 = (f1 = f1 || this_tok_throwSyntaxError('Expected to parse an expression, did not find any'))(thawValue);
+ step = 7; case 7:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('Expected to parse an expression, did not find any'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 7:
+case 8:
 step = 5;
 case 5:
 return groupAssignable;
@@ -6440,7 +6509,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var count, assignable, beforeAssignments, beforeNonAssignments, endCount;
-return function(thawValue){
+return function inside_this_par_parseExpressionOptional(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6455,37 +6524,38 @@ case 3:
  assignable = v0;
        beforeAssignments = this_tok_tokenCountAll;
       if (!(count !== beforeAssignments)) { step = 5; continue; }
-step = 4;
 case 4:
+step = 7; case 7:
 v1 = (f1 = f1 || this_par_parseAssignments(assignable))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 7;
-case 7:
-beforeNonAssignments = this_tok_tokenCountAll;
-        v2 = (f2 = f2 || this_par_parseNonAssignments())(thawValue);
-if (frozen) return v2;
-else f2 = null;
 step = 8;
 case 8:
+beforeNonAssignments = this_tok_tokenCountAll;
+        step = 9; case 9:
+v2 = (f2 = f2 || this_par_parseNonAssignments())(thawValue);
+if (frozen) return v2;
+else f2 = null;
+step = 10;
+case 10:
 endCount = this_tok_tokenCountAll;
 // if there was a non-assign binary op, the whole thing is nonassign
         // if there were only assign ops, the whole thing is assignable unless grouped
         // if there were no binary ops, the whole thing is whatever the primary was
-if (!(beforeNonAssignments !== endCount)) { step = 10; continue; }
-step = 9;
-case 9:
- assignable = 0;
+if (!(beforeNonAssignments !== endCount)) { step = 12; continue; }
 step = 11;
-continue;
-case 10:
- if (!(beforeAssignments !== beforeNonAssignments)) { step = 13; continue; }
-step = 12;
-case 12:
- assignable = 2;
 case 11:
+ assignable = 0;
 step = 13;
+continue;
+case 12:
+ if (!(beforeAssignments !== beforeNonAssignments)) { step = 15; continue; }
+step = 14;
+case 14:
+ assignable = 2;
 case 13:
+step = 15;
+case 15:
 // return state for parseGroup, to determine whether the group as a whole can be assignment lhs
       // the group needs to know about the prim expr AND any binary ops (inc assignments).
 step = 5;
@@ -6502,13 +6572,13 @@ var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
 var strictAssign, A;
-return function(thawValue){
+return function inside_this_par_parseAssignments(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // assignment ops are allowed until the first non-assignment binary op
 strictAssign = this_par_options.strictAssignmentCheck;
-// while start [black=9984]
+// while start [black=9975]
 case 2:
 step = 4;
 case 4:
@@ -6520,7 +6590,7 @@ case 5:
 if (!(!(v0))) { step = 7; continue; }
 step = 6;
 case 6:
-// break to loop [black=9984] end
+// break to loop [black=9975] end
 step = 3;
 continue;
 case 7:
@@ -6532,32 +6602,32 @@ case 9:
 step = 10;
 case 10:
 if (!A) { step = 13; continue; }
-step = 12;
 case 12:
- v1 = (f1 = f1 || this_tok_throwSyntaxError('LHS of this assignment is invalid assignee'))(thawValue);
+ step = 15; case 15:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('LHS of this assignment is invalid assignee'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 15;
-case 15:
+step = 16;
+case 16:
 // any assignment means not a for-in per definition
-step = 13;
 case 13:
+step = 17; case 17:
 v2 = (f2 = f2 || this_tok_next(true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 16:
-step = 17;
-case 17:
+case 18:
+step = 19;
+case 19:
 v3 = (f3 = f3 || this_par_parsePrimary(false))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 18;
-case 18:
+step = 20;
+case 20:
 assignable = v3;
-// back to start of while [black=9984]
+// back to start of while [black=9975]
 step = 2;
 continue
-// end of while [black=9984]
+// end of while [black=9975]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -6569,12 +6639,12 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseNonAssignments(thawValue){
   while (true) {
     switch (step) {
       case 1:
 // keep parsing non-assignment binary/ternary ops
-// while start [black=10054]
+// while start [black=10045]
 case 2:
 step = 4;
 case 4:
@@ -6584,40 +6654,40 @@ else f0 = null;
 step = 5;
 case 5:
 if (!(v0)) { step = 7; continue; }
-step = 6;
 case 6:
+step = 9; case 9:
 v1 = (f1 = f1 || this_tok_next(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 9;
-case 9:
+case 10:
+step = 11; case 11:
 v2 = (f2 = f2 || this_par_parsePrimary(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 10:
+case 12:
 step = 8;
 continue;
 case 7:
- if (!(this_tok_firstTokenChar === 0x3f)) { step = 12; continue; }
-step = 11;
-case 11:
- v3 = (f3 = f3 || this_par_parseTernary())(thawValue);
+ if (!(this_tok_firstTokenChar === 0x3f)) { step = 14; continue; }
+case 13:
+ step = 16; case 16:
+v3 = (f3 = f3 || this_par_parseTernary())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 14:
-step = 13;
+case 17:
+step = 15;
 continue;
-case 12:
-// break to loop [black=10054] end
+case 14:
+// break to loop [black=10045] end
 step = 3;
 continue;
 case 8:
-step = 13;
-case 13:
-// back to start of while [black=10054]
+step = 15;
+case 15:
+// back to start of while [black=10045]
 step = 2;
 continue
-// end of while [black=10054]
+// end of while [black=10045]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -6629,30 +6699,31 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseTernary(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseExpression())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_tok_mustBeNum(0x3a, true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+case 7:
+step = 8; case 8:
 v3 = (f3 = f3 || this_par_parseExpression())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 5;
-case 5:
+step = 9;
+case 9:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6663,30 +6734,31 @@ return;
 var step = 1;
 var v3, v2, v1, v0;
 var f3, f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseTernaryNoIn(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseExpression())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+case 5:
+step = 6; case 6:
 v2 = (f2 = f2 || this_tok_mustBeNum(0x3a, true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 4;
-case 4:
+case 7:
+step = 8; case 8:
 v3 = (f3 = f3 || this_par_parseExpressionNoIn())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 5;
-case 5:
+step = 9;
+case 9:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -6698,7 +6770,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var validForInLhs;
-return function(thawValue){
+return function inside_this_par_parseExpressionsNoIn(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6710,7 +6782,7 @@ else f0 = null;
 step = 3;
 case 3:
  validForInLhs = v0;
-// while start [black=10159]
+// while start [black=10150]
 case 4:
 step = 6;
 case 6:
@@ -6722,21 +6794,22 @@ case 7:
 if (!(!(v1))) { step = 9; continue; }
 step = 8;
 case 8:
-// break to loop [black=10159] end
+// break to loop [black=10150] end
 step = 5;
 continue;
 case 9:
 // lhs of for-in cant be multiple expressions
-        v2 = (f2 = f2 || this_par_parseExpressionNoIn())(thawValue);
+        step = 11; case 11:
+v2 = (f2 = f2 || this_par_parseExpressionNoIn())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 11;
-case 11:
+step = 12;
+case 12:
 validForInLhs = 0;
-// back to start of while [black=10159]
+// back to start of while [black=10150]
 step = 4;
 continue
-// end of while [black=10159]
+// end of while [black=10150]
 case 5:
 return validForInLhs;
 return;
@@ -6750,7 +6823,7 @@ var step = 1;
 var v6, v5, v4, v3, v2, v1, v0;
 var f6, f5, f4, f3, f2, f1, f0;
 var assignable, count, repeat, A;
-return function(thawValue){
+return function inside_this_par_parseExpressionNoIn(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6763,99 +6836,101 @@ step = 3;
 case 3:
  assignable = v0;
 count = this_tok_tokenCountAll;
-      v1 = (f1 = f1 || this_par_parseAssignments(assignable))(thawValue);
+      step = 4; case 4:
+v1 = (f1 = f1 || this_par_parseAssignments(assignable))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 4;
-case 4:
+step = 5;
+case 5:
  // any assignment is illegal in for-in, with and without group. no need to check here.
 // keep parsing non-assignment binary/ternary ops unless `in`
        repeat = true;
-// while start [black=10219]
-step = 5;
-case 5:
-if (!(!(repeat))) { step = 8; continue; }
-step = 7;
-case 7:
-// break to loop [black=10219] end
+// while start [black=10210]
 step = 6;
-continue; 
+case 6:
+if (!(!(repeat))) { step = 9; continue; }
+step = 8;
 case 8:
-step = 10;
-case 10:
+// break to loop [black=10210] end
+step = 7;
+continue; 
+case 9:
+step = 11;
+case 11:
 v2 = (f2 = f2 || this_par_isBinaryOperator())(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 11;
-case 11:
-if (!(v2)) { step = 13; continue; }
 step = 12;
 case 12:
+if (!(v2)) { step = 14; continue; }
+step = 13;
+case 13:
 // rationale for using getLastNum; this is the `in` check which will succeed
           // about 50% of the time (stats from 8mb of various js). the other time it
           // will check for a primary. it's therefore more likely that an getLastNum will
           // save time because it would cache the charCodeAt for the other token if
           // it failed the check
             A = this_tok_firstTokenChar === 0x69 ;
-if (!A) { step = 16; continue; }
-case 15:
-step = 18;
-case 18:
+if (!A) { step = 17; continue; }
+case 16:
+step = 19;
+case 19:
 v3 = (f3 = f3 || this_tok_getNum(1))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 19;
-case 19:
-A =  v3 === 0x6e ;  
-step = 16;
-case 16:
-if (!A) { step = 21; continue; }
 step = 20;
 case 20:
- A =  this_tok_lastLen === 2; 
+A =  v3 === 0x6e ;  
+step = 17;
+case 17:
+if (!A) { step = 22; continue; }
 step = 21;
 case 21:
-if (!A) { step = 24; continue; }
-step = 23;
-case 23:
+ A =  this_tok_lastLen === 2; 
+step = 22;
+case 22:
+if (!A) { step = 25; continue; }
+step = 24;
+case 24:
   // in
             repeat = false;
-step = 25;
+step = 26;
 continue;
-case 24:
+case 25:
+step = 27; case 27:
 v4 = (f4 = f4 || this_tok_next(true))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 26;
-case 26:
+case 28:
+step = 29; case 29:
 v5 = (f5 = f5 || this_par_parsePrimary(false))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 27;
-case 27:
-case 25:
-step = 14;
+step = 30;
+case 30:
+case 26:
+step = 15;
 continue;
-case 13:
- if (!(this_tok_firstTokenChar === 0x3f)) { step = 29; continue; }
-step = 28;
-case 28:
+case 14:
+ if (!(this_tok_firstTokenChar === 0x3f)) { step = 32; continue; }
+case 31:
+step = 34; case 34:
 v6 = (f6 = f6 || this_par_parseTernaryNoIn())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-case 31:
-step = 30;
+case 35:
+step = 33;
 continue;
-case 29:
+case 32:
 repeat = false;
-case 14:
-step = 30;
-case 30:
-// back to start of while [black=10219]
-step = 5;
+case 15:
+step = 33;
+case 33:
+// back to start of while [black=10210]
+step = 6;
 continue
-// end of while [black=10219]
-case 6:
+// end of while [black=10210]
+case 7:
 return count === this_tok_tokenCountAll ? assignable : 0;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -6867,7 +6942,7 @@ return;
 var step = 1;
 var v0;
 var f0;
-return function(thawValue){
+return function inside_this_par_parsePrimary(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6890,7 +6965,7 @@ var step = 1;
 var v26, v25, v24, v23, v22, v21, v20, v19, v18, v17, v16, v15, v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var len, c, A, B, assignable;
-return function(thawValue){
+return function inside_this_par_parsePrimaryOrPrefix(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -6934,309 +7009,314 @@ if (!A) { step = 17; continue; }
 step = 16;
 case 16:
 if (!(hasNew)) { step = 20; continue; }
-step = 19;
 case 19:
- v1 = (f1 = f1 || this_tok_throwSyntaxError('typeof is illegal right after new'))(thawValue);
+ step = 22; case 22:
+v1 = (f1 = f1 || this_tok_throwSyntaxError('typeof is illegal right after new'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 22:
-step = 20;
+step = 23;
+case 23:
 case 20:
+step = 24; case 24:
 v2 = (f2 = f2 || this_par_parsePrimaryOrPrefix(false, false, false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 23;
-case 23:
+step = 25;
+case 25:
 return 0;
 case 17:
 step = 10;
 continue;
 case 9:
    A = this_tok_firstTokenChar === 0x66 ;
-if (!A) { step = 25; continue; }
-case 24:
-step = 27;
-case 27:
+if (!A) { step = 27; continue; }
+case 26:
+step = 29;
+case 29:
 v3 = (f3 = f3 || this_tok_getLastValue())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 28;
-case 28:
+step = 30;
+case 30:
 A =  v3 === 'function'; 
-step = 25;
-case 25:
-if (!A) { step = 30; continue; }
-step = 29;
-case 29:
+step = 27;
+case 27:
+if (!A) { step = 32; continue; }
+case 31:
+step = 34; case 34:
 v4 = (f4 = f4 || this_par_parseFunction(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 32;
-case 32:
+step = 35;
+case 35:
 // can never assign to function directly
-step = 33;
-case 33:
+step = 36;
+case 36:
 v5 = (f5 = f5 || this_par_parsePrimarySuffixes(0, hasNew, false))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 34;
-case 34:
+step = 37;
+case 37:
 return v5;
-step = 31;
+step = 33;
 continue;
-case 30:
- if (!(c === 0x6e)) { step = 36; continue; }
-case 35:
-step = 38;
+case 32:
+ if (!(c === 0x6e)) { step = 39; continue; }
 case 38:
+step = 41;
+case 41:
 v6 = (f6 = f6 || this_tok_nextExprIfString('new'))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 39;
-case 39:
-if (!(v6)) { step = 41; continue; }
-step = 40;
-case 40:
+step = 42;
+case 42:
+if (!(v6)) { step = 44; continue; }
+step = 43;
+case 43:
 // new is actually assignable if it has a trailing property AND at least one paren pair
               // TOFIX: isn't the OR flawed? HASNEW is a constant...
                 B =  true ;
-if (!(!B)) { step = 44; continue; }
-step = 43;
-case 43:
- B =  hasNew; 
-case 44:
+if (!(!B)) { step = 47; continue; }
 step = 46;
 case 46:
+ B =  hasNew; 
+case 47:
+step = 49;
+case 49:
 v7 = (f7 = f7 || this_par_parsePrimaryOrPrefix(false,B, false))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 47;
-case 47:
+step = 50;
+case 50:
 return v7;
-case 41:
-step = 37;
+case 44:
+step = 40;
 continue;
-case 36:
- if (!(c === 0x64)) { step = 49; continue; }
-step = 48;
-case 48:
-A = len === 6 ;
-if (!A) { step = 52; continue; }
+case 39:
+ if (!(c === 0x64)) { step = 52; continue; }
+step = 51;
 case 51:
-step = 54;
+A = len === 6 ;
+if (!A) { step = 55; continue; }
 case 54:
+step = 57;
+case 57:
 v8 = (f8 = f8 || this_tok_nextExprIfString('delete'))(thawValue);
 if (frozen) return v8;
 else f8 = null;
+step = 58;
+case 58:
+A =  v8; 
 step = 55;
 case 55:
-A =  v8; 
-step = 52;
-case 52:
-if (!A) { step = 57; continue; }
-step = 56;
-case 56:
-if (!(hasNew)) { step = 60; continue; }
+if (!A) { step = 60; continue; }
 step = 59;
 case 59:
- v9 = (f9 = f9 || this_tok_throwSyntaxError('delete is illegal right after new'))(thawValue);
+if (!(hasNew)) { step = 63; continue; }
+case 62:
+ step = 65; case 65:
+v9 = (f9 = f9 || this_tok_throwSyntaxError('delete is illegal right after new'))(thawValue);
 if (frozen) return v9;
 else f9 = null;
-case 62:
-step = 60;
-case 60:
+step = 66;
+case 66:
+case 63:
+step = 67; case 67:
 v10 = (f10 = f10 || this_par_parsePrimaryOrPrefix(false, false, false))(thawValue);
 if (frozen) return v10;
 else f10 = null;
-step = 63;
-case 63:
+step = 68;
+case 68:
 return 0;
-case 57:
-step = 50;
+case 60:
+step = 53;
 continue;
-case 49:
- if (!(c === 0x76)) { step = 65; continue; }
-case 64:
-step = 67;
-case 67:
+case 52:
+ if (!(c === 0x76)) { step = 70; continue; }
+case 69:
+step = 72;
+case 72:
 v11 = (f11 = f11 || this_tok_nextExprIfString('void'))(thawValue);
 if (frozen) return v11;
 else f11 = null;
-step = 68;
-case 68:
-if (!(v11)) { step = 70; continue; }
-step = 69;
-case 69:
-if (!(hasNew)) { step = 73; continue; }
-step = 72;
-case 72:
- v12 = (f12 = f12 || this_tok_throwSyntaxError('void is illegal right after new'))(thawValue);
-if (frozen) return v12;
-else f12 = null;
-case 75:
 step = 73;
 case 73:
+if (!(v11)) { step = 75; continue; }
+step = 74;
+case 74:
+if (!(hasNew)) { step = 78; continue; }
+case 77:
+ step = 80; case 80:
+v12 = (f12 = f12 || this_tok_throwSyntaxError('void is illegal right after new'))(thawValue);
+if (frozen) return v12;
+else f12 = null;
+step = 81;
+case 81:
+case 78:
+step = 82; case 82:
 v13 = (f13 = f13 || this_par_parsePrimaryOrPrefix(false, false, false))(thawValue);
 if (frozen) return v13;
 else f13 = null;
-step = 76;
-case 76:
+step = 83;
+case 83:
 return 0;
+case 75:
+step = 33;
+case 33:
+case 40:
+step = 53;
+case 53:
 case 70:
-step = 31;
-case 31:
-case 37:
-step = 50;
-case 50:
-case 65:
 step = 10;
 case 10:
 case 6:
-step = 77;
-case 77:
+step = 84;
+case 84:
 v14 = (f14 = f14 || this_par_parsePrimaryCoreIdentifier(hasNew, maybeLabel))(thawValue);
 if (frozen) return v14;
 else f14 = null;
-step = 78;
-case 78:
+step = 85;
+case 85:
 return v14;
 step = 3;
 case 3:
   A = c === 0x21 ;
-if (!(!A)) { step = 80; continue; }
-step = 79;
-case 79:
+if (!(!A)) { step = 87; continue; }
+step = 86;
+case 86:
  A =  c === 0x7e; 
-step = 80;
-case 80:
+step = 87;
+case 87:
   A = (A) ;
-if (!A) { step = 83; continue; }
-step = 82;
-case 82:
- A =  this_tok_lastLen === 1; 
-step = 83;
-case 83:
-if (!A) { step = 86; continue; }
-step = 85;
-case 85:
-if (!(hasNew)) { step = 89; continue; }
-step = 88;
-case 88:
- v15 = (f15 = f15 || this_tok_throwSyntaxError('! and ~ are illegal right after new'))(thawValue);
-if (frozen) return v15;
-else f15 = null;
-case 91:
+if (!A) { step = 90; continue; }
 step = 89;
 case 89:
+ A =  this_tok_lastLen === 1; 
+step = 90;
+case 90:
+if (!A) { step = 93; continue; }
+step = 92;
+case 92:
+if (!(hasNew)) { step = 96; continue; }
+case 95:
+ step = 98; case 98:
+v15 = (f15 = f15 || this_tok_throwSyntaxError('! and ~ are illegal right after new'))(thawValue);
+if (frozen) return v15;
+else f15 = null;
+step = 99;
+case 99:
+case 96:
+step = 100; case 100:
 v16 = (f16 = f16 || this_tok_next(true))(thawValue);
 if (frozen) return v16;
 else f16 = null;
-step = 92;
-case 92:
+case 101:
+step = 102; case 102:
 v17 = (f17 = f17 || this_par_parsePrimaryOrPrefix(false, false, false))(thawValue);
 if (frozen) return v17;
 else f17 = null;
-step = 93;
-case 93:
-return 0;
-step = 86;
-case 86:
-  A = c === 0x2d ;
-if (!(!A)) { step = 95; continue; }
-step = 94;
-case 94:
- A =  c === 0x2b; 
-step = 95;
-case 95:
-if (!A) { step = 98; continue; }
-step = 97;
-case 97:
-if (!(hasNew)) { step = 101; continue; }
-step = 100;
-case 100:
- v18 = (f18 = f18 || this_tok_throwSyntaxError('illegal operator right after new'))(thawValue);
-if (frozen) return v18;
-else f18 = null;
 step = 103;
 case 103:
-// have to verify len anyways, for += and -= case
-step = 101;
-case 101:
-if (!(this_tok_lastLen === 1)) { step = 105; continue; }
+return 0;
+step = 93;
+case 93:
+  A = c === 0x2d ;
+if (!(!A)) { step = 105; continue; }
 step = 104;
 case 104:
+ A =  c === 0x2b; 
+step = 105;
+case 105:
+if (!A) { step = 108; continue; }
+step = 107;
+case 107:
+if (!(hasNew)) { step = 111; continue; }
+case 110:
+ step = 113; case 113:
+v18 = (f18 = f18 || this_tok_throwSyntaxError('illegal operator right after new'))(thawValue);
+if (frozen) return v18;
+else f18 = null;
+step = 114;
+case 114:
+// have to verify len anyways, for += and -= case
+step = 111;
+case 111:
+if (!(this_tok_lastLen === 1)) { step = 116; continue; }
+case 115:
+step = 118; case 118:
 v19 = (f19 = f19 || this_tok_next(true))(thawValue);
 if (frozen) return v19;
 else f19 = null;
-step = 107;
-case 107:
+case 119:
+step = 120; case 120:
 v20 = (f20 = f20 || this_par_parsePrimaryOrPrefix(false, false, false))(thawValue);
 if (frozen) return v20;
 else f20 = null;
-case 108:
-step = 106;
+case 121:
+step = 117;
 continue;
-case 105:
-step = 109;
-case 109:
+case 116:
+step = 122;
+case 122:
 v21 = (f21 = f21 || this_tok_getNum(1))(thawValue);
 if (frozen) return v21;
 else f21 = null;
-step = 110;
-case 110:
-if (!(v21 === c)) { step = 112; continue; }
-step = 111;
-case 111:
+step = 123;
+case 123:
+if (!(v21 === c)) { step = 125; continue; }
+case 124:
+step = 127; case 127:
 v22 = (f22 = f22 || this_tok_next(true))(thawValue);
 if (frozen) return v22;
 else f22 = null;
-case 114:
-step = 115;
-case 115:
+case 128:
+step = 129;
+case 129:
 v23 = (f23 = f23 || this_par_parsePrimaryOrPrefix(false, false, false))(thawValue);
 if (frozen) return v23;
 else f23 = null;
-step = 116;
-case 116:
+step = 130;
+case 130:
  assignable = v23;
             A = !assignable ;
-if (!A) { step = 118; continue; }
-step = 117;
-case 117:
+if (!A) { step = 132; continue; }
+step = 131;
+case 131:
  A =  this_par_options.strictAssignmentCheck; 
-step = 118;
-case 118:
-if (!A) { step = 121; continue; }
-step = 120;
-case 120:
- v24 = (f24 = f24 || this_tok_throwSyntaxError('The rhs of ++ or -- was not assignable'))(thawValue);
+step = 132;
+case 132:
+if (!A) { step = 135; continue; }
+case 134:
+ step = 137; case 137:
+v24 = (f24 = f24 || this_tok_throwSyntaxError('The rhs of ++ or -- was not assignable'))(thawValue);
 if (frozen) return v24;
 else f24 = null;
-step = 123;
-case 123:
-case 121:
-step = 113;
+step = 138;
+case 138:
+case 135:
+step = 126;
 continue;
-case 112:
+case 125:
 // this is a += or -= token (there's no other possibility left)
           // I believe it is illegal at this point :)
-          v25 = (f25 = f25 || this_tok_throwSyntaxError('Illegal operator, expecting primary core'))(thawValue);
+          step = 139; case 139:
+v25 = (f25 = f25 || this_tok_throwSyntaxError('Illegal operator, expecting primary core'))(thawValue);
 if (frozen) return v25;
 else f25 = null;
-step = 124;
-case 124:
-case 106:
-step = 113;
-case 113:
+step = 140;
+case 140:
+case 117:
+step = 126;
+case 126:
 return 0;
-case 98:
-step = 125;
-case 125:
+case 108:
+step = 141;
+case 141:
 v26 = (f26 = f26 || this_par_parsePrimaryCoreOther(optional, hasNew))(thawValue);
 if (frozen) return v26;
 else f26 = null;
-step = 126;
-case 126:
+step = 142;
+case 142:
 return v26;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -7249,7 +7329,7 @@ var step = 1;
 var v6, v5, v4, v3, v2, v1, v0;
 var f6, f5, f4, f3, f2, f1, f0;
 var identifier, c, fail, assignable;
-return function(thawValue){
+return function inside_this_par_parsePrimaryCoreIdentifier(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -7288,35 +7368,36 @@ fail = v2;
 step = 6;
 case 6:
 if (!(fail)) { step = 12; continue; }
-step = 11;
 case 11:
- v3 = (f3 = f3 || this_tok_throwSyntaxError('Reserved identifier ['+identifier+'] found in expression'))(thawValue);
+ step = 14; case 14:
+v3 = (f3 = f3 || this_tok_throwSyntaxError('Reserved identifier ['+identifier+'] found in expression'))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 14:
-step = 12;
+step = 15;
+case 15:
 case 12:
+step = 16; case 16:
 v4 = (f4 = f4 || this_tok_next(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 15;
-case 15:
+step = 17;
+case 17:
 // can not assign to keywords, anything else is fine here
-step = 16;
-case 16:
+step = 18;
+case 18:
 v5 = (f5 = f5 || this_par_isValueKeyword(c, identifier))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 17;
-case 17:
+step = 19;
+case 19:
  assignable = !v5 ? 1 : 0;
-step = 18;
-case 18:
+step = 20;
+case 20:
 v6 = (f6 = f6 || this_par_parsePrimarySuffixes(assignable, hasNew, maybeLabel))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 19;
-case 19:
+step = 21;
+case 21:
 return v6;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -7329,7 +7410,7 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var count, assignable;
-return function(thawValue){
+return function inside_this_par_parsePrimaryCoreOther(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -7349,22 +7430,22 @@ if (!(optional)) { step = 8; continue; }
 step = 7;
 case 7:
  return 0; // prevents `return.foo`
-step = 8;
 case 8:
+step = 10; case 10:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('Missing required primary'))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 10;
-case 10:
- // TOFIX: find case for this
-case 5:
 step = 11;
 case 11:
+ // TOFIX: find case for this
+case 5:
+step = 12;
+case 12:
 v2 = (f2 = f2 || this_par_parsePrimarySuffixes(assignable, hasNew, false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 12;
-case 12:
+step = 13;
+case 13:
 return v2;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -7377,7 +7458,7 @@ var step = 1;
 var v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var t, A;
-return function(thawValue){
+return function inside_this_par_parsePrimaryValue(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -7394,91 +7475,92 @@ case 2:
 step = 3;
 case 3:
 if (!A) { step = 6; continue; }
-step = 5;
 case 5:
+step = 8; case 8:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 8;
-case 8:
+step = 9;
+case 9:
 return 0;
 step = 6;
 case 6:
-if (!(t === 7)) { step = 10; continue; }
-step = 9;
-case 9:
+if (!(t === 7)) { step = 11; continue; }
+step = 10;
+case 10:
 // special case: numbers must always be followed by whitespace (or EOF)
-        v1 = (f1 = f1 || this_tok_nextWhiteAfterNumber())(thawValue);
+        step = 13; case 13:
+v1 = (f1 = f1 || this_tok_nextWhiteAfterNumber())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 12;
-case 12:
+step = 14;
+case 14:
 return 0;
-case 10:
-step = 13;
-case 13:
+case 11:
+step = 15;
+case 15:
 v2 = (f2 = f2 || this_tok_nextExprIfNum(0x28))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 14;
-case 14:
-if (!(v2)) { step = 16; continue; }
-case 15:
-step = 18;
-case 18:
+step = 16;
+case 16:
+if (!(v2)) { step = 18; continue; }
+case 17:
+step = 20;
+case 20:
 v3 = (f3 = f3 || this_par_parseGroup())(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 19;
-case 19:
+step = 21;
+case 21:
 return v3;
-case 16:
-step = 20;
-case 20:
+case 18:
+step = 22;
+case 22:
 v4 = (f4 = f4 || this_tok_nextExprIfNum(0x7b))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 21;
-case 21:
-if (!(v4)) { step = 23; continue; }
-step = 22;
-case 22:
+step = 23;
+case 23:
+if (!(v4)) { step = 25; continue; }
+case 24:
+step = 27; case 27:
 v5 = (f5 = f5 || this_par_parseObject())(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 25;
-case 25:
+step = 28;
+case 28:
 return 0;
-case 23:
-step = 26;
-case 26:
+case 25:
+step = 29;
+case 29:
 v6 = (f6 = f6 || this_tok_nextExprIfNum(0x5b))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 27;
-case 27:
-if (!(v6)) { step = 29; continue; }
-step = 28;
-case 28:
+step = 30;
+case 30:
+if (!(v6)) { step = 32; continue; }
+case 31:
+step = 34; case 34:
 v7 = (f7 = f7 || this_par_parseArray())(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 31;
-case 31:
-return 0;
-step = 29;
-case 29:
-if (!(!optional)) { step = 33; continue; }
-step = 32;
-case 32:
- v8 = (f8 = f8 || this_tok_throwSyntaxError('Unable to parse required primary value'))(thawValue);
-if (frozen) return v8;
-else f8 = null;
 step = 35;
 case 35:
+return 0;
+step = 32;
+case 32:
+if (!(!optional)) { step = 37; continue; }
+case 36:
+ step = 39; case 39:
+v8 = (f8 = f8 || this_tok_throwSyntaxError('Unable to parse required primary value'))(thawValue);
+if (frozen) return v8;
+else f8 = null;
+step = 40;
+case 40:
 // if the primary was optional but not found, the return value here is irrelevant
-step = 33;
-case 33:
+step = 37;
+case 37:
 return 1;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -7491,7 +7573,7 @@ var step = 1;
 var v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var colonIsError, allowCallAssignment, c, A;
-return function(thawValue){
+return function inside_this_par_parsePrimarySuffixes(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -7509,7 +7591,7 @@ case 2:
  assignable = 0; // for new, must have trailing property _after_ a call
 step = 3;
 case 3:
-// while start [black=11206]
+// while start [black=11197]
 step = 5;
 case 5:
 // see c frequency stats in /stats/primary suffix start.txt
@@ -7521,192 +7603,195 @@ case 7:
           if (!(c !== 0x5b)) { step = 11; continue; }
 step = 10;
 case 10:
-// break to loop [black=11206] end
+// break to loop [black=11197] end
 step = 6;
 continue;
 case 11:
+step = 13; case 13:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 13;
-case 13:
+case 14:
+step = 15; case 15:
 v1 = (f1 = f1 || this_par_parseExpressions())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 14;
-case 14:
- // required
-          v2 = (f2 = f2 || this_tok_mustBeNum(0x5d, false))(thawValue);
-if (frozen) return v2;
-else f2 = null;
-step = 15;
-case 15:
- // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-            A = !unassignableUntilAfterCall ;
-if (!A) { step = 17; continue; }
 step = 16;
 case 16:
- A =  !assignable; 
-step = 17;
-case 17:
+ // required
+          step = 17; case 17:
+v2 = (f2 = f2 || this_tok_mustBeNum(0x5d, false))(thawValue);
+if (frozen) return v2;
+else f2 = null;
+step = 18;
+case 18:
+ // ] cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
+            A = !unassignableUntilAfterCall ;
 if (!A) { step = 20; continue; }
 step = 19;
 case 19:
- assignable = 1; // trailing property
+ A =  !assignable; 
+step = 20;
 case 20:
+if (!A) { step = 23; continue; }
+step = 22;
+case 22:
+ assignable = 1; // trailing property
+case 23:
 step = 9;
 continue;
 case 8:
- if (!(c === 0x2e)) { step = 23; continue; }
-step = 22;
-case 22:
-if (!(this_tok_lastType === 7)) { step = 26; continue; }
+ if (!(c === 0x2e)) { step = 26; continue; }
 step = 25;
 case 25:
-// break to loop [black=11206] end
+if (!(this_tok_lastType === 7)) { step = 29; continue; }
+step = 28;
+case 28:
+// break to loop [black=11197] end
 step = 6;
 continue; // ASI: foo\n.5 -> [foo][\n][.5]
-step = 26;
-case 26:
+case 29:
+step = 31; case 31:
 v3 = (f3 = f3 || this_tok_next(false))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 28;
-case 28:
+case 32:
+step = 33; case 33:
 v4 = (f4 = f4 || this_tok_mustBeIdentifier(false))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 29;
-case 29:
+step = 34;
+case 34:
  // cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
             A = !unassignableUntilAfterCall ;
-if (!A) { step = 31; continue; }
-step = 30;
-case 30:
+if (!A) { step = 36; continue; }
+step = 35;
+case 35:
  A =  !assignable; 
-step = 31;
-case 31:
-if (!A) { step = 34; continue; }
-step = 33;
-case 33:
- assignable = 1; // trailing property
-case 34:
-step = 24;
-continue;
-case 23:
- if (!(c === 0x28)) { step = 37; continue; }
 step = 36;
 case 36:
+if (!A) { step = 39; continue; }
+step = 38;
+case 38:
+ assignable = 1; // trailing property
+case 39:
+step = 27;
+continue;
+case 26:
+ if (!(c === 0x28)) { step = 42; continue; }
+case 41:
+step = 44; case 44:
 v5 = (f5 = f5 || this_tok_next(true))(thawValue);
 if (frozen) return v5;
 else f5 = null;
-step = 39;
-case 39:
+case 45:
+step = 46; case 46:
 v6 = (f6 = f6 || this_par_parseOptionalExpressions())(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 40;
-case 40:
+case 47:
+step = 48; case 48:
 v7 = (f7 = f7 || this_tok_mustBeNum(0x29, false))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 41;
-case 41:
+step = 49;
+case 49:
  // ) cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
           unassignableUntilAfterCall = false;
           assignable = allowCallAssignment; // call, only assignable in IE
-step = 38;
+step = 43;
 continue;
-case 37:
+case 42:
 // postfix inc/dec are restricted, so no newline allowed here
             A = !this_tok_lastNewline ;
-if (!A) { step = 43; continue; }
-step = 42;
-case 42:
+if (!A) { step = 51; continue; }
+step = 50;
+case 50:
    A = c === 0x2b ;
-if (!(!A)) { step = 46; continue; }
-step = 45;
-case 45:
+if (!(!A)) { step = 54; continue; }
+step = 53;
+case 53:
  A =  c === 0x2d; 
-step = 46;
-case 46:
+step = 54;
+case 54:
 A =  (A) ;  
-step = 43;
-case 43:
-if (!A) { step = 49; continue; }
-case 48:
 step = 51;
 case 51:
+if (!A) { step = 57; continue; }
+case 56:
+step = 59;
+case 59:
 v8 = (f8 = f8 || this_tok_getNum(1))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-step = 52;
-case 52:
-A =  v8 === c; 
-step = 49;
-case 49:
-if (!A) { step = 54; continue; }
-step = 53;
-case 53:
-A = !assignable ;
-if (!A) { step = 57; continue; }
-step = 56;
-case 56:
- A =  this_par_options.strictAssignmentCheck; 
-step = 57;
-case 57:
-if (!A) { step = 60; continue; }
-step = 59;
-case 59:
- v9 = (f9 = f9 || this_tok_throwSyntaxError('Postfix increment not allowed here'))(thawValue);
-if (frozen) return v9;
-else f9 = null;
-case 62:
 step = 60;
 case 60:
-v10 = (f10 = f10 || this_tok_next(false))(thawValue);
-if (frozen) return v10;
-else f10 = null;
-step = 63;
-case 63:
-assignable = 0; // ++
-step = 54;
-case 54:
-// break to loop [black=11206] end
-step = 6;
-continue;
-case 9:
-case 24:
-step = 38;
-case 38:
-colonIsError = true;
-// back to start of while [black=11206]
-step = 5;
-continue
-// end of while [black=11206]
-case 6:
-  A = colonIsError ;
+A =  v8 === c; 
+step = 57;
+case 57:
+if (!A) { step = 62; continue; }
+step = 61;
+case 61:
+A = !assignable ;
 if (!A) { step = 65; continue; }
 step = 64;
 case 64:
- A =  maybeLabel ;  
+ A =  this_par_options.strictAssignmentCheck; 
 step = 65;
 case 65:
 if (!A) { step = 68; continue; }
-step = 67;
 case 67:
- A =  c === 0x3a; 
-step = 68;
-case 68:
-if (!A) { step = 71; continue; }
-step = 70;
-case 70:
- v11 = (f11 = f11 || this_tok_throwSyntaxError('Invalid label here, I think'))(thawValue);
-if (frozen) return v11;
-else f11 = null;
-case 73:
+ step = 70; case 70:
+v9 = (f9 = f9 || this_tok_throwSyntaxError('Postfix increment not allowed here'))(thawValue);
+if (frozen) return v9;
+else f9 = null;
 step = 71;
 case 71:
+case 68:
+step = 72; case 72:
+v10 = (f10 = f10 || this_tok_next(false))(thawValue);
+if (frozen) return v10;
+else f10 = null;
+step = 73;
+case 73:
+assignable = 0; // ++
+step = 62;
+case 62:
+// break to loop [black=11197] end
+step = 6;
+continue;
+case 9:
+case 27:
+step = 43;
+case 43:
+colonIsError = true;
+// back to start of while [black=11197]
+step = 5;
+continue
+// end of while [black=11197]
+case 6:
+  A = colonIsError ;
+if (!A) { step = 75; continue; }
+step = 74;
+case 74:
+ A =  maybeLabel ;  
+step = 75;
+case 75:
+if (!A) { step = 78; continue; }
+step = 77;
+case 77:
+ A =  c === 0x3a; 
+step = 78;
+case 78:
+if (!A) { step = 81; continue; }
+case 80:
+ step = 83; case 83:
+v11 = (f11 = f11 || this_tok_throwSyntaxError('Invalid label here, I think'))(thawValue);
+if (frozen) return v11;
+else f11 = null;
+case 84:
+step = 81;
+case 81:
 return assignable;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -7719,7 +7804,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var len, c, A;
-return function(thawValue){
+return function inside_this_par_isAssignmentOperator(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -7862,7 +7947,7 @@ var step = 1;
 var v4, v3, v2, v1, v0;
 var f4, f3, f2, f1, f0;
 var c, len, A;
-return function(thawValue){
+return function inside_this_par_isBinaryOperator(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -8107,7 +8192,7 @@ var step = 1;
 var v1, v0;
 var f1, f0;
 var groupAssignable;
-return function(thawValue){
+return function inside_this_par_parseGroup(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -8124,17 +8209,18 @@ step = 3;
 case 3:
  groupAssignable = v0;
 // groups cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-      v1 = (f1 = f1 || this_tok_mustBeNum(0x29, false))(thawValue);
+      step = 4; case 4:
+v1 = (f1 = f1 || this_tok_mustBeNum(0x29, false))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 4;
-case 4:
-if (!(groupAssignable === 2)) { step = 6; continue; }
 step = 5;
 case 5:
- groupAssignable = 0;
+if (!(groupAssignable === 2)) { step = 7; continue; }
 step = 6;
 case 6:
+ groupAssignable = 0;
+step = 7;
+case 7:
 return groupAssignable;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -8146,37 +8232,38 @@ return;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-return function(thawValue){
+return function inside_this_par_parseArray(thawValue){
   while (true) {
     switch (step) {
       case 1:
-// do start [black=12415]
-step = 2;
+// do start [black=12406]
 case 2:
+step = 4; case 4:
 v0 = (f0 = f0 || this_par_parseExpressionOptional())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 4;
-case 4:
- // just one because they are all optional (and arent in expressions)
 step = 5;
 case 5:
+ // just one because they are all optional (and arent in expressions)
+step = 6;
+case 6:
 v1 = (f1 = f1 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 6;
-case 6:
-if (v1) { step = 2; continue; } // jump to start of loop [black=12415]
-// do end [black=12415]
+step = 7;
+case 7:
+if (v1) { step = 2; continue; } // jump to start of loop [black=12406]
+// do end [black=12406]
 step = 3;
 case 3:
  // elision
 // array lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-      v2 = (f2 = f2 || this_tok_mustBeNum(0x5d, false))(thawValue);
+      step = 8; case 8:
+v2 = (f2 = f2 || this_tok_mustBeNum(0x5d, false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 7;
-case 7:
+step = 9;
+case 9:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -8188,11 +8275,11 @@ var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
 var type, A;
-return function(thawValue){
+return function inside_this_par_parseObject(thawValue){
   while (true) {
     switch (step) {
       case 1:
-// do start [black=12455]
+// do start [black=12446]
 step = 2;
 case 2:
 type = this_tok_lastType;
@@ -8210,33 +8297,34 @@ case 7:
 step = 8;
 case 8:
 if (!A) { step = 11; continue; }
-step = 10;
 case 10:
- v0 = (f0 = f0 || this_par_parsePair())(thawValue);
+ step = 13; case 13:
+v0 = (f0 = f0 || this_par_parsePair())(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 13;
-case 13:
- // 84% 9% 1% = 94%
-case 11:
 step = 14;
 case 14:
+ // 84% 9% 1% = 94%
+case 11:
+step = 15;
+case 15:
 v1 = (f1 = f1 || this_tok_nextExprIfNum(0x2c))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 15;
-case 15:
-if (v1) { step = 2; continue; } // jump to start of loop [black=12455]
-// do end [black=12455]
+step = 16;
+case 16:
+if (v1) { step = 2; continue; } // jump to start of loop [black=12446]
+// do end [black=12446]
 step = 3;
 case 3:
  // elision
 // obj lits cannot be followed by a regex (not even on new line, asi wouldnt apply, would parse as div)
-      v2 = (f2 = f2 || this_tok_mustBeNum(0x7d, false))(thawValue);
+      step = 17; case 17:
+v2 = (f2 = f2 || this_tok_mustBeNum(0x7d, false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 16;
-case 16:
+step = 18;
+case 18:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -8248,7 +8336,7 @@ var step = 1;
 var v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var c, A;
-return function(thawValue){
+return function inside_this_par_parsePair(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -8282,75 +8370,78 @@ if (!A) { step = 13; continue; }
 step = 12;
 case 12:
 if (!(this_tok_lastType === 13)) { step = 16; continue; }
-step = 15;
 case 15:
+step = 18; case 18:
 v2 = (f2 = f2 || this_tok_next(false))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 18;
-case 18:
+case 19:
+step = 20; case 20:
 v3 = (f3 = f3 || this_par_parseFunctionRemainder(this_par_options.checkAccessorArgs ? 0 : 2, true))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 19:
+case 21:
 step = 17;
 continue;
 case 16:
- v4 = (f4 = f4 || this_par_parseDataPart())(thawValue);
+ step = 22; case 22:
+v4 = (f4 = f4 || this_par_parseDataPart())(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 20;
-case 20:
+step = 23;
+case 23:
 case 17:
 step = 14;
 continue;
 case 13:
    A = c === 0x73 ;
-if (!A) { step = 22; continue; }
-case 21:
-step = 24;
+if (!A) { step = 25; continue; }
 case 24:
+step = 27;
+case 27:
 v5 = (f5 = f5 || this_tok_nextPuncIfString('set'))(thawValue);
 if (frozen) return v5;
 else f5 = null;
+step = 28;
+case 28:
+A =  v5; 
 step = 25;
 case 25:
-A =  v5; 
-step = 22;
-case 22:
-if (!A) { step = 27; continue; }
-step = 26;
-case 26:
-if (!(this_tok_lastType === 13)) { step = 30; continue; }
+if (!A) { step = 30; continue; }
 step = 29;
 case 29:
+if (!(this_tok_lastType === 13)) { step = 33; continue; }
+case 32:
+step = 35; case 35:
 v6 = (f6 = f6 || this_tok_next(false))(thawValue);
 if (frozen) return v6;
 else f6 = null;
-step = 32;
-case 32:
+case 36:
+step = 37; case 37:
 v7 = (f7 = f7 || this_par_parseFunctionRemainder(this_par_options.checkAccessorArgs ? 1 : 2, true))(thawValue);
 if (frozen) return v7;
 else f7 = null;
+case 38:
+step = 34;
+continue;
 case 33:
+ step = 39; case 39:
+v8 = (f8 = f8 || this_par_parseDataPart())(thawValue);
+if (frozen) return v8;
+else f8 = null;
+step = 40;
+case 40:
+case 34:
 step = 31;
 continue;
 case 30:
- v8 = (f8 = f8 || this_par_parseDataPart())(thawValue);
-if (frozen) return v8;
-else f8 = null;
-step = 34;
-case 34:
-case 31:
-step = 28;
-continue;
-case 27:
+step = 41; case 41:
 v9 = (f9 = f9 || this_par_parseData())(thawValue);
 if (frozen) return v9;
 else f9 = null;
-step = 35;
-case 35:
-case 28:
+step = 42;
+case 42:
+case 31:
 step = 14;
 case 14:
 return;
@@ -8363,20 +8454,21 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseData(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(false))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseDataPart())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -8387,20 +8479,21 @@ return;
 var step = 1;
 var v1, v0;
 var f1, f0;
-return function(thawValue){
+return function inside_this_par_parseDataPart(thawValue){
   while (true) {
     switch (step) {
       case 1:
+step = 2; case 2:
 v0 = (f0 = f0 || this_tok_mustBeNum(0x3a, true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
-step = 2;
-case 2:
+case 3:
+step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseExpression())(thawValue);
 if (frozen) return v1;
 else f1 = null;
-step = 3;
-case 3:
+step = 5;
+case 5:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -8412,7 +8505,7 @@ var step = 1;
 var v16, v15, v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var value, c, A, d;
-return function(thawValue){
+return function inside_this_par_isReservedIdentifierSpecial(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -8751,7 +8844,7 @@ var step = 1;
 var v28, v27, v26, v25, v24, v23, v22, v21, v20, v19, v18, v17, v16, v15, v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
 var f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var c, len, value, A;
-return function(thawValue){
+return function inside_this_par_isReservedIdentifier(thawValue){
   while (true) {
     switch (step) {
       case 1:
@@ -9349,7 +9442,7 @@ return;
   function this_par_isValueKeyword(c, word){
 var step = 1;
 var A;
-return function(thawValue){
+return function inside_this_par_isValueKeyword(thawValue){
   while (true) {
     switch (step) {
       case 1:
