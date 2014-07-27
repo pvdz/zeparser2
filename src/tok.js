@@ -856,7 +856,6 @@
       return pos+1;
     },
     parseUnicodeEscapeBody: function(pos){
-
       if (pos >= this.len) this.getMoreInput(REQUIRED);
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
@@ -1189,7 +1188,7 @@
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (this.input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
 
-        // TOFIX: make test case, this should fail the streamer with not enough input
+        // parseUnicodeEscapeBody will ensure enough input for this slice
         var u = parseInt(this.input.slice(pos+2, pos+6), 16);
         var b = u & 0xffdf;
         if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
