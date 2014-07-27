@@ -93,10 +93,6 @@
             desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
           }
 
-          if (!newlineState) try { Function(input); } catch (e) {
-            console.warn('['+i+']['+nonl(input)+']; cant compile in browser');
-          }
-
           var crashed = false;
           try {
             // try to split up the input in every possible way (only one split to reduce complexity...)
@@ -110,8 +106,8 @@
               ++splitIndex;
             }
           } catch (e) {
-            console.error('Crash for', input, 'at splitIndex=',splitIndex);
-            console.error(e.stack);
+            if (top === window) console.error('Crash for', input, 'at splitIndex=',splitIndex);
+            if (top === window) console.error(e.stack);
             crashed = sans(e.toString()+' at splitIndex='+splitIndex);
           }
 
@@ -149,7 +145,7 @@
         for (var i = 0; i < bad.length; ++i) {
           var currentNewline = NEWLINEFORSTATE[newlineState];
           var test = bad[i];
-          if (!test) console.warn("Probably missing a comma...");
+          if (!test) if (top === window) console.warn("Probably missing a comma...");
           var input = test[0];
           var desc = test[1];
 
@@ -159,21 +155,16 @@
             desc += ' (newline used: '+NEWLINESTATES[newlineState]+')';
           }
 
-          if (!newlineState) try { Function(input);
-            console.error('['+i+']['+nonl(input)+']; _does_ compile in browser');
-          } catch (e) {}
-
-
           // try to split up the input in every possible way (only one split to reduce complexity...)
           // the rest is pretty much the same as normal test
           var splitIndex = 0;
           while (splitIndex < input.length) {
               var crashed = false;
               try {
-              var obj = Par.parse(input.slice(0, splitIndex), {});
-              obj.thaw();
-              var par = obj.thaw(input.slice(splitIndex));
-                console.warn("Did not fail:", desc);
+                var obj = Par.parse(input.slice(0, splitIndex), {});
+                obj.thaw();
+                var par = obj.thaw(input.slice(splitIndex));
+                if (top === window) console.warn("Did not fail:", desc);
               } catch (e) {
               var msg = sans(e.toString());
               crashed = true;
@@ -205,7 +196,7 @@
         document.getElementById('result').innerHTML = 'ok: ' + ok + ', fail: ' + fail;
         document.getElementById('result').style.color = 'white';
         document.body.style.backgroundColor = fail ? 'red' : 'green';
-        console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
+        if (top === window) console.log("Parser test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
       };
     </script>
   </body>
