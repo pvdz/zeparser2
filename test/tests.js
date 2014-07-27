@@ -922,6 +922,8 @@ var good = [
   ["/foo/i\u006dg;", 2, [true], "regex flags can be unicode escaped 3"],
 
   ["0", [1, 2], "test zero at eof"],
+
+  ["/a/\\u0067\\u006di", [1,2], [true], "unicode regex flags tripped over the streaming parser"],
 ];
 
 // these are mainly for the parser, of course...
@@ -1510,6 +1512,8 @@ var bad = [
   ["3in {}", "numbers must be followed by some whitespace"],
   ["3instanceof {}", "numbers must be followed by some whitespace"],
   ["for (3in {});", "for-in in must also be preceeded by whitespace"],
+
+  ["\\u0061#;", "make sure identifier unicode doesnt consume next char unchecked"],
 
   // TOFIX: this is currently passing because the unicode is part of the regex
   //["\u0f7axx", "specific 0x20 identifier hack check, make sure it doesnt blatantly accepts cropped high numbers (0x20 & 0xf7a = 90 = Z)"],
