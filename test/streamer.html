@@ -1,4 +1,5 @@
 <p>Tests the streaming api, checks if it streams properly.</p>
+<p>No verification, only confirms that it doesn't crash unexpectedly.</p>
 <p id="result">Running...</p>
 
 <script>
@@ -23,126 +24,78 @@
 
 <script>
 
+  var lastDesc = 'simple';
+
+  function one(desc, parts) {
+    return function(){
+      lastDesc = desc;
+      if (top === window) console.warn(desc);
+      var s = '';
+      var o = Par.parse(parts.shift(), {onToken: function(t, v, a, b, n){
+        s += v;
+        if (top === window) console.log(Par[t], [v], a, b, 'n:', n);
+      }});
+      o.thaw();
+
+      while (parts.length) o.thaw(parts.shift());
+
+      o.thaw(false);
+      if (top === window) console.log('parsed:', [s]);
+    };
+  }
+
+  function simple() {
+    if (top === window) console.warn('simple savetokens test');
+    var o = Par.parse('var foo', {saveTokens: true});
+    o.thaw();
+
+    o.thaw('');
+    o.thaw(' = bar;');
+
+    var p = o.thaw(false);
+    if (top === window) console.log('simple:', p);
+  }
+
   var tests = [
-    function simple() {
-      console.warn('simple test');
-  //    console.log('initializing');
-      var o = Par.parse('var foo', {saveTokens: true});
-  //    console.log('starting', o);
-      o.thaw();
-  //    console.log('faking');
-      o.thaw('');
-  //    console.log('streaming on');
-      o.thaw(' = bar;');
-  //    console.log('ending');
-      var p = o.thaw(false);
+    one(
+      'split identifier',
+      ['hel', 'lo']
+    ),
 
-      console.log('simple:', p);
-    },
+    one(
+      'onToken tests',
+      ['function f', '', 'oo(x) {\n', '  /foo/.', 'test(bar); /', '/ dead\n }']
+    ),
 
-    function splitIdent() {
-      console.warn('split identifier test');
-      var o = Par.parse('hel', {saveTokens: true});
-      o.thaw();
-      o.thaw('lo;');
-      var p = o.thaw(false);
-      console.log('split:', p);
-    },
+    one(
+      'multi-char ambiguous puncs test',
+      ['', '+', 'a', 'b', ';', 'x', '+', '=', 'y;']
+    ),
 
-    function callbacks() {
-      console.warn('onToken tests');
-      var s = '';
-      var o = Par.parse('function f', {onToken: function(t, v, a, b, n){
-        s += v;
-        console.log(Par[t], [v], a, b, 'n:',n);
-      }});
-      o.thaw();
-      o.thaw('');
-      o.thaw('oo(x) {\n');
-      o.thaw('  /foo/.');
-      o.thaw('test(bar); /');
-      o.thaw('/ dead\n }');
-      o.thaw(false);
+    one(
+      'multi broken regex flags test',
+      ['', '/foo/', 'g', 'i', 'm']
+    ),
 
-      console.log('parsed:',[s]);
-    },
+    one(
+      'multi broken regex unicode flags test',
+      ['', '/a/\\u0067\\u', '006d', 'i']
+    ),
 
-    function compounds() {
-      console.warn('multi-char ambiguous puncs test');
-      var s = '';
-      var o = Par.parse('', {onToken: function(t, v, a, b, n){
-        s += v;
-        console.log(Par[t], [v], a, b, 'n:',n);
-      }});
-      o.thaw();
+    one(
+      'single broken regex unicode flag test',
+      ['', '/a/\\u006', '9']
+    ),
 
-      o.thaw('+');
-      o.thaw('+');
-      o.thaw('a');
-      o.thaw('b');
-      o.thaw(';');
-      o.thaw('x');
-      o.thaw('+');
-      o.thaw('=');
-      o.thaw('y;');
-
-      o.thaw(false);
-      console.log('parsed:',[s]);
-    },
-
-    function regexflags() {
-      console.warn('multi broken regex flags test');
-      var s = '';
-      var o = Par.parse('', {onToken: function(t, v, a, b, n){
-        s += v;
-        console.log(Par[t], [v], a, b, 'n:',n);
-      }});
-      o.thaw();
-
-      o.thaw('/foo/');
-      o.thaw('g');
-      o.thaw('i');
-      o.thaw('m');
-
-      o.thaw(false);
-      console.log('parsed:',[s]);
-    },
-
-    function regexuniflags() {
-      console.warn('multi broken regex unicode flags test');
-      var s = '';
-      var o = Par.parse('', {onToken: function(t, v, a, b, n){
-        s += v;
-        console.log(Par[t], [v], a, b, 'n:',n);
-      }});
-      o.thaw();
-
-      o.thaw('/a/\\u0067\\u');
-      o.thaw('006d');
-      o.thaw('i');
-
-      o.thaw(false);
-      console.log('parsed:',[s]);
-    },
-
-    function regexSplit() {
-      console.warn('regex broken before closer');
-      var s = '';
-      var o = Par.parse('', {onToken: function(t, v, a, b, n){
-        s += v;
-        console.log(Par[t], [v], a, b, 'n:',n);
-      }});
-      o.thaw();
-
-      o.thaw('/a');
-      o.thaw('/');
-
-      o.thaw(false);
-      console.log('parsed:',[s]);
-    }
+    one(
+      'broken regex class with nul char',
+      ['', '/[\0', ']/']
+    ),
   ];
 
   try {
+
+    simple();
 
     tests.forEach(function(t){ t(); });
 
@@ -150,7 +103,7 @@
     document.getElementById('result').style.color = 'white';
     document.body.style.backgroundColor = 'green';
   } catch(e) {
-    document.getElementById('result').innerHTML = 'FAIL: '+e;
+    document.getElementById('result').innerHTML = 'FAIL: '+lastDesc+'<br>'+e;
     document.getElementById('result').style.color = 'white';
     document.body.style.backgroundColor = 'red';
   }
