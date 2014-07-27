@@ -3779,10 +3779,8 @@ this_tok_lastOffset = 0;
 this_tok_tokenCountAll = 0;
     this_tok_tokenCountBlack = 0;
 if (options.saveTokens) {
-      // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
-      // TOFIX: how does this look after the build?
-      this['tokens'] = this_tok_tokens = [];
-      if (options.createBlackStream) this['black'] = this_tok_black = [];
+      this_tok_tokens = [];
+      if (options.createBlackStream) this_tok_black = [];
     }
 // for testing the builds
     this['_getTrickedTokenCount'] = function(){ return this_tok_tokenCountAll; };
@@ -3884,7 +3882,7 @@ return function inside_this_par_parseStatements(thawValue){
     switch (step) {
       case 1:
 // note: statements are optional, this function might not parse anything
-// while start [black=6492]
+// while start [black=6482]
 case 2:
 step = 4;
 case 4:
@@ -3896,14 +3894,14 @@ case 5:
 if (!(!(v0))) { step = 7; continue; }
 step = 6;
 case 6:
-// break to loop [black=6492] end
+// break to loop [black=6482] end
 step = 3;
 continue;
 case 7:
-// back to start of while [black=6492]
+// back to start of while [black=6482]
 step = 2;
 continue
-// end of while [black=6492]
+// end of while [black=6482]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -4523,7 +4521,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-// do start [black=7356]
+// do start [black=7346]
 case 4:
 step = 6;
 case 6:
@@ -4575,8 +4573,8 @@ if (frozen) return v6;
 else f6 = null;
 step = 26;
 case 26:
-if(v6) { step = 4; continue; } // jump to start of loop [black=7356]
-// do end [black=7356]
+if(v6) { step = 4; continue; } // jump to start of loop [black=7346]
+// do end [black=7346]
 case 5:
 step = 27; case 27:
 v7 = (f7 = f7 || this_par_parseSemi())(thawValue);
@@ -4600,7 +4598,7 @@ return function inside_this_par_parseVarPartNoIn(thawValue){
     switch (step) {
       case 1:
 vars = 0;
-// do start [black=7453]
+// do start [black=7443]
 case 2:
 step = 4;
 case 4:
@@ -4659,8 +4657,8 @@ if (frozen) return v6;
 else f6 = null;
 step = 26;
 case 26:
-if(v6) { step = 2; continue; } // jump to start of loop [black=7453]
-// do end [black=7453]
+if(v6) { step = 2; continue; } // jump to start of loop [black=7443]
+// do end [black=7443]
 step = 3;
 case 3:
 return vars === 1;
@@ -5426,7 +5424,7 @@ else f4 = null;
 case 23:
 step = 20;
 case 20:
-// while start [black=8618]
+// while start [black=8608]
 case 24:
 step = 26;
 case 26:
@@ -5438,7 +5436,7 @@ case 27:
 if (!(!(v5))) { step = 29; continue; }
 step = 28;
 case 28:
-// break to loop [black=8618] end
+// break to loop [black=8608] end
 step = 25;
 continue;
 case 29:
@@ -5466,10 +5464,10 @@ else f7 = null;
 case 40:
 step = 37;
 case 37:
-// back to start of while [black=8618]
+// back to start of while [black=8608]
 step = 24;
 continue
-// end of while [black=8618]
+// end of while [black=8608]
 case 25:
 step = 41; case 41:
 v8 = (f8 = f8 || this_tok_mustBeNum(0x7d, true))(thawValue);
@@ -5927,7 +5925,7 @@ else f3 = null;
 step = 18;
 case 18:
 // there are only two valid next tokens; either a comma or a closing paren
-// while start [black=9145]
+// while start [black=9135]
 case 19:
 step = 21;
 case 21:
@@ -5939,7 +5937,7 @@ case 22:
 if (!(!(v4))) { step = 24; continue; }
 step = 23;
 case 23:
-// break to loop [black=9145] end
+// break to loop [black=9135] end
 step = 20;
 continue;
 case 24:
@@ -5987,10 +5985,10 @@ else f9 = null;
 case 44:
 step = 33;
 case 33:
-// back to start of while [black=9145]
+// back to start of while [black=9135]
 step = 19;
 continue
-// end of while [black=9145]
+// end of while [black=9135]
 case 20:
 step = 4;
 continue;
@@ -6380,7 +6378,7 @@ case 3:
 if (!(tokCount !== this_tok_tokenCountAll)) { step = 5; continue; }
 step = 4;
 case 4:
-// while start [black=9785]
+// while start [black=9775]
 case 7:
 step = 9;
 case 9:
@@ -6392,7 +6390,7 @@ case 10:
 if (!(!(v1))) { step = 12; continue; }
 step = 11;
 case 11:
-// break to loop [black=9785] end
+// break to loop [black=9775] end
 step = 8;
 continue; 
 case 12:
@@ -6402,10 +6400,10 @@ if (frozen) return v2;
 else f2 = null;
 step = 15;
 case 15:
-// back to start of while [black=9785]
+// back to start of while [black=9775]
 step = 7;
 continue
-// end of while [black=9785]
+// end of while [black=9775]
 case 8:
 step = 5;
 case 5:
@@ -6433,7 +6431,7 @@ else f0 = null;
 step = 3;
 case 3:
  groupAssignable = v0;
-// while start [black=9823]
+// while start [black=9813]
 case 4:
 step = 6;
 case 6:
@@ -6445,7 +6443,7 @@ case 7:
 if (!(!(v1))) { step = 9; continue; }
 step = 8;
 case 8:
-// break to loop [black=9823] end
+// break to loop [black=9813] end
 step = 5;
 continue; 
 case 9:
@@ -6456,10 +6454,10 @@ else f2 = null;
 step = 12;
 case 12:
 groupAssignable = 0;
-// back to start of while [black=9823]
+// back to start of while [black=9813]
 step = 4;
 continue
-// end of while [black=9823]
+// end of while [black=9813]
 case 5:
 return groupAssignable;
 return;
@@ -6578,7 +6576,7 @@ return function inside_this_par_parseAssignments(thawValue){
       case 1:
 // assignment ops are allowed until the first non-assignment binary op
 strictAssign = this_par_options.strictAssignmentCheck;
-// while start [black=9975]
+// while start [black=9965]
 case 2:
 step = 4;
 case 4:
@@ -6590,7 +6588,7 @@ case 5:
 if (!(!(v0))) { step = 7; continue; }
 step = 6;
 case 6:
-// break to loop [black=9975] end
+// break to loop [black=9965] end
 step = 3;
 continue;
 case 7:
@@ -6624,10 +6622,10 @@ else f3 = null;
 step = 20;
 case 20:
 assignable = v3;
-// back to start of while [black=9975]
+// back to start of while [black=9965]
 step = 2;
 continue
-// end of while [black=9975]
+// end of while [black=9965]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -6644,7 +6642,7 @@ return function inside_this_par_parseNonAssignments(thawValue){
     switch (step) {
       case 1:
 // keep parsing non-assignment binary/ternary ops
-// while start [black=10045]
+// while start [black=10035]
 case 2:
 step = 4;
 case 4:
@@ -6678,16 +6676,16 @@ case 17:
 step = 15;
 continue;
 case 14:
-// break to loop [black=10045] end
+// break to loop [black=10035] end
 step = 3;
 continue;
 case 8:
 step = 15;
 case 15:
-// back to start of while [black=10045]
+// back to start of while [black=10035]
 step = 2;
 continue
-// end of while [black=10045]
+// end of while [black=10035]
 case 3:
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -6782,7 +6780,7 @@ else f0 = null;
 step = 3;
 case 3:
  validForInLhs = v0;
-// while start [black=10150]
+// while start [black=10140]
 case 4:
 step = 6;
 case 6:
@@ -6794,7 +6792,7 @@ case 7:
 if (!(!(v1))) { step = 9; continue; }
 step = 8;
 case 8:
-// break to loop [black=10150] end
+// break to loop [black=10140] end
 step = 5;
 continue;
 case 9:
@@ -6806,10 +6804,10 @@ else f2 = null;
 step = 12;
 case 12:
 validForInLhs = 0;
-// back to start of while [black=10150]
+// back to start of while [black=10140]
 step = 4;
 continue
-// end of while [black=10150]
+// end of while [black=10140]
 case 5:
 return validForInLhs;
 return;
@@ -6845,13 +6843,13 @@ case 5:
  // any assignment is illegal in for-in, with and without group. no need to check here.
 // keep parsing non-assignment binary/ternary ops unless `in`
        repeat = true;
-// while start [black=10210]
+// while start [black=10200]
 step = 6;
 case 6:
 if (!(!(repeat))) { step = 9; continue; }
 step = 8;
 case 8:
-// break to loop [black=10210] end
+// break to loop [black=10200] end
 step = 7;
 continue; 
 case 9:
@@ -6926,10 +6924,10 @@ repeat = false;
 case 15:
 step = 33;
 case 33:
-// back to start of while [black=10210]
+// back to start of while [black=10200]
 step = 6;
 continue
-// end of while [black=10210]
+// end of while [black=10200]
 case 7:
 return count === this_tok_tokenCountAll ? assignable : 0;
 return;
@@ -7591,7 +7589,7 @@ case 2:
  assignable = 0; // for new, must have trailing property _after_ a call
 step = 3;
 case 3:
-// while start [black=11197]
+// while start [black=11187]
 step = 5;
 case 5:
 // see c frequency stats in /stats/primary suffix start.txt
@@ -7603,7 +7601,7 @@ case 7:
           if (!(c !== 0x5b)) { step = 11; continue; }
 step = 10;
 case 10:
-// break to loop [black=11197] end
+// break to loop [black=11187] end
 step = 6;
 continue;
 case 11:
@@ -7647,7 +7645,7 @@ case 25:
 if (!(this_tok_lastType === 7)) { step = 29; continue; }
 step = 28;
 case 28:
-// break to loop [black=11197] end
+// break to loop [black=11187] end
 step = 6;
 continue; // ASI: foo\n.5 -> [foo][\n][.5]
 case 29:
@@ -7757,7 +7755,7 @@ case 73:
 assignable = 0; // ++
 step = 62;
 case 62:
-// break to loop [black=11197] end
+// break to loop [black=11187] end
 step = 6;
 continue;
 case 9:
@@ -7765,10 +7763,10 @@ case 27:
 step = 43;
 case 43:
 colonIsError = true;
-// back to start of while [black=11197]
+// back to start of while [black=11187]
 step = 5;
 continue
-// end of while [black=11197]
+// end of while [black=11187]
 case 6:
   A = colonIsError ;
 if (!A) { step = 75; continue; }
@@ -8236,7 +8234,7 @@ return function inside_this_par_parseArray(thawValue){
   while (true) {
     switch (step) {
       case 1:
-// do start [black=12406]
+// do start [black=12396]
 case 2:
 step = 4; case 4:
 v0 = (f0 = f0 || this_par_parseExpressionOptional())(thawValue);
@@ -8252,8 +8250,8 @@ if (frozen) return v1;
 else f1 = null;
 step = 7;
 case 7:
-if (v1) { step = 2; continue; } // jump to start of loop [black=12406]
-// do end [black=12406]
+if (v1) { step = 2; continue; } // jump to start of loop [black=12396]
+// do end [black=12396]
 step = 3;
 case 3:
  // elision
@@ -8279,7 +8277,7 @@ return function inside_this_par_parseObject(thawValue){
   while (true) {
     switch (step) {
       case 1:
-// do start [black=12446]
+// do start [black=12436]
 step = 2;
 case 2:
 type = this_tok_lastType;
@@ -8313,8 +8311,8 @@ if (frozen) return v1;
 else f1 = null;
 step = 16;
 case 16:
-if (v1) { step = 2; continue; } // jump to start of loop [black=12446]
-// do end [black=12446]
+if (v1) { step = 2; continue; } // jump to start of loop [black=12436]
+// do end [black=12436]
 step = 3;
 case 3:
  // elision
@@ -9508,7 +9506,7 @@ var Par = exports.Par = function(input, options){
     if (!options.requireDoWhileSemi) options.requireDoWhileSemi = false;
     options.allowCallAssignment = options.allowCallAssignment ? 1 : 0;
 // `this['xxx'] prevents build script mangling :)
-    this['tok'] = new Tok(input, this_par_options);
+    this_par_tok = new Tok(input, this_par_options);
     this['run'] = this_par_run; // used in Par.parse
 // special build
     if (typeof frozen !== 'undefined') {
@@ -9546,6 +9544,7 @@ Par.parse = function(input, options){
     var par = new Par(input, options);
     // the call makes sure run has the proper context for the streaming version
     // it will be the only instance method that has the proper context :)
+    // TOFIX: we can probably eliminate that now?
     var f = par.run.call(par);
 // `frozen` is added as a module global in an extra build step
     if (typeof frozen !== 'undefined') {

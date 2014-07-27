@@ -983,10 +983,8 @@
     this_tok_tokenCountBlack = 0;
 
     if (options.saveTokens) {
-      // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
-      // TOFIX: how does this look after the build?
-      this['tokens'] = this_tok_tokens = [];
-      if (options.createBlackStream) this['black'] = this_tok_black = [];
+      this_tok_tokens = [];
+      if (options.createBlackStream) this_tok_black = [];
     }
 
     // for testing the builds
@@ -2356,7 +2354,7 @@
     options.allowCallAssignment = options.allowCallAssignment ? 1 : 0;
 
     // `this['xxx'] prevents build script mangling :)
-    this['tok'] = new Tok(input, this_par_options);
+    this_par_tok = new Tok(input, this_par_options);
     this['run'] = this_par_run; // used in Par.parse
 
     // special build
@@ -2400,6 +2398,7 @@
     var par = new Par(input, options);
     // the call makes sure run has the proper context for the streaming version
     // it will be the only instance method that has the proper context :)
+    // TOFIX: we can probably eliminate that now?
     var f = par.run.call(par);
 
     // `frozen` is added as a module global in an extra build step
