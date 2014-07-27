@@ -193,10 +193,8 @@
     this.tokenCountBlack = 0;
 
     if (options.saveTokens) {
-      // looks like double assignment but after build step, changes into `this['tokens'] = this_tok_tokens = [];`
-      // TOFIX: how does this look after the build?
-      this['tokens'] = this.tokens = [];
-      if (options.createBlackStream) this['black'] = this.black = [];
+      this.tokens = [];
+      if (options.createBlackStream) this.black = [];
     }
 
     // for testing the builds

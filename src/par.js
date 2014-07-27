@@ -126,7 +126,7 @@
     options.allowCallAssignment = options.allowCallAssignment ? ASSIGNABLE : NOTASSIGNABLE;
 
     // `this['xxx'] prevents build script mangling :)
-    this['tok'] = new Tok(input, this.options);
+    this.tok = new Tok(input, this.options);
     this['run'] = this.run; // used in Par.parse
 
     // special build
@@ -170,6 +170,7 @@
     var par = new Par(input, options);
     // the call makes sure run has the proper context for the streaming version
     // it will be the only instance method that has the proper context :)
+    // TOFIX: we can probably eliminate that now?
     var f = par.run.call(par);
 
     // `frozen` is added as a module global in an extra build step
