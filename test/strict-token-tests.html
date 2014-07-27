@@ -50,16 +50,18 @@ try {
       assert(expectToken.white, resultToken.white, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): white-index');
       assert(expectToken.black, resultToken.black, desc + ': token ' + index + ' (' + Par[resultToken.type] + '): black-index');
     } catch (e) {
-      console.error(desc);
-      console.log('token index', index);
-      console.log('got:',resultToken);
-      console.log('exp:', expectToken);
+      if (top === window) {
+        console.error(desc);
+        console.log('token index', index);
+        console.log('got:', resultToken);
+        console.log('exp:', expectToken);
+      }
       throw e;
     }
   }
 
   function assertCode(desc, code, expect, what){
-    console.warn([code])
+    if (top === window) console.warn([code])
     var whites = 0;
     var blacks = 0;
 
@@ -89,7 +91,7 @@ try {
     }
 
     var tokens = Par.parse(code, {saveTokens: true, onToken: what !== STREAM_ONLY && onToken, runWithoutFurtherInput:true}).whites;
-//    console.log(desc + ':', tokens);
+
     if (what !== ONTOKEN_ONLY) expect.forEach(function(arr, i){
       // allow optional white override
       var white = (arr.length === 6) ? arr[5] : i;
@@ -107,7 +109,7 @@ try {
         }
       );
     });
-//    console.log('###');
+
     // do it again with just onToken
     desc += ', pass 2';
     whites = 0;

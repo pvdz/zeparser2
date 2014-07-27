@@ -113,8 +113,8 @@
             } while (tokenCount < 1000 && type !== Par.EOF);
           } catch (e) {
             errorThrown = e.toString();
-            console.error('Crash for', input);
-            console.error(e);
+            if (top === window) console.error('Crash for', input);
+            if (top === window) console.error(e);
           }
           tokenCount += tok._getTrickedTokenCount(); // add tokens counted by newline+whitespace trick
 
@@ -148,7 +148,7 @@
         document.getElementById('result').innerHTML = 'ok: ' + ok + ', fail: ' + fail;
         document.getElementById('result').style.color = 'white';
         document.body.style.backgroundColor = (fail || !ok) ? 'red' : 'green';
-        console.log("Tokenizer test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
+        if (top === window) console.log("Tokenizer test suite finished (" + (Date.now() - start) + ' ms). ok:' + ok + ', fail:' + fail);
       }
     };
 		</script>

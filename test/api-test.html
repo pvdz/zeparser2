@@ -74,7 +74,7 @@
 
       // first simple test
       var p1 = Par.parse('var foo = bar;', {runWithoutFurtherInput:true});
-      console.log('p1',p1);
+      if (top === window) console.log('p1',p1);
       if (typeof p1 !== 'object') throw 'par is not an object';
       if (typeof p1.par !== 'object') throw 'par.par is not an object';
       if (typeof p1.tok !== 'object') throw 'par.tok is not an object';
@@ -92,7 +92,7 @@
 
       // test repeated parsings
       var p2 = Par.parse('if (telve && thirteen) one;', {runWithoutFurtherInput:true});
-      console.log('p2',p2);
+      if (top === window) console.log('p2',p2);
       if (typeof p2 !== 'object') throw 'par is not an object';
       if (typeof p2.tok !== 'object') throw 'par.tok is not an object';
       if (typeof p2.options !== 'object') throw 'par.options is not an object';
@@ -124,20 +124,20 @@
 
       // check white tokens
       var p3 = Par.parse('try { fail; } catch (e) {}', {saveTokens: true, runWithoutFurtherInput:true});
-      console.log('p3',p3);
+      if (top === window) console.log('p3',p3);
       if (!(p3.whites instanceof Array || p3.whites instanceof parent.Array)) throw 'p3.whites is not an array 1';
       if (p3.whites.length !== 18) throw 'should have 18 tokens, have [' + p3.whites.length + ']';
 
       // check black tokens
       var p4 = Par.parse('foo: break foo;', {saveTokens: true, createBlackStream: true, runWithoutFurtherInput:true});
-      console.log('p4',p4);
+      if (top === window) console.log('p4',p4);
       if (!(p4.whites instanceof Array || p4.whites instanceof parent.Array)) throw 'par.whites is not an array 2';
       if (!(p4.blacks instanceof Array || p4.whites instanceof parent.Array)) throw 'par.blacks is not an array 3';
       if (p4.whites.length !== 8) throw 'whites should have 8 tokens, have [' + p4.whites.length + ']';
       if (p4.blacks.length !== 6) throw 'blacks should have 6 tokens, have [' + p4.blacks.length + ']';
 
       var p5 = Par.parse('foo; \nwhile (true) Infinity', {saveTokens: true, createBlackStream: true, runWithoutFurtherInput:true});
-      console.log('p5',p5);
+      if (top === window) console.log('p5',p5);
       if (!(p5.whites instanceof Array || p5.whites instanceof parent.Array)) throw 'par.whites is not an array 4';
       if (!(p5.blacks instanceof Array || p5.whites instanceof parent.Array)) throw 'par.blacks is not an array 5';
       if (p5.whites.length !== 13) throw 'whites should have 13 tokens, have [' + p5.whites.length + ']';
