@@ -83,7 +83,7 @@ function makeFreezable(data){
         (switchCounter ? 'var switchValue, matched, fellThrough;\n' : '') +
         (isRootDir ? 'var frob = this.frozenObject;\n':'')+
         (varDecls.length ? 'var '+varDecls.join(', ')+';\n' : '')+
-        'return function(thawValue){\n' +
+        'return function inside_'+currentFunc.name+'(thawValue){\n' +
         (isRootDir ? 'frozen = false;\n':'')+
         (ENABLE_LOOP_GUARD?'  var guard = 100000;\n':'')+
         '  while (true) {\n' +
