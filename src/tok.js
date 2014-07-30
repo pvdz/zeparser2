@@ -442,7 +442,7 @@
         this.firstTokenChar = 0;
         return EOF;
       }
-      var nextChar = this.firstTokenChar = this.input.charCodeAt(fullStart) | 0;
+      var nextChar = this.firstTokenChar = this.inputCharAt_offset(fullStart) | 0;
 
       var type = this.nextTokenDeterminator(nextChar, expressionStart);
       this.lastLen = (this.lastStop = this.pos) - this.lastOffset;
@@ -600,7 +600,7 @@
 
     parseFwdSlash: function(expressionStart){
       if (this.pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      var d = this.input.charCodeAt(this.pos+1);
+      var d = this.inputCharAt_offset(this.pos+1);
       if (d === ORD_FWDSLASH_2F) return this.parseSingleComment();
       if (d === ORD_STAR_2A) return this.parseMultiComment();
       if (expressionStart) return this.parseRegex();
@@ -613,7 +613,7 @@
 
       var pos = this.pos;
       if (pos+1 >= this.len) this.getMoreInput(OPTIONALLY);
-      var crlf = (pos+1 < this.len && this.input.charCodeAt(pos+1)) === ORD_LF_0A ? 1 : 0;
+      var crlf = (pos+1 < this.len && this.inputCharAt_offset(pos+1)) === ORD_LF_0A ? 1 : 0;
 
       return this.parseVerifiedNewline(pos + crlf, crlf);
     },
@@ -635,7 +635,7 @@
       var guard = 100000; // #zp-build drop line
       while (++pos < this.len) {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
-        var c = this.input.charCodeAt(pos);
+        var c = this.inputCharAt_offset(pos);
 
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
@@ -667,7 +667,7 @@
 
       var pos = this.pos+1;
       if (pos >= this.len) this.getMoreInput(REQUIRED);
-      var d = this.input.charCodeAt(pos);
+      var d = this.inputCharAt_offset(pos);
       // pick one, any one :) (this func runs too infrequent to make a significant difference)
 //      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
 //      this.pos += 1 + (!(d - c && d - ORD_IS_3D) |0);
@@ -684,9 +684,9 @@
       var len = 1;
       var offset = this.lastOffset;
       if (offset+1 >= this.len) this.getMoreInput(REQUIRED);
-      if (this.input.charCodeAt(offset+1) === ORD_IS_3D) {
+      if (this.inputCharAt_offset(offset+1) === ORD_IS_3D) {
         if (offset+2 >= this.len) this.getMoreInput(REQUIRED);
-        if (this.input.charCodeAt(offset+2) === ORD_IS_3D) len = 3;
+        if (this.inputCharAt_offset(offset+2) === ORD_IS_3D) len = 3;
         else len = 2;
       }
       this.pos += len;
@@ -696,17 +696,17 @@
       var len = 1;
       var offset = this.lastOffset;
       if (offset+1 >= this.len) this.getMoreInput(REQUIRED);
-      var d = this.input.charCodeAt(offset+1);
+      var d = this.inputCharAt_offset(offset+1);
       if (d === ORD_IS_3D) len = 2;
       else if (d === c) {
         len = 2;
         if (offset+2 >= this.len) this.getMoreInput(REQUIRED);
-        var e = this.input.charCodeAt(offset+2);
+        var e = this.inputCharAt_offset(offset+2);
         if (e === ORD_IS_3D) len = 3;
         else if (e === c && c !== ORD_LT_3C) {
           len = 3;
           if (offset+3 >= this.len) this.getMoreInput(REQUIRED);
-          if (this.input.charCodeAt(offset+3) === ORD_IS_3D) len = 4;
+          if (this.inputCharAt_offset(offset+3) === ORD_IS_3D) len = 4;
         }
       }
       this.pos += len;
@@ -715,7 +715,7 @@
     parseCompoundAssignment: function(){
       var len = 1;
       if (this.pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      if (this.input.charCodeAt(this.pos+1) === ORD_IS_3D) len = 2;
+      if (this.inputCharAt_offset(this.pos+1) === ORD_IS_3D) len = 2;
       this.pos += len;
       return PUNCTUATOR;
     },
@@ -736,7 +736,7 @@
       do {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
-        var c = this.input.charCodeAt(pos);
+        var c = this.inputCharAt_offset(pos);
         if (!c || c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
       } while (true);
 
@@ -781,13 +781,13 @@
       var noNewline = true;
       var c = 0;
       if (pos >= this.len) this.getMoreInput(REQUIRED);
-      var d = this.input.charCodeAt(pos);
+      var d = this.inputCharAt_offset(pos);
       var guard = 100000; // #zp-build drop line
       while (d) {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         c = d;
         if (++pos >= this.len) this.getMoreInput(REQUIRED);
-        d = this.input.charCodeAt(pos);
+        d = this.inputCharAt_offset(pos);
 
         if (c === ORD_STAR_2A && d === ORD_FWDSLASH_2F) {
           this.pos = pos+1;
@@ -813,7 +813,7 @@
       do {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (pos >= this.len) this.getMoreInput(REQUIRED);
-        var c = this.input.charCodeAt(pos++);
+        var c = this.inputCharAt_offset(pos++);
 
         if (c === targetChar) {
           this.pos = pos;
@@ -836,7 +836,7 @@
     },
     parseStringEscape: function(pos){
       if (pos >= this.len) this.getMoreInput(REQUIRED);
-      var c = this.input.charCodeAt(pos);
+      var c = this.inputCharAt_offset(pos);
 
       // unicode escapes
       if (c === ORD_L_U_75) {
@@ -848,7 +848,7 @@
         // for other line terminators here. we are merely checking to see
         // whether we need to skip an additional character for CRLF.
         if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
-        if (this.input.charCodeAt(pos+1) === ORD_LF_0A) ++pos;
+        if (this.inputCharAt_offset(pos+1) === ORD_LF_0A) ++pos;
       // hex escapes
       } else if (c === ORD_L_X_78) {
         if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
@@ -872,7 +872,7 @@
 
     parseLeadingDot: function(){
       if (this.pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      var c = this.input.charCodeAt(this.pos+1);
+      var c = this.inputCharAt_offset(this.pos+1);
 
       if (c >= ORD_L_0_30 && c <= ORD_L_9_39) return this.parseAfterDot(this.pos+2);
 
@@ -890,7 +890,7 @@
         return NUMBER;
       }
 
-      var d = this.input.charCodeAt(this.pos+1);
+      var d = this.inputCharAt_offset(this.pos+1);
       if (d === ORD_L_X_78 || d === ORD_L_X_UC_58) { // x or X
         this.parseHexNumber();
       } else if (d === ORD_DOT_2E) {
@@ -911,7 +911,7 @@
       do {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
-        var c = this.input.charCodeAt(pos);
+        var c = this.inputCharAt_offset(pos);
       } while ((c <= ORD_L_9_39 && c >= ORD_L_0_30) || (c >= ORD_L_A_61 && c <= ORD_L_F_66) || (c >= ORD_L_A_UC_41 && c <= ORD_L_F_UC_46));
 
       this.pos = pos;
@@ -927,7 +927,7 @@
       do {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
-        var c = this.input.charCodeAt(pos);
+        var c = this.inputCharAt_offset(pos);
       } while (c >= ORD_L_0_30 && c <= ORD_L_9_39);
 
       if (c === ORD_DOT_2E) return this.parseAfterDot(pos+1);
@@ -938,7 +938,8 @@
     parseAfterDot: function(pos){
       if (pos < this.len || this.getMoreInput(OPTIONALLY)) {
         var guard = 100000; // #zp-build drop line
-        do { var c = this.input.charCodeAt(pos);
+        do {
+          var c = this.inputCharAt_offset(pos);
           if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
         } while (c >= ORD_L_0_30 && c <= ORD_L_9_39 && (++pos < this.len || this.getMoreInput(OPTIONALLY)));
       }
@@ -952,17 +953,17 @@
     parseExponent: function(c, pos){
       if (c === ORD_L_E_65 || c === ORD_L_E_UC_45) {
         if (++pos >= this.len) this.getMoreInput(REQUIRED);
-        c = this.input.charCodeAt(pos);
+        c = this.inputCharAt_offset(pos);
         // sign is optional (especially for plus)
         if (c === ORD_DASH_2D || c === ORD_PLUS_2B) {
           if (++pos >= this.len) this.getMoreInput(REQUIRED); // must have at least one char after +-
-          c = this.input.charCodeAt(pos);
+          c = this.inputCharAt_offset(pos);
         }
 
         // first digit is mandatory
         if (c >= ORD_L_0_30 && c <= ORD_L_9_39) {
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) return pos;
-          c = this.input.charCodeAt(pos);
+          c = this.inputCharAt_offset(pos);
         }
         else this.throwSyntaxError('Missing required digits after exponent');
 
@@ -971,7 +972,7 @@
         while (c >= ORD_L_0_30 && c <= ORD_L_9_39) {
           if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) return pos;
-          c = this.input.charCodeAt(pos);
+          c = this.inputCharAt_offset(pos);
         }
       }
       return pos;
@@ -999,11 +1000,11 @@
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
 
         if (this.pos >= this.len && !this.getMoreInput(OPTIONALLY)) this.throwSyntaxError('Unterminated regular expression at eof');
-        var c = this.input.charCodeAt(this.pos++);
+        var c = this.inputCharAt_offset(this.pos++);
 
         if (c === ORD_BACKSLASH_5C) { // backslash
           if (this.pos >= this.len && !this.getMoreInput(OPTIONALLY)) this.throwSyntaxError('Unterminated regular expression escape at eof');
-          var d = this.input.charCodeAt(this.pos++);
+          var d = this.inputCharAt_offset(this.pos++);
           if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             this.throwSyntaxError('Newline can not be escaped in regular expression');
           }
@@ -1025,7 +1026,7 @@
           this.throwSyntaxError('Unterminated regular expression');
         }
 
-        var c = this.input.charCodeAt(pos++);
+        var c = this.inputCharAt_offset(pos++);
 
         if (c === ORD_CLOSE_SQUARE_5D) {
           this.pos = pos;
@@ -1037,7 +1038,7 @@
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this.options.regexNoClassEscape) {
             if (pos >= this.len) this.getMoreInput(REQUIRED);
-            var d = this.input.charCodeAt(pos++);
+            var d = this.inputCharAt_offset(pos++);
             if (d === ORD_LF_0A || d === ORD_CR_0D || (d ^ ORD_PS_2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
               this.throwSyntaxError('Newline can not be escaped in regular expression');
             }
@@ -1067,7 +1068,7 @@
       var i = false;
 
       if (pos < this.len || this.getMoreInput(OPTIONALLY)) {
-        var c = this.input.charCodeAt(pos);
+        var c = this.inputCharAt_offset(pos);
         var guard = 100000; // #zp-build drop line
         while (true) {
           if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
@@ -1095,7 +1096,7 @@
 
           if (backslash) pos += 5;
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
-          c = this.input.charCodeAt(pos);
+          c = this.inputCharAt_offset(pos);
         }
       }
       this.pos = pos;
@@ -1105,12 +1106,12 @@
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
-      if (this.input.charCodeAt(pos) !== ORD_L_U_75 || this.input.charCodeAt(pos+1) !== ORD_L_0_30 || this.input.charCodeAt(pos+2) !== ORD_L_0_30 || this.input.charCodeAt(pos+3) !== ORD_L_6_36) {
+      if (this.inputCharAt_offset(pos) !== ORD_L_U_75 || this.inputCharAt_offset(pos+1) !== ORD_L_0_30 || this.inputCharAt_offset(pos+2) !== ORD_L_0_30 || this.inputCharAt_offset(pos+3) !== ORD_L_6_36) {
         return 0;
       }
 
       if (pos+4 >= this.len) this.getMoreInput(REQUIRED);
-      var c = this.input.charCodeAt(pos+4);
+      var c = this.inputCharAt_offset(pos+4);
       if (c === ORD_L_7_37) return ORD_L_G_67;
       if (c === ORD_L_9_39) return ORD_L_I_69;
       if (c === ORD_L_D_64) return ORD_L_M_6D;
@@ -1138,14 +1139,14 @@
         // sequential lower case letters are very common, 5:2
         // combining lower and upper case letters here to reduce branching later https://twitter.com/mraleph/status/467277652110614528
         if (pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
-        var c = this.input.charCodeAt(pos);
+        var c = this.inputCharAt_offset(pos);
         var b = c & 0xffdf;
         var guard2 = 100000; // #zp-build drop line
         while (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
           if (useGuards) if (!--guard2) throw 'loop security'; // #zp-build drop line
 
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
-          c = this.input.charCodeAt(pos);
+          c = this.inputCharAt_offset(pos);
           b = c & 0xffdf;
         }
 
@@ -1181,7 +1182,7 @@
 
     parseAndValidateUnicodeAsIdentifier: function(pos, atStart){
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      if (this.input.charCodeAt(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
+      if (this.inputCharAt_offset(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
 
         // parseUnicodeEscapeBody will ensure enough input for this slice
         var u = parseInt(this.input.slice(pos+2, pos+6), 16);
@@ -1220,9 +1221,10 @@
 //      return val;
     },
 
+    // TOFIX: this is kind of the same as inputCharAt_offset...?
     getNum: function(offset){
       if (offset >= this.len) throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?'; // #zp-build drop line
-      return this.input.charCodeAt(this.lastOffset+offset);
+      return this.inputCharAt_offset(this.lastOffset+offset);
     },
 
     throwSyntaxError: function(message){
@@ -1234,6 +1236,13 @@
       var pos = (this.lastStop === this.pos) ? this.lastOffset : this.pos;
       var inp = this.input;
       throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
+    },
+
+    inputCharAt_offset: function(pos){
+      // proxy method to take care of subtracting the offset from the position
+      // in the regular build the offset is always zero so we can optimize this call.
+      // warning: this function is replaced for the regular build. dont do anything fancy in here!
+      return this.input.charCodeAt(pos - this.offset);
     },
 
     inputSlice_offset: function(from, to){
