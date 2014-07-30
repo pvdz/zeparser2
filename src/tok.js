@@ -212,6 +212,8 @@
     len: 0,
     /** @property {number} pos */
     pos: 0,
+    /** @property {number} offset */
+    offset: 0,
     /** @property {boolean} reachedEof Becomes true when you reach end of stream */
     reachedEof: false,
 
@@ -640,12 +642,12 @@
         if (saveTokens) {
           // we just checked another token, stash the _previous_ one.
           var s = pos-(1+extraForCrlf);
-          var v = this.input.slice(s, pos);
+          var v = this.inputSlice_offset(s, pos);
           tokens.push({type:WHITE, value:v, start:s, stop:pos, white:count});
         }
         if (onToken) {
           var s = pos-(1+extraForCrlf);
-          var v = this.input.slice(s, pos);
+          var v = this.inputSlice_offset(s, pos);
           onToken(WHITE, v, s, pos, count);
         }
 
@@ -1207,8 +1209,8 @@
 
     getLastValue: function(){
 //      return this.input.substring(this.lastOffset, this.lastStop);
-//      return this.input.slice(this.lastOffset, this.lastStop);
-      return this.input.substr(this.lastOffset, this.lastLen);
+      return this.inputSlice_offset(this.lastOffset, this.lastStop);
+//      return this.input.substr(this.lastOffset, this.lastLen);
 
       // this seems slightly slower
 //      var val = this.lastValue;
@@ -1233,6 +1235,13 @@
       var inp = this.input;
       throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
     },
-  };
+
+    inputSlice_offset: function(from, to){
+      // proxy method to take care of subtracting the offset from the position
+      // in the regular build the offset is always zero so we can optimize this call.
+      // warning: this function is replaced for the regular build. dont do anything fancy in here!
+      return this.input.slice(from - this.offset, to - this.offset);
+    },
+};
 
 })(typeof exports === 'object' ? exports : window);
