@@ -619,7 +619,6 @@
       // mark for ASI
       this.lastNewline = true;
 
-      var input = this.input; // normally we dont cache input, but its okay here since we dont ask for more input anywhere
       var tokens = this.tokens;
       var saveTokens = this.options.saveTokens;
       var onToken = this.options.onToken;
@@ -634,19 +633,19 @@
       var guard = 100000; // #zp-build drop line
       while (++pos < this.len) {
         if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
-        var c = input.charCodeAt(pos);
+        var c = this.input.charCodeAt(pos);
 
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
 
         if (saveTokens) {
           // we just checked another token, stash the _previous_ one.
           var s = pos-(1+extraForCrlf);
-          var v = input.slice(s, pos);
+          var v = this.input.slice(s, pos);
           tokens.push({type:WHITE, value:v, start:s, stop:pos, white:count});
         }
         if (onToken) {
           var s = pos-(1+extraForCrlf);
-          var v = input.slice(s, pos);
+          var v = this.input.slice(s, pos);
           onToken(WHITE, v, s, pos, count);
         }
 
