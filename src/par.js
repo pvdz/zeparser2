@@ -15,7 +15,7 @@
 (function(exports){
   var Tok = exports.Tok || require(__dirname+'/tok.js').Tok;
 
-  var USE_LOOP_GUARDS = true; // #zp-build drop line
+  var USE_LOOP_GUARDS = true; // #zp-build loopguard
 
   // indices match slots of the start-regexes (where applicable)
   // this order is determined by regex/parser rules so they are fixed
@@ -250,10 +250,10 @@
 
     parseStatements: function(inFunction, inLoop, inSwitch, labelSet){
       var tok = this.tok;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       // note: statements are optional, this function might not parse anything
       while (this.parseStatement(inFunction, inLoop, inSwitch, labelSet, OPTIONAL, EMPTY_LABELSET))
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security';else // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security';else // #zp-build loopguard
         ;
     },
     parseStatement: function(inFunction, inLoop, inSwitch, labelSet, optional, freshLabels){
@@ -408,10 +408,10 @@
 
       var tok = this.tok;
       tok.next(PUNC);
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
 
       do {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         if (tok.firstTokenChar === ORD_IS && tok.lastLen === 1) {
@@ -424,9 +424,9 @@
     parseVarPartNoIn: function(){
       var tok = this.tok;
       var vars = 0;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       do {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Var name ['+tok.getLastValue()+'] is reserved');
         tok.mustBeIdentifier(NEXTTOKENCANBEREGEX);
         ++vars;
@@ -607,9 +607,9 @@
       if (value === 'default') ++defaults;
       if (value !== 'case' && !defaults && value !== '}') tok.throwSyntaxError('Switch body must begin with case or default or be empty');
 
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (this.parseStatement(inFunction, inLoop, INSWITCH, labelSet, OPTIONAL, EMPTY_LABELSET)) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         // switches are quite infrequent so this overhead is okay, compared ot the alternatives
         if (tok.getLastValue() === 'default' && ++defaults > 1) tok.throwSyntaxError('Only one default allowed per switch');
       }
@@ -716,9 +716,9 @@
         if (this.isReservedIdentifier(DONTIGNOREVALUES)) tok.throwSyntaxError('Function param name is reserved.');
         tok.next(EXPR);
         // there are only two valid next tokens; either a comma or a closing paren
-        if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+        if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           if (paramCount === ONEARG) tok.throwSyntaxError('Setters have exactly one param');
 
           // param name
@@ -836,9 +836,9 @@
       var tokCount = tok.tokenCountAll;
       this.parseExpressionOptional();
       if (tokCount !== tok.tokenCountAll) {
-        if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+        if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
         while (tok.nextExprIfNum(ORD_COMMA)) {
-          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           this.parseExpression();
         }
       }
@@ -847,9 +847,9 @@
       // track for parseGroup, if this expression is wrapped, is it still assignable?
       var groupAssignable = this.parseExpression();
       var tok = this.tok;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (tok.nextExprIfNum(ORD_COMMA)) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         this.parseExpression();
         groupAssignable = NOTASSIGNABLE;
       }
@@ -894,9 +894,9 @@
       // assignment ops are allowed until the first non-assignment binary op
       var tok = this.tok;
       var strictAssign = this.options.strictAssignmentCheck;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (this.isAssignmentOperator()) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (!assignable && strictAssign) tok.throwSyntaxError('LHS of this assignment is invalid assignee');
         // any assignment means not a for-in per definition
         tok.next(EXPR);
@@ -906,9 +906,9 @@
     parseNonAssignments: function(){
       var tok = this.tok;
       // keep parsing non-assignment binary/ternary ops
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (true) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (this.isBinaryOperator()) {
           tok.next(EXPR);
           this.parsePrimary(REQUIRED);
@@ -935,9 +935,9 @@
       var tok = this.tok;
 
       var validForInLhs = this.parseExpressionNoIn();
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (tok.nextExprIfNum(ORD_COMMA)) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         // lhs of for-in cant be multiple expressions
         this.parseExpressionNoIn();
         validForInLhs = NOTASSIGNABLE;
@@ -954,9 +954,9 @@
 
       // keep parsing non-assignment binary/ternary ops unless `in`
       var repeat = true;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (repeat) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (this.isBinaryOperator()) {
           // rationale for using getLastNum; this is the `in` check which will succeed
           // about 50% of the time (stats from 8mb of various js). the other time it
@@ -1149,9 +1149,9 @@
       if (unassignableUntilAfterCall) assignable = NOTASSIGNABLE; // for new, must have trailing property _after_ a call
 
       var tok = this.tok;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       while (true) {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         // see c frequency stats in /stats/primary suffix start.txt
         var c = tok.firstTokenChar;
         if (c > 0x2e) {
@@ -1290,9 +1290,9 @@
     },
     parseArray: function(){
       var tok = this.tok;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       do {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         this.parseExpressionOptional(); // just one because they are all optional (and arent in expressions)
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision
 
@@ -1301,9 +1301,9 @@
     },
     parseObject: function(){
       var tok = this.tok;
-      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build drop line
+      if (USE_LOOP_GUARDS) var guard = 100000; // #zp-build loopguard
       do {
-        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         var type = tok.lastType;
         if (type === IDENTIFIER || type === STRING || type === NUMBER) this.parsePair(); // 84% 9% 1% = 94%
       } while (tok.nextExprIfNum(ORD_COMMA)); // elision

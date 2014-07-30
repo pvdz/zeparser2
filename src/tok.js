@@ -1,7 +1,7 @@
 (function(exports){
   var uniRegex = exports.uni || require(__dirname+'/uni.js').uni;
 
-  var useGuards = true; // #zp-build drop line
+  var USE_LOOP_GUARDS = true; // #zp-build loopguard
 
   // punctuator occurrence stats: http://qfox.nl/weblog/301
   // token start stats: http://qfox.nl/weblog/302
@@ -268,9 +268,9 @@
       var had = false;
 
       if (!this.reachedEof) {
-        var guard = 100000; // #zp-build drop line
+        var guard = 100000; // #zp-build loopguard
         do {
-          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           had = this.waitForInput();
         } while (had !== false && !had.length);
 
@@ -391,9 +391,9 @@
       var onToken = options.onToken;
       var tokens = this.tokens;
 
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         var type = this.nextAnyToken(expressionStart);
         if (saveTokens) {
           var token = {type:type, value:this.getLastValue(), start:this.lastOffset, stop:this.pos, white:this.tokenCountAll};
@@ -632,9 +632,9 @@
       // note: first loop consumes the verified newline.
 
       // only check for EOF, get new input elsewhere, no need to stream here
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       while (++pos < this.len) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         var c = this.inputCharAt_offset(pos);
 
         if (c !== ORD_SPACE_20 && c !== ORD_TAB_09) break;
@@ -732,9 +732,9 @@
 
       // note: although we _know_ a newline will happen next; explicitly checking for it is slower than not.
 
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
         var c = this.inputCharAt_offset(pos);
         if (!c || c === ORD_CR_0D || c === ORD_LF_0A || (c ^ ORD_PS_2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
@@ -782,9 +782,9 @@
       var c = 0;
       if (pos >= this.len) this.getMoreInput(REQUIRED);
       var d = this.inputCharAt_offset(pos);
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       while (d) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         c = d;
         if (++pos >= this.len) this.getMoreInput(REQUIRED);
         d = this.inputCharAt_offset(pos);
@@ -809,9 +809,9 @@
     },
     parseString: function(targetChar){
       var pos = this.pos + 1;
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (pos >= this.len) this.getMoreInput(REQUIRED);
         var c = this.inputCharAt_offset(pos++);
 
@@ -907,9 +907,9 @@
       var pos = this.pos + 1;
 
       // (could use OR, eliminate casing branch)
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
         var c = this.inputCharAt_offset(pos);
       } while ((c <= ORD_L_9_39 && c >= ORD_L_0_30) || (c >= ORD_L_A_61 && c <= ORD_L_F_66) || (c >= ORD_L_A_UC_41 && c <= ORD_L_F_UC_46));
@@ -923,9 +923,9 @@
 
       var pos = this.pos;
 
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       do {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
         var c = this.inputCharAt_offset(pos);
       } while (c >= ORD_L_0_30 && c <= ORD_L_9_39);
@@ -937,10 +937,10 @@
     },
     parseAfterDot: function(pos){
       if (pos < this.len || this.getMoreInput(OPTIONALLY)) {
-        var guard = 100000; // #zp-build drop line
+        var guard = 100000; // #zp-build loopguard
         do {
           var c = this.inputCharAt_offset(pos);
-          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         } while (c >= ORD_L_0_30 && c <= ORD_L_9_39 && (++pos < this.len || this.getMoreInput(OPTIONALLY)));
       }
 
@@ -968,9 +968,9 @@
         else this.throwSyntaxError('Missing required digits after exponent');
 
         // rest is optional
-        var guard = 100000; // #zp-build drop line
+        var guard = 100000; // #zp-build loopguard
         while (c >= ORD_L_0_30 && c <= ORD_L_9_39) {
-          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) return pos;
           c = this.inputCharAt_offset(pos);
         }
@@ -995,9 +995,9 @@
     },
     regexBody: function(){
       // TOFIX: should try to have the regex parser only use pos, not this.pos
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       while (true) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
 
         if (this.pos >= this.len && !this.getMoreInput(OPTIONALLY)) this.throwSyntaxError('Unterminated regular expression at eof');
         var c = this.inputCharAt_offset(this.pos++);
@@ -1019,9 +1019,9 @@
     regexClass: function(){
       var pos = this.pos;
 
-      var guard = 100000; // #zp-build drop line
+      var guard = 100000; // #zp-build loopguard
       while (true) {
-        if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
         if (pos >= this.len && !this.getMoreInput(OPTIONALLY)) {
           this.throwSyntaxError('Unterminated regular expression');
         }
@@ -1069,9 +1069,9 @@
 
       if (pos < this.len || this.getMoreInput(OPTIONALLY)) {
         var c = this.inputCharAt_offset(pos);
-        var guard = 100000; // #zp-build drop line
+        var guard = 100000; // #zp-build loopguard
         while (true) {
-          if (useGuards) if (!--guard) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           var backslash = false;
 
           // check backslash first so we can replace c with the canonical value of the escape
@@ -1132,18 +1132,18 @@
       } // #zp-build drop line
 
       // note: statements in this loop are the second most executed statements
-      var guard1 = 100000; // #zp-build drop line
+      var guard1 = 100000; // #zp-build loopguard
       while (true) {
-        if (useGuards) if (!--guard1) throw 'loop security'; // #zp-build drop line
+        if (USE_LOOP_GUARDS) if (!--guard1) throw 'loop security'; // #zp-build loopguard
 
         // sequential lower case letters are very common, 5:2
         // combining lower and upper case letters here to reduce branching later https://twitter.com/mraleph/status/467277652110614528
         if (pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
         var c = this.inputCharAt_offset(pos);
         var b = c & 0xffdf;
-        var guard2 = 100000; // #zp-build drop line
+        var guard2 = 100000; // #zp-build loopguard
         while (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
-          if (useGuards) if (!--guard2) throw 'loop security'; // #zp-build drop line
+          if (USE_LOOP_GUARDS) if (!--guard2) throw 'loop security'; // #zp-build loopguard
 
           if (++pos >= this.len && !this.getMoreInput(OPTIONALLY)) break;
           c = this.inputCharAt_offset(pos);

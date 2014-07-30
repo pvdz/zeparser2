@@ -2,7 +2,7 @@
 
 // TOFIX: concurrent runs of the streaming parser will probably fail due to the build
 
-var showHelp = process.argv[2] === '--help' || process.argv[2] === '-?' || process.argv[2] === '--?';
+var showHelp = process.argv[2] === '--help' || process.argv[2] === '?' || process.argv[2] === '-?' || process.argv[2] === '--?';
 if (!showHelp) console.log("Building...");
 
 var fs = require('fs');
@@ -26,6 +26,7 @@ var noComment = true;
 var enableLast = 5;
 var showLast = 10;
 var dirnameBare = '';
+var guardedBuild = false;
 var streamer = false;
 var buildAll = false;
 if (!process.argv[2] || showHelp) {
@@ -40,6 +41,7 @@ if (!process.argv[2] || showHelp) {
   console.log('--enable n      To enable last n builds in Gonzales (default:5)');
   console.log('--streamer      Builds a streaming parser (zps.js)');
   console.log('--all           Create regular (zp.js) and streaming (zps.js) builds, no name');
+  console.log('--guarded       Do not eliminate loop guards');
   if (!showHelp) console.log('--help          Duh');
 
   if (showHelp) {
@@ -52,7 +54,6 @@ if (!process.argv[2] || showHelp) {
   var argIndex = 2;
   var next = process.argv[argIndex];
   while (next && next[0] === '-' && next[1] === '-') {
-
     switch (next.slice(2)) {
       case 'comments':
         console.log('-- Leaving in comments')
@@ -85,6 +86,10 @@ if (!process.argv[2] || showHelp) {
       case 'all':
         console.log('-- producing a streaming parser and regular build');
         buildAll = true;
+        break;
+      case 'guarded':
+        console.log('-- leaving in loop guards');
+        guardedBuild = true;
         break;
       default:
         console.log('Bailing for unknown flag: '+next);
@@ -210,9 +215,8 @@ var code = files.map(function(f){
 }).join('');
 
 // my DSL macros
-code = code
-  .replace(/^.*\/\/ #zp-build drop line(?: .*)?$/gm, '\n')
-  .replace(/(^.*)\.call\(this,\s*(.*)\/\/ #zp-build call(?: .*)?$/gm, '$1($2');
+code = code.replace(/^.*\/\/ #zp-build drop line(?: .*)?$/gm, '\n')
+if (!guardedBuild) code = code.replace(/^.*\/\/ #zp-build loopguard(?: .*)?$/gm, '\n')
 
 // wrap in nodejs/browser way of exposing an exports object
 code = '(function(exports){'+code+'})(typeof exports === "undefined" ? window : exports);\n';
