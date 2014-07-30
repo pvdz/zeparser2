@@ -861,8 +861,7 @@
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
-      var input = this.input; // cache input now, it wont change any further
-      return this.parseHexDigit(input.charCodeAt(pos)) && this.parseHexDigit(input.charCodeAt(pos+1)) && this.parseHexDigit(input.charCodeAt(pos+2)) && this.parseHexDigit(input.charCodeAt(pos+3));
+      return this.parseHexDigit(this.input.charCodeAt(pos)) && this.parseHexDigit(this.input.charCodeAt(pos+1)) && this.parseHexDigit(this.input.charCodeAt(pos+2)) && this.parseHexDigit(this.input.charCodeAt(pos+3));
     },
     parseHexDigit: function(c){
       // 0-9, a-f, A-F
@@ -1104,23 +1103,15 @@
       if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
       if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
-      var input = this.input; // safe to cache for the next line (only)
-      if (input.charCodeAt(pos) !== ORD_L_U_75 || input.charCodeAt(pos+1) !== ORD_L_0_30 || input.charCodeAt(pos+2) !== ORD_L_0_30 || input.charCodeAt(pos+3) !== ORD_L_6_36) {
+      if (this.input.charCodeAt(pos) !== ORD_L_U_75 || this.input.charCodeAt(pos+1) !== ORD_L_0_30 || this.input.charCodeAt(pos+2) !== ORD_L_0_30 || this.input.charCodeAt(pos+3) !== ORD_L_6_36) {
         return 0;
       }
-      input = undefined; // protection, should not use cached input here // #zp-build drop line
 
       if (pos+4 >= this.len) this.getMoreInput(REQUIRED);
       var c = this.input.charCodeAt(pos+4);
-      if (c === ORD_L_7_37) {
-        return ORD_L_G_67;
-      }
-      if (c === ORD_L_9_39) {
-        return ORD_L_I_69;
-      }
-      if (c === ORD_L_D_64) {
-        return ORD_L_M_6D;
-      }
+      if (c === ORD_L_7_37) return ORD_L_G_67;
+      if (c === ORD_L_9_39) return ORD_L_I_69;
+      if (c === ORD_L_D_64) return ORD_L_M_6D;
 
       return 0;
     },
