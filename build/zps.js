@@ -31,7 +31,7 @@ return function inside_this_tok_getMoreInput(thawValue){
     switch (step) {
       case 1:
 had = false;
-if (!(!this_tok_reachedEof)) { step = 3; continue; }
+if (this_tok_reachedEof) { step = 3; continue; }
 case 2:
 case 5:
 step = 7;
@@ -48,7 +48,7 @@ case 9:
 if (A) { step = 5; continue; }
 step = 6;
 case 6:
-if (!(had)) { step = 12; continue; }
+if (!had) { step = 12; continue; }
 step = 11;
 case 11:
 this_tok_input += had;
@@ -56,12 +56,12 @@ this_tok_input += had;
 case 12:
 step = 3;
 case 3:
-if (!(had === false)) { step = 15; continue; }
+if (had !== false) { step = 15; continue; }
 step = 14;
 case 14:
 // if there was no more input, next time skip the freeze part
         this_tok_reachedEof = true;
-        if (!(mustHaveMore)) { step = 18; continue; }
+        if (!mustHaveMore) { step = 18; continue; }
 case 17:
  step = 20; case 20:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Unexpected EOF'))(thawValue);
@@ -117,7 +117,7 @@ return function inside_this_tok_nextExprIfNum(thawValue){
     switch (step) {
       case 1:
 equals = this_tok_firstTokenChar === num;
-      if (!(equals)) { step = 3; continue; }
+      if (!equals) { step = 3; continue; }
 case 2:
  step = 5; case 5:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
@@ -150,7 +150,7 @@ else f0 = null;
 step = 3;
 case 3:
  equals = v0 === str;
-      if (!(equals)) { step = 5; continue; }
+      if (!equals) { step = 5; continue; }
 case 4:
  step = 7; case 7:
 v1 = (f1 = f1 || this_tok_next(false))(thawValue);
@@ -183,7 +183,7 @@ else f0 = null;
 step = 3;
 case 3:
  equals = v0 === str;
-      if (!(equals)) { step = 5; continue; }
+      if (!equals) { step = 5; continue; }
 case 4:
  step = 7; case 7:
 v1 = (f1 = f1 || this_tok_next(true))(thawValue);
@@ -207,7 +207,7 @@ return function inside_this_tok_mustBeNum(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(this_tok_firstTokenChar === num)) { step = 3; continue; }
+if (this_tok_firstTokenChar !== num) { step = 3; continue; }
 case 2:
 step = 5;
 case 5:
@@ -238,7 +238,7 @@ return function inside_this_tok_mustBeIdentifier(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(this_tok_lastType === 13)) { step = 3; continue; }
+if (this_tok_lastType !== 13) { step = 3; continue; }
 case 2:
 step = 5;
 case 5:
@@ -276,7 +276,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-if (!(v0 === str)) { step = 5; continue; }
+if (v0 !== str) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
@@ -328,7 +328,7 @@ else f0 = null;
 step = 5;
 case 5:
  type = v0;
-        if (!(saveTokens)) { step = 7; continue; }
+        if (!saveTokens) { step = 7; continue; }
 case 6:
 step = 9;
 case 9:
@@ -341,7 +341,7 @@ case 10:
           tokens.push(token);
 step = 7;
 case 7:
-if (!(onToken)) { step = 12; continue; }
+if (!onToken) { step = 12; continue; }
 case 11:
 step = 14;
 case 14:
@@ -357,7 +357,7 @@ case 12:
        if (type === 18) { step = 2; continue; }
 step = 3;
 case 3:
-if (!(saveTokens)) { step = 17; continue; }
+if (!saveTokens) { step = 17; continue; }
 step = 16;
 case 16:
 token.black = this_tok_tokenCountBlack++;
@@ -395,7 +395,7 @@ step = 3;
 case 3:
  type = v0;
         A = type === 13 ;
-if (!(!A)) { step = 5; continue; }
+if (A) { step = 5; continue; }
 step = 4;
 case 4:
  A =  type === 7; 
@@ -1011,7 +1011,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-if (!(v0)) { step = 5; continue; }
+if (!v0) { step = 5; continue; }
 step = 4;
 case 4:
  return ++this_tok_pos,(18);
@@ -1219,7 +1219,7 @@ else f1 = null;
 step = 8;
 case 8:
  d = v1;
-      if (!(d === 0x2f)) { step = 10; continue; }
+      if (d !== 0x2f) { step = 10; continue; }
 case 9:
 step = 12;
 case 12:
@@ -1231,7 +1231,7 @@ case 13:
 return v2;
 step = 10;
 case 10:
-if (!(d === 0x2a)) { step = 15; continue; }
+if (d !== 0x2a) { step = 15; continue; }
 case 14:
 step = 17;
 case 17:
@@ -1243,7 +1243,7 @@ case 18:
 return v3;
 step = 15;
 case 15:
-if (!(expressionStart)) { step = 20; continue; }
+if (!expressionStart) { step = 20; continue; }
 case 19:
 step = 22;
 case 22:
@@ -1364,7 +1364,7 @@ case 12:
  step = 3;
 continue;
 case 13:
-if (!(saveTokens)) { step = 16; continue; }
+if (!saveTokens) { step = 16; continue; }
 step = 15;
 case 15:
 // we just checked another token, stash the _previous_ one.
@@ -1380,7 +1380,7 @@ case 19:
           tokens.push({type:18, value:v, start:s, stop:pos, white:count});
 step = 16;
 case 16:
-if (!(onToken)) { step = 21; continue; }
+if (!onToken) { step = 21; continue; }
 step = 20;
 case 20:
 s = pos-(1+extraForCrlf);
@@ -1446,7 +1446,7 @@ case 8:
 //      this.pos += 1 + (d === c | d === ORD_IS_3D);
 //      this.pos += 1 + !(d-c && d-ORD_IS_3D);
 A = d === c ;
-if (!(!A)) { step = 10; continue; }
+if (A) { step = 10; continue; }
 step = 9;
 case 9:
  A =  d === 0x3d; 
@@ -1487,7 +1487,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 8;
 case 8:
-if (!(v1 === 0x3d)) { step = 10; continue; }
+if (v1 !== 0x3d) { step = 10; continue; }
 step = 9;
 case 9:
 if (!(offset+2 >= this_tok_len)) { step = 13; continue; }
@@ -1506,7 +1506,7 @@ if (frozen) return v3;
 else f3 = null;
 step = 18;
 case 18:
-if (!(v3 === 0x3d)) { step = 20; continue; }
+if (v3 !== 0x3d) { step = 20; continue; }
 step = 19;
 case 19:
  len = 3;
@@ -1553,14 +1553,14 @@ else f1 = null;
 step = 8;
 case 8:
  d = v1;
-      if (!(d === 0x3d)) { step = 10; continue; }
+      if (d !== 0x3d) { step = 10; continue; }
 step = 9;
 case 9:
  len = 2;
 step = 11;
 continue;
 case 10:
- if (!(d === c)) { step = 13; continue; }
+ if (d !== c) { step = 13; continue; }
 step = 12;
 case 12:
 len = 2;
@@ -1581,7 +1581,7 @@ else f3 = null;
 step = 21;
 case 21:
  e = v3;
-        if (!(e === 0x3d)) { step = 23; continue; }
+        if (e !== 0x3d) { step = 23; continue; }
 step = 22;
 case 22:
  len = 3;
@@ -1615,7 +1615,7 @@ if (frozen) return v5;
 else f5 = null;
 step = 37;
 case 37:
-if (!(v5 === 0x3d)) { step = 39; continue; }
+if (v5 !== 0x3d) { step = 39; continue; }
 step = 38;
 case 38:
  len = 4;
@@ -1660,7 +1660,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 8;
 case 8:
-if (!(v1 === 0x3d)) { step = 10; continue; }
+if (v1 !== 0x3d) { step = 10; continue; }
 step = 9;
 case 9:
  len = 2;
@@ -1682,7 +1682,7 @@ return function inside_this_tok_parseDivPunctuator(thawValue){
       case 1:
 // cant really be a //, /* or regex because they should have been checked before calling this function
       // could rewrite this to OR magic and eliminate a branch
-      if (!(d === 0x3d)) { step = 3; continue; }
+      if (d !== 0x3d) { step = 3; continue; }
 step = 2;
 case 2:
  this_tok_pos += 2;
@@ -1739,19 +1739,19 @@ step = 13;
 case 13:
  c = v1;
           A = !c ;
-if (!(!A)) { step = 15; continue; }
+if (A) { step = 15; continue; }
 step = 14;
 case 14:
  A =  c === 0x0D ;  
 step = 15;
 case 15:
-if (!(!A)) { step = 18; continue; }
+if (A) { step = 18; continue; }
 step = 17;
 case 17:
  A =  c === 0x0A ;  
 step = 18;
 case 18:
-if (!(!A)) { step = 21; continue; }
+if (A) { step = 21; continue; }
 step = 20;
 case 20:
  A =  (c ^ 0x2028) <= 1; 
@@ -1864,7 +1864,7 @@ step = 24;
 case 24:
 this_tok_pos = pos+1;
           // yes I hate the double negation, but it saves doing ! above
-          if (!(!noNewline)) { step = 28; continue; }
+          if (noNewline) { step = 28; continue; }
 step = 27;
 case 27:
  this_tok_lastNewline = true;
@@ -1873,17 +1873,17 @@ case 28:
 return 18;
 step = 25;
 case 25:
-if (!(noNewline)) { step = 31; continue; }
+if (!noNewline) { step = 31; continue; }
 step = 30;
 case 30:
    A = c === 0x0D ;
-if (!(!A)) { step = 34; continue; }
+if (A) { step = 34; continue; }
 step = 33;
 case 33:
  A =  c === 0x0A ;  
 step = 34;
 case 34:
-if (!(!A)) { step = 37; continue; }
+if (A) { step = 37; continue; }
 step = 36;
 case 36:
  A =  (c ^ 0x2028) <= 1; 
@@ -1979,7 +1979,7 @@ else f1 = null;
 step = 10;
 case 10:
  c = v1;
-if (!(c === targetChar)) { step = 12; continue; }
+if (c !== targetChar) { step = 12; continue; }
 step = 11;
 case 11:
 this_tok_pos = pos;
@@ -1990,7 +1990,7 @@ case 12:
 if (!((c & 8) === 8)) { step = 15; continue; }
 step = 14;
 case 14:
-if (!(c === 0x5c)) { step = 18; continue; }
+if (c !== 0x5c) { step = 18; continue; }
 case 17:
 step = 20;
 case 20:
@@ -2011,19 +2011,19 @@ if (!A) { step = 23; continue; }
 step = 22;
 case 22:
    A = c === 0x0A ;
-if (!(!A)) { step = 26; continue; }
+if (A) { step = 26; continue; }
 step = 25;
 case 25:
  A =  c === 0x0D ;  
 step = 26;
 case 26:
-if (!(!A)) { step = 29; continue; }
+if (A) { step = 29; continue; }
 step = 28;
 case 28:
  A =  c === 0x2028 ;  
 step = 29;
 case 29:
-if (!(!A)) { step = 32; continue; }
+if (A) { step = 32; continue; }
 step = 31;
 case 31:
  A =  c === 0x2029; 
@@ -2085,7 +2085,7 @@ step = 8;
 case 8:
  c = v1;
 // unicode escapes
-      if (!(c === 0x75)) { step = 10; continue; }
+      if (c !== 0x75) { step = 10; continue; }
 case 9:
 step = 12;
 case 12:
@@ -2094,7 +2094,7 @@ if (frozen) return v2;
 else f2 = null;
 step = 13;
 case 13:
-if (!(v2)) { step = 15; continue; }
+if (!v2) { step = 15; continue; }
 step = 14;
 case 14:
  pos += 4;
@@ -2112,7 +2112,7 @@ case 16:
 step = 11;
 continue;
 case 10:
- if (!(c === 0x0D)) { step = 20; continue; }
+ if (c !== 0x0D) { step = 20; continue; }
 step = 19;
 case 19:
 // keep in mind, we are already skipping a char. no need to check
@@ -2134,7 +2134,7 @@ if (frozen) return v5;
 else f5 = null;
 step = 28;
 case 28:
-if (!(v5 === 0x0A)) { step = 30; continue; }
+if (v5 !== 0x0A) { step = 30; continue; }
 step = 29;
 case 29:
  ++pos;
@@ -2143,7 +2143,7 @@ case 30:
 step = 21;
 continue;
 case 20:
- if (!(c === 0x78)) { step = 33; continue; }
+ if (c !== 0x78) { step = 33; continue; }
 step = 32;
 case 32:
 if (!(pos+1 >= this_tok_len)) { step = 36; continue; }
@@ -2322,7 +2322,7 @@ case 2:
 step = 3;
 case 3:
   A = (A) ;
-if (!(!A)) { step = 6; continue; }
+if (A) { step = 6; continue; }
 step = 5;
 case 5:
    A = c >= 0x61 ;
@@ -2335,7 +2335,7 @@ case 9:
 A =  (A) ;  
 step = 6;
 case 6:
-if (!(!A)) { step = 12; continue; }
+if (A) { step = 12; continue; }
 step = 11;
 case 11:
    A = c >= 0x41 ;
@@ -2448,7 +2448,7 @@ step = 11;
 case 11:
  d = v1;
         A = d === 0x78 ;
-if (!(!A)) { step = 13; continue; }
+if (A) { step = 13; continue; }
 step = 12;
 case 12:
  A =  d === 0x58; 
@@ -2466,7 +2466,7 @@ case 19:
 step = 17;
 continue;
 case 16:
- if (!(d === 0x2e)) { step = 21; continue; }
+ if (d !== 0x2e) { step = 21; continue; }
 case 20:
 step = 23; case 23:
 v3 = (f3 = f3 || this_tok_parseAfterDot(this_tok_pos+2))(thawValue);
@@ -2559,7 +2559,7 @@ case 14:
 step = 15;
 case 15:
   A = (A) ;
-if (!(!A)) { step = 18; continue; }
+if (A) { step = 18; continue; }
 step = 17;
 case 17:
    A = c >= 0x61 ;
@@ -2572,7 +2572,7 @@ case 21:
 A =  (A) ;  
 step = 18;
 case 18:
-if (!(!A)) { step = 24; continue; }
+if (A) { step = 24; continue; }
 step = 23;
 case 23:
    A = c >= 0x41 ;
@@ -2645,7 +2645,7 @@ case 15:
 if (A) { step = 2; continue; }
 step = 3;
 case 3:
-if (!(c === 0x2e)) { step = 18; continue; }
+if (c !== 0x2e) { step = 18; continue; }
 case 17:
 step = 20;
 case 20:
@@ -2681,7 +2681,7 @@ return function inside_this_tok_parseAfterDot(thawValue){
     switch (step) {
       case 1:
 A = pos < this_tok_len ;
-if (!(!A)) { step = 3; continue; }
+if (A) { step = 3; continue; }
 case 2:
 step = 5;
 case 5:
@@ -2715,7 +2715,7 @@ if (!A) { step = 18; continue; }
 step = 17;
 case 17:
    A = ++pos < this_tok_len ;
-if (!(!A)) { step = 21; continue; }
+if (A) { step = 21; continue; }
 case 20:
 step = 23;
 case 23:
@@ -2759,7 +2759,7 @@ return function inside_this_tok_parseExponent(thawValue){
     switch (step) {
       case 1:
 A = c === 0x65 ;
-if (!(!A)) { step = 3; continue; }
+if (A) { step = 3; continue; }
 step = 2;
 case 2:
  A =  c === 0x45; 
@@ -2787,7 +2787,7 @@ case 14:
 c = v1;
         // sign is optional (especially for plus)
           A = c === 0x2d ;
-if (!(!A)) { step = 16; continue; }
+if (A) { step = 16; continue; }
 step = 15;
 case 15:
  A =  c === 0x2b; 
@@ -2873,7 +2873,7 @@ case 48:
  A =  c <= 0x39; 
 step = 49;
 case 49:
-if (!(!A)) { step = 52; continue; }
+if (A) { step = 52; continue; }
 case 51:
  step = 47;
 continue;
@@ -2993,7 +2993,7 @@ else f2 = null;
 step = 15;
 case 15:
  c = v2;
-if (!(c === 0x5c)) { step = 17; continue; }
+if (c !== 0x5c) { step = 17; continue; }
 step = 16;
 case 16:
   // backslash
@@ -3028,13 +3028,13 @@ step = 30;
 case 30:
  d = v5;
             A = d === 0x0A ;
-if (!(!A)) { step = 32; continue; }
+if (A) { step = 32; continue; }
 step = 31;
 case 31:
  A =  d === 0x0D ;  
 step = 32;
 case 32:
-if (!(!A)) { step = 35; continue; }
+if (A) { step = 35; continue; }
 step = 34;
 case 34:
  A =  (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/; 
@@ -3052,14 +3052,14 @@ case 38:
 step = 18;
 continue;
 case 17:
- if (!(c === 0x2f)) { step = 43; continue; }
+ if (c !== 0x2f) { step = 43; continue; }
 step = 42;
 case 42:
  return;
 step = 44;
 continue;
 case 43:
- if (!(c === 0x5b)) { step = 46; continue; }
+ if (c !== 0x5b) { step = 46; continue; }
 case 45:
  step = 48; case 48:
 v7 = (f7 = f7 || this_tok_regexClass())(thawValue);
@@ -3070,13 +3070,13 @@ step = 47;
 continue;
 case 46:
    A = c === 0x0A ;
-if (!(!A)) { step = 51; continue; }
+if (A) { step = 51; continue; }
 step = 50;
 case 50:
  A =  c === 0x0D ;  
 step = 51;
 case 51:
-if (!(!A)) { step = 54; continue; }
+if (A) { step = 54; continue; }
 step = 53;
 case 53:
  A =  (c ^ 0x2028) <= 1 /*c === ORD_PS || c === ORD_LS*/; 
@@ -3146,14 +3146,14 @@ else f2 = null;
 step = 15;
 case 15:
  c = v2;
-if (!(c === 0x5d)) { step = 17; continue; }
+if (c !== 0x5d) { step = 17; continue; }
 step = 16;
 case 16:
 this_tok_pos = pos;
           return;
 step = 17;
 case 17:
-if (!(c === 0x5c)) { step = 20; continue; }
+if (c !== 0x5c) { step = 20; continue; }
 step = 19;
 case 19:
 // there's a historical dispute over whether backslashes in regex classes
@@ -3179,13 +3179,13 @@ step = 31;
 case 31:
  d = v4;
               A = d === 0x0A ;
-if (!(!A)) { step = 33; continue; }
+if (A) { step = 33; continue; }
 step = 32;
 case 32:
  A =  d === 0x0D ;  
 step = 33;
 case 33:
-if (!(!A)) { step = 36; continue; }
+if (A) { step = 36; continue; }
 step = 35;
 case 35:
  A =  (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/; 
@@ -3205,13 +3205,13 @@ step = 21;
 continue;
 case 20:
    A = c === 0x0A ;
-if (!(!A)) { step = 44; continue; }
+if (A) { step = 44; continue; }
 step = 43;
 case 43:
  A =  c === 0x0D ;  
 step = 44;
 case 44:
-if (!(!A)) { step = 47; continue; }
+if (A) { step = 47; continue; }
 step = 46;
 case 46:
  A =  (c ^ 0x2028) <= 1; 
@@ -3271,7 +3271,7 @@ g = false;
        m = false;
        i = false;
 A = pos < this_tok_len ;
-if (!(!A)) { step = 8; continue; }
+if (A) { step = 8; continue; }
 case 7:
 step = 10;
 case 10:
@@ -3297,7 +3297,7 @@ step = 17;
 case 17:
 backslash = false;
 // check backslash first so we can replace c with the canonical value of the escape
-          if (!(c === 0x5c)) { step = 20; continue; }
+          if (c !== 0x5c) { step = 20; continue; }
 step = 19;
 case 19:
 // only valid here is `\u006` followed by a 7=g 9=i or d=m
@@ -3312,10 +3312,10 @@ case 23:
 c = v3;
 step = 20;
 case 20:
-if (!(c === 0x67)) { step = 25; continue; }
+if (c !== 0x67) { step = 25; continue; }
 step = 24;
 case 24:
-if (!(g)) { step = 28; continue; }
+if (!g) { step = 28; continue; }
 step = 27;
 case 27:
  throw 'Illegal duplicate regex flag';
@@ -3325,10 +3325,10 @@ g = true;
 step = 26;
 continue;
 case 25:
- if (!(c === 0x69)) { step = 31; continue; }
+ if (c !== 0x69) { step = 31; continue; }
 step = 30;
 case 30:
-if (!(i)) { step = 34; continue; }
+if (!i) { step = 34; continue; }
 step = 33;
 case 33:
  throw 'Illegal duplicate regex flag';
@@ -3338,10 +3338,10 @@ i = true;
 step = 32;
 continue;
 case 31:
- if (!(c === 0x6D)) { step = 37; continue; }
+ if (c !== 0x6D) { step = 37; continue; }
 step = 36;
 case 36:
-if (!(m)) { step = 40; continue; }
+if (!m) { step = 40; continue; }
 step = 39;
 case 39:
  throw 'Illegal duplicate regex flag';
@@ -3357,7 +3357,7 @@ case 26:
 case 32:
 step = 38;
 case 38:
-if (!(backslash)) { step = 43; continue; }
+if (!backslash) { step = 43; continue; }
 step = 42;
 case 42:
  pos += 5;
@@ -3454,7 +3454,7 @@ else f4 = null;
 step = 23;
 case 23:
  A = v4 !== 0x75 ;
-if (!(!A)) { step = 25; continue; }
+if (A) { step = 25; continue; }
 case 24:
 step = 27;
 case 27:
@@ -3466,7 +3466,7 @@ case 28:
 A =  v5 !== 0x30 ;  
 step = 25;
 case 25:
-if (!(!A)) { step = 30; continue; }
+if (A) { step = 30; continue; }
 case 29:
 step = 32;
 case 32:
@@ -3478,7 +3478,7 @@ case 33:
 A =  v6 !== 0x30 ;  
 step = 30;
 case 30:
-if (!(!A)) { step = 35; continue; }
+if (A) { step = 35; continue; }
 case 34:
 step = 37;
 case 37:
@@ -3513,19 +3513,19 @@ else f9 = null;
 step = 48;
 case 48:
  c = v9;
-      if (!(c === 0x37)) { step = 50; continue; }
+      if (c !== 0x37) { step = 50; continue; }
 step = 49;
 case 49:
  return 0x67;
 step = 50;
 case 50:
-if (!(c === 0x39)) { step = 53; continue; }
+if (c !== 0x39) { step = 53; continue; }
 step = 52;
 case 52:
  return 0x69;
 step = 53;
 case 53:
-if (!(c === 0x64)) { step = 56; continue; }
+if (c !== 0x64) { step = 56; continue; }
 step = 55;
 case 55:
  return 0x6D;
@@ -3613,7 +3613,7 @@ case 16:
  A =  b <= 0x5a; 
 step = 17;
 case 17:
-if (!(!A)) { step = 20; continue; }
+if (A) { step = 20; continue; }
 case 19:
  step = 15;
 continue;
@@ -3656,7 +3656,7 @@ else f4 = null;
 step = 33;
 case 33:
  delta = v4;
-        if (!(!delta)) { step = 35; continue; }
+        if (delta) { step = 35; continue; }
 case 34:
  step = 3;
 continue;
@@ -3686,7 +3686,7 @@ return function inside_this_tok_parseOtherIdentifierParts(thawValue){
 step = 2;
 case 2:
     A = c <= 0x39 ;
-if (!(!A)) { step = 6; continue; }
+if (A) { step = 6; continue; }
 step = 5;
 case 5:
  A =  c === 0x5f; 
@@ -3700,7 +3700,7 @@ case 9:
 step = 4;
 continue;
 case 3:
- if (!(c === 0x24)) { step = 12; continue; }
+ if (c !== 0x24) { step = 12; continue; }
 step = 11;
 case 11:
  return 1;
@@ -3708,7 +3708,7 @@ case 11:
 case 4:
 step = 12;
 case 12:
-if (!(c === 0x5c)) { step = 15; continue; }
+if (c !== 0x5c) { step = 15; continue; }
 step = 14;
 case 14:
 // TOFIX: seems the atStart flag is ignored. make a test. (input is always passed on but was removed at the finger print of func)
@@ -3806,7 +3806,7 @@ case 24:
 if (!A) { step = 27; continue; }
 step = 26;
 case 26:
-if (!(atStart)) { step = 30; continue; }
+if (!atStart) { step = 30; continue; }
 case 29:
  step = 32; case 32:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Digit not allowed at start of identifier, not even escaped'))(thawValue);
@@ -3819,7 +3819,7 @@ return true;
 step = 27;
 case 27:
   A = u === 0x5f ;
-if (!(!A)) { step = 35; continue; }
+if (A) { step = 35; continue; }
 step = 34;
 case 34:
  A =  u === 0x24; 
@@ -4095,7 +4095,7 @@ else f1 = null;
 step = 5;
 case 5:
 A = this_tok_pos !== this_tok_len ;
-if (!(!A)) { step = 7; continue; }
+if (A) { step = 7; continue; }
 step = 6;
 case 6:
  A =  this_tok_lastType !== 14; 
@@ -4168,7 +4168,7 @@ return function inside_this_par_parseStatement(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(this_tok_lastType === 13)) { step = 3; continue; }
+if (this_tok_lastType !== 13) { step = 3; continue; }
 case 2:
 step = 5; case 5:
 v0 = (f0 = f0 || this_par_parseIdentifierStatement(inFunction, inLoop, inSwitch, labelSet, freshLabels))(thawValue);
@@ -4203,11 +4203,11 @@ return function inside_this_par_parseNonIdentifierStatement(thawValue){
     switch (step) {
       case 1:
 c = this_tok_firstTokenChar;
-if (!(c === 0x7d)) { step = 3; continue; }
+if (c !== 0x7d) { step = 3; continue; }
 step = 2;
 case 2:
   // 65.6%
-        if (!(!optional)) { step = 6; continue; }
+        if (optional) { step = 6; continue; }
 case 5:
  step = 8; case 8:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Expected more input..'))(thawValue);
@@ -4221,7 +4221,7 @@ case 6:
 return false;
 step = 3;
 case 3:
-if (!(c === 0x7b)) { step = 11; continue; }
+if (c !== 0x7b) { step = 11; continue; }
 step = 10;
 case 10:
   // 33.2%
@@ -4262,7 +4262,7 @@ return function inside_this_par_parseNonIdentifierStatementNonCurly(thawValue){
     switch (step) {
       case 1:
 // relative to this function: punc=96%, string=4%, number=1%, rest 0%
-if (!(c === 0x28)) { step = 3; continue; }
+if (c !== 0x28) { step = 3; continue; }
 step = 2;
 case 2:
   // 56%
@@ -4275,7 +4275,7 @@ case 6:
 return true;
 step = 3;
 case 3:
-if (!(c === 0x3b)) { step = 8; continue; }
+if (c !== 0x3b) { step = 8; continue; }
 step = 7;
 case 7:
   // 26% empty statement
@@ -4290,7 +4290,7 @@ return true;
 step = 8;
 case 8:
   A = c === 0x2b ;
-if (!(!A)) { step = 13; continue; }
+if (A) { step = 13; continue; }
 step = 12;
 case 12:
  A =  c === 0x2d; 
@@ -4308,7 +4308,7 @@ else f2 = null;
 step = 19;
 case 19:
  A = v2 === c ;
-if (!(!A)) { step = 21; continue; }
+if (A) { step = 21; continue; }
 step = 20;
 case 20:
  A =  this_tok_lastLen === 1; 
@@ -4334,7 +4334,7 @@ case 16:
  type = this_tok_lastType;
 // rare
         A = type === 10 ;
-if (!(!A)) { step = 31; continue; }
+if (A) { step = 31; continue; }
 step = 30;
 case 30:
  A =  c === 0x5b; 
@@ -4354,11 +4354,11 @@ return true;
 // almost never
 step = 34;
 case 34:
-if (!(c === 0x21)) { step = 39; continue; }
+if (c !== 0x21) { step = 39; continue; }
 step = 38;
 case 38:
   // 2%
-        if (!(this_tok_lastLen === 1)) { step = 42; continue; }
+        if (this_tok_lastLen !== 1) { step = 42; continue; }
 case 41:
 step = 44; case 44:
 v6 = (f6 = f6 || this_par_parseExpressionStatement())(thawValue);
@@ -4378,13 +4378,13 @@ case 47:
 step = 39;
 case 39:
   A = type === 7 ;
-if (!(!A)) { step = 49; continue; }
+if (A) { step = 49; continue; }
 step = 48;
 case 48:
  A =  c === 0x7e ;  
 step = 49;
 case 49:
-if (!(!A)) { step = 52; continue; }
+if (A) { step = 52; continue; }
 step = 51;
 case 51:
  A =  type === 8; 
@@ -4405,7 +4405,7 @@ return true;
       // program and, I think, will always trigger once, of course.
 step = 55;
 case 55:
-if (!(!optional)) { step = 60; continue; }
+if (optional) { step = 60; continue; }
 case 59:
  step = 62; case 62:
 v9 = (f9 = f9 || this_tok_throwSyntaxError('Expected more input..'))(thawValue);
@@ -4450,7 +4450,7 @@ step = 4;
 case 4:
 // bcdfirstvw, not in that order.
          c = this_tok_firstTokenChar;
-if (!(c === 0x74)) { step = 8; continue; }
+if (c !== 0x74) { step = 8; continue; }
 step = 7;
 case 7:
 if (!(len !== 4)) { step = 11; continue; }
@@ -4484,7 +4484,7 @@ case 11:
 step = 9;
 continue;
 case 8:
- if (!(c === 0x69)) { step = 24; continue; }
+ if (c !== 0x69) { step = 24; continue; }
 step = 23;
 case 23:
 if (!(value === 'if')) { step = 27; continue; }
@@ -4501,7 +4501,7 @@ case 27:
 step = 25;
 continue;
 case 24:
- if (!(c === 0x76)) { step = 32; continue; }
+ if (c !== 0x76) { step = 32; continue; }
 step = 31;
 case 31:
 if (!(value === 'var')) { step = 35; continue; }
@@ -4518,7 +4518,7 @@ case 35:
 step = 33;
 continue;
 case 32:
- if (!(c === 0x72)) { step = 40; continue; }
+ if (c !== 0x72) { step = 40; continue; }
 step = 39;
 case 39:
 if (!(value === 'return')) { step = 43; continue; }
@@ -4535,7 +4535,7 @@ case 43:
 step = 41;
 continue;
 case 40:
- if (!(c === 0x66)) { step = 48; continue; }
+ if (c !== 0x66) { step = 48; continue; }
 step = 47;
 case 47:
 if (!(value === 'for')) { step = 51; continue; }
@@ -4564,7 +4564,7 @@ case 56:
 step = 49;
 continue;
 case 48:
- if (!(c === 0x63)) { step = 61; continue; }
+ if (c !== 0x63) { step = 61; continue; }
 step = 60;
 case 60:
 if (!(value === 'case')) { step = 64; continue; }
@@ -4593,7 +4593,7 @@ case 69:
 step = 62;
 continue;
 case 61:
- if (!(c === 0x62)) { step = 74; continue; }
+ if (c !== 0x62) { step = 74; continue; }
 step = 73;
 case 73:
 if (!(value === 'break')) { step = 77; continue; }
@@ -4610,7 +4610,7 @@ case 77:
 step = 75;
 continue;
 case 74:
- if (!(c === 0x64)) { step = 82; continue; }
+ if (c !== 0x64) { step = 82; continue; }
 step = 81;
 case 81:
 if (!(value === 'default')) { step = 85; continue; }
@@ -4651,7 +4651,7 @@ case 95:
 step = 83;
 continue;
 case 82:
- if (!(c === 0x73)) { step = 100; continue; }
+ if (c !== 0x73) { step = 100; continue; }
 step = 99;
 case 99:
 if (!(value === 'switch')) { step = 103; continue; }
@@ -4668,7 +4668,7 @@ case 103:
 step = 101;
 continue;
 case 100:
- if (!(c === 0x77)) { step = 108; continue; }
+ if (c !== 0x77) { step = 108; continue; }
 step = 107;
 case 107:
 if (!(value === 'while')) { step = 111; continue; }
@@ -4780,7 +4780,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 7;
 case 7:
-if (!(v1)) { step = 9; continue; }
+if (!v1) { step = 9; continue; }
 case 8:
  step = 11; case 11:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Var name is reserved'))(thawValue);
@@ -4855,7 +4855,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 5;
 case 5:
-if (!(v0)) { step = 7; continue; }
+if (!v0) { step = 7; continue; }
 case 6:
 step = 11;
 case 11:
@@ -4985,7 +4985,7 @@ step = 3;
 case 3:
  // do
         B =  inLoop ;
-if (!(!B)) { step = 5; continue; }
+if (B) { step = 5; continue; }
 step = 4;
 case 4:
  B =  ' '; 
@@ -5018,7 +5018,7 @@ step = 16;
 case 16:
 // spec requires the semi but browsers made it optional
         A = this_par_options.requireDoWhileSemi ;
-if (!(!A)) { step = 18; continue; }
+if (A) { step = 18; continue; }
 step = 17;
 case 17:
  A =  this_tok_firstTokenChar === 0x3b; 
@@ -5061,7 +5061,7 @@ else f1 = null;
 step = 5;
 case 5:
 B =  inLoop ;
-if (!(!B)) { step = 7; continue; }
+if (B) { step = 7; continue; }
 step = 6;
 case 6:
  B =  ' '; 
@@ -5110,7 +5110,7 @@ if (frozen) return v2;
 else f2 = null;
 step = 7;
 case 7:
-if (!(v2)) { step = 9; continue; }
+if (!v2) { step = 9; continue; }
 case 8:
  step = 11; case 11:
 v3 = (f3 = f3 || this_par_parseForEachHeader())(thawValue);
@@ -5167,7 +5167,7 @@ if (frozen) return v7;
 else f7 = null;
 step = 26;
 case 26:
-if (!(v7)) { step = 28; continue; }
+if (!v7) { step = 28; continue; }
 case 27:
  step = 30; case 30:
 v8 = (f8 = f8 || this_par_parseForEachHeader())(thawValue);
@@ -5178,7 +5178,7 @@ step = 29;
 continue;
 case 28:
    A = this_tok_firstTokenChar !== 0x69 ;
-if (!(!A)) { step = 33; continue; }
+if (A) { step = 33; continue; }
 case 32:
 step = 35;
 case 35:
@@ -5190,7 +5190,7 @@ case 36:
 A =  v9 !== 0x6e ;  
 step = 33;
 case 33:
-if (!(!A)) { step = 38; continue; }
+if (A) { step = 38; continue; }
 step = 37;
 case 37:
  A =  this_tok_lastLen !== 2; 
@@ -5241,7 +5241,7 @@ else f13 = null;
 step = 56;
 case 56:
 B =  inLoop ;
-if (!(!B)) { step = 58; continue; }
+if (B) { step = 58; continue; }
 step = 57;
 case 57:
  B =  ' '; 
@@ -5329,7 +5329,7 @@ return function inside_this_par_parseContinue(thawValue){
 // continue ;
       // continue <idntf> ;
       // newline right after keyword = asi
-if (!(!inLoop)) { step = 3; continue; }
+if (inLoop) { step = 3; continue; }
 case 2:
  step = 5; case 5:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only continue in a loop'))(thawValue);
@@ -5364,7 +5364,7 @@ step = 16;
 case 16:
  label = v2;
           A = !labelSet ;
-if (!(!A)) { step = 18; continue; }
+if (A) { step = 18; continue; }
 step = 17;
 case 17:
  A =  labelSet.indexOf(' '+label+' ') < 0; 
@@ -5380,7 +5380,7 @@ case 24:
 step = 21;
 case 21:
   A = !inLoop ;
-if (!(!A)) { step = 26; continue; }
+if (A) { step = 26; continue; }
 step = 25;
 case 25:
  A =  inLoop.indexOf(' '+label+' ') < 0; 
@@ -5438,7 +5438,7 @@ step = 3;
 case 3:
  type = v0; // token after break cannot be a regex, either way.
 A = type !== 13 ;
-if (!(!A)) { step = 5; continue; }
+if (A) { step = 5; continue; }
 step = 4;
 case 4:
  A =  this_tok_lastNewline; 
@@ -5478,7 +5478,7 @@ step = 19;
 case 19:
  label = v2;
           A = !labelSet ;
-if (!(!A)) { step = 21; continue; }
+if (A) { step = 21; continue; }
 step = 20;
 case 20:
  A =  labelSet.indexOf(' '+label+' ') < 0; 
@@ -5547,7 +5547,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 11;
 case 11:
-if (!(!this_tok_lastNewline)) { step = 13; continue; }
+if (this_tok_lastNewline) { step = 13; continue; }
 case 12:
  step = 15; case 15:
 v2 = (f2 = f2 || this_par_parseOptionalExpressions())(thawValue);
@@ -5583,7 +5583,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-if (!(this_tok_lastNewline)) { step = 5; continue; }
+if (!this_tok_lastNewline) { step = 5; continue; }
 case 4:
  step = 7; case 7:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('No newline allowed directly after a throw, ever'))(thawValue);
@@ -5731,7 +5731,7 @@ return function inside_this_par_parseCase(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(!inSwitch)) { step = 3; continue; }
+if (inSwitch) { step = 3; continue; }
 case 2:
  step = 5; case 5:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only use case in a switch'))(thawValue);
@@ -5770,7 +5770,7 @@ return function inside_this_par_parseDefault(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(!inSwitch)) { step = 3; continue; }
+if (inSwitch) { step = 3; continue; }
 case 2:
  step = 5; case 5:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Can only use default in a switch'))(thawValue);
@@ -5832,7 +5832,7 @@ if (frozen) return v3;
 else f3 = null;
 step = 9;
 case 9:
-if (!(count === this_tok_tokenCountAll)) { step = 11; continue; }
+if (count !== this_tok_tokenCountAll) { step = 11; continue; }
 case 10:
  step = 13; case 13:
 v4 = (f4 = f4 || this_tok_throwSyntaxError('Try must have at least a catch or finally block or both'))(thawValue);
@@ -5864,7 +5864,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-if (!(v0)) { step = 5; continue; }
+if (!v0) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
@@ -5875,7 +5875,7 @@ step = 8;
 case 8:
  type = v1;
 // catch var
-        if (!(type === 13)) { step = 10; continue; }
+        if (type !== 13) { step = 10; continue; }
 case 9:
 step = 12;
 case 12:
@@ -5884,7 +5884,7 @@ if (frozen) return v2;
 else f2 = null;
 step = 13;
 case 13:
-if (!(v2)) { step = 15; continue; }
+if (!v2) { step = 15; continue; }
 case 14:
  step = 17; case 17:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Catch scope var name is reserved'))(thawValue);
@@ -5942,7 +5942,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-if (!(v0)) { step = 5; continue; }
+if (!v0) { step = 5; continue; }
 case 4:
 step = 7; case 7:
 v1 = (f1 = f1 || this_par_parseCompleteBlock(true, inFunction, inLoop, inSwitch, labelSet))(thawValue);
@@ -6032,7 +6032,7 @@ else f0 = null;
 step = 3;
 case 3:
  type = v0; // 'function'
-      if (!(type === 13)) { step = 5; continue; }
+      if (type !== 13) { step = 5; continue; }
 step = 4;
 case 4:
   // name
@@ -6043,7 +6043,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 8;
 case 8:
-if (!(v1)) { step = 10; continue; }
+if (!v1) { step = 10; continue; }
 case 9:
 step = 14;
 case 14:
@@ -6066,7 +6066,7 @@ case 17:
 step = 6;
 continue;
 case 5:
- if (!(forFunctionDeclaration)) { step = 19; continue; }
+ if (!forFunctionDeclaration) { step = 19; continue; }
 case 18:
 step = 21; case 21:
 v5 = (f5 = f5 || this_tok_throwSyntaxError('Function declaration requires a name'))(thawValue);
@@ -6132,10 +6132,10 @@ return function inside_this_par_parseParameters(thawValue){
     switch (step) {
       case 1:
 // [<idntf> [, <idntf>]]
-if (!(this_tok_lastType === 13)) { step = 3; continue; }
+if (this_tok_lastType !== 13) { step = 3; continue; }
 step = 2;
 case 2:
-if (!(paramCount === 0)) { step = 6; continue; }
+if (paramCount !== 0) { step = 6; continue; }
 case 5:
  step = 8; case 8:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Getters have no parameters'))(thawValue);
@@ -6151,7 +6151,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 11;
 case 11:
-if (!(v1)) { step = 13; continue; }
+if (!v1) { step = 13; continue; }
 case 12:
  step = 15; case 15:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Function param name is reserved.'))(thawValue);
@@ -6180,7 +6180,7 @@ case 23:
  step = 20;
 continue;
 case 24:
-if (!(paramCount === 1)) { step = 27; continue; }
+if (paramCount !== 1) { step = 27; continue; }
 case 26:
  step = 29; case 29:
 v5 = (f5 = f5 || this_tok_throwSyntaxError('Setters have exactly one param'))(thawValue);
@@ -6191,7 +6191,7 @@ case 30:
 // param name
 step = 27;
 case 27:
-if (!(this_tok_lastType === 13)) { step = 32; continue; }
+if (this_tok_lastType !== 13) { step = 32; continue; }
 case 31:
 step = 34;
 case 34:
@@ -6200,7 +6200,7 @@ if (frozen) return v6;
 else f6 = null;
 step = 35;
 case 35:
-if (!(v6)) { step = 37; continue; }
+if (!v6) { step = 37; continue; }
 case 36:
  step = 39; case 39:
 v7 = (f7 = f7 || this_tok_throwSyntaxError('Function param name is reserved'))(thawValue);
@@ -6230,7 +6230,7 @@ case 20:
 step = 4;
 continue;
 case 3:
- if (!(paramCount === 1)) { step = 46; continue; }
+ if (paramCount !== 1) { step = 46; continue; }
 case 45:
 step = 48; case 48:
 v10 = (f10 = f10 || this_tok_throwSyntaxError('Setters have exactly one param'))(thawValue);
@@ -6316,7 +6316,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 3;
 case 3:
-if (!(v0)) { step = 5; continue; }
+if (!v0) { step = 5; continue; }
 step = 4;
 case 4:
  return 9;
@@ -6328,7 +6328,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 8;
 case 8:
-if (!(v1)) { step = 10; continue; }
+if (!v1) { step = 10; continue; }
 step = 9;
 case 9:
  return 15;
@@ -6357,13 +6357,13 @@ return function inside_this_par_parseAsi(thawValue){
 // asi at EOF, if next token is } or if there is a newline between prev and next (black) token
       // asi prevented if asi would be empty statement, no asi in for-header, no asi if next token is regex
 A = this_tok_firstTokenChar === 0x7d ;
-if (!(!A)) { step = 3; continue; }
+if (A) { step = 3; continue; }
 step = 2;
 case 2:
  A =  this_tok_lastNewline ;  
 step = 3;
 case 3:
-if (!(!A)) { step = 6; continue; }
+if (A) { step = 6; continue; }
 step = 5;
 case 5:
  A =  this_tok_lastType === 14; 
@@ -6503,7 +6503,7 @@ if (frozen) return v3;
 else f3 = null;
 step = 9;
 case 9:
-if (!(this_tok_firstTokenChar === 0x3a)) { step = 11; continue; }
+if (this_tok_firstTokenChar !== 0x3a) { step = 11; continue; }
 step = 10;
 case 10:
 if (!(this_tok_tokenCountAll !== count)) { step = 14; continue; }
@@ -6515,7 +6515,7 @@ else f4 = null;
 case 17:
 step = 14;
 case 14:
-if (!(!assignable)) { step = 19; continue; }
+if (assignable) { step = 19; continue; }
 case 18:
  step = 21; case 21:
 v5 = (f5 = f5 || this_tok_throwSyntaxError('Label ['+identifier+'] is a reserved keyword'))(thawValue);
@@ -6540,21 +6540,21 @@ if (frozen) return v7;
 else f7 = null;
 step = 29;
 case 29:
-if (!(inLoop)) { step = 31; continue; }
+if (!inLoop) { step = 31; continue; }
 step = 30;
 case 30:
  inLoop += labelSpaced; // these are the only valid jump targets for `continue`
 step = 31;
 case 31:
   D = labelSet ;
-if (!(!D)) { step = 34; continue; }
+if (D) { step = 34; continue; }
 step = 33;
 case 33:
  D =  ' '; 
 step = 34;
 case 34:
   F = freshLabels;
-if (!(!F)) { step = 37; continue; }
+if (F) { step = 37; continue; }
 step = 36;
 case 36:
  F = ' '; 
@@ -6574,7 +6574,7 @@ if (frozen) return v9;
 else f9 = null;
 step = 42;
 case 42:
-if (!(v9)) { step = 44; continue; }
+if (!v9) { step = 44; continue; }
 case 43:
  step = 46; case 46:
 v10 = (f10 = f10 || this_par_parseExpressions())(thawValue);
@@ -6711,7 +6711,7 @@ step = 3;
 case 3:
  groupAssignable = v0;
 // either tokenizer pos moved, or we reached the end (we hadnt reached the end before)
-      if (!(tokCount === this_tok_tokenCountAll)) { step = 5; continue; }
+      if (tokCount !== this_tok_tokenCountAll) { step = 5; continue; }
 case 4:
  step = 7; case 7:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('Expected to parse an expression, did not find any'))(thawValue);
@@ -6870,7 +6870,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 5;
 case 5:
-if (!(v0)) { step = 7; continue; }
+if (!v0) { step = 7; continue; }
 case 6:
 step = 9; case 9:
 v1 = (f1 = f1 || this_tok_next(true))(thawValue);
@@ -6885,7 +6885,7 @@ case 12:
 step = 8;
 continue;
 case 7:
- if (!(this_tok_firstTokenChar === 0x3f)) { step = 14; continue; }
+ if (this_tok_firstTokenChar !== 0x3f) { step = 14; continue; }
 case 13:
  step = 16; case 16:
 v3 = (f3 = f3 || this_par_parseTernary())(thawValue);
@@ -7067,7 +7067,7 @@ if (frozen) return v2;
 else f2 = null;
 step = 12;
 case 12:
-if (!(v2)) { step = 14; continue; }
+if (!v2) { step = 14; continue; }
 step = 13;
 case 13:
 // rationale for using getLastNum; this is the `in` check which will succeed
@@ -7117,7 +7117,7 @@ case 26:
 step = 15;
 continue;
 case 14:
- if (!(this_tok_firstTokenChar === 0x3f)) { step = 32; continue; }
+ if (this_tok_firstTokenChar !== 0x3f) { step = 32; continue; }
 case 31:
 step = 34; case 34:
 v6 = (f6 = f6 || this_par_parseTernaryNoIn())(thawValue);
@@ -7185,13 +7185,13 @@ return function inside_this_par_parsePrimaryOrPrefix(thawValue){
 //      7=80k
 len = this_tok_lastLen;
        c = this_tok_firstTokenChar;
-if (!(this_tok_lastType === 13)) { step = 3; continue; }
+if (this_tok_lastType !== 13) { step = 3; continue; }
 step = 2;
 case 2:
 if (!(len > 2)) { step = 6; continue; }
 step = 5;
 case 5:
-if (!(c === 0x74)) { step = 9; continue; }
+if (c !== 0x74) { step = 9; continue; }
 step = 8;
 case 8:
 A = len === 6 ;
@@ -7210,7 +7210,7 @@ case 12:
 if (!A) { step = 17; continue; }
 step = 16;
 case 16:
-if (!(hasNew)) { step = 20; continue; }
+if (!hasNew) { step = 20; continue; }
 case 19:
  step = 22; case 22:
 v1 = (f1 = f1 || this_tok_throwSyntaxError('typeof is illegal right after new'))(thawValue);
@@ -7263,7 +7263,7 @@ return v5;
 step = 33;
 continue;
 case 32:
- if (!(c === 0x6e)) { step = 39; continue; }
+ if (c !== 0x6e) { step = 39; continue; }
 case 38:
 step = 41;
 case 41:
@@ -7272,13 +7272,13 @@ if (frozen) return v6;
 else f6 = null;
 step = 42;
 case 42:
-if (!(v6)) { step = 44; continue; }
+if (!v6) { step = 44; continue; }
 step = 43;
 case 43:
 // new is actually assignable if it has a trailing property AND at least one paren pair
               // TOFIX: isn't the OR flawed? HASNEW is a constant...
                 B =  true ;
-if (!(!B)) { step = 47; continue; }
+if (B) { step = 47; continue; }
 step = 46;
 case 46:
  B =  hasNew; 
@@ -7295,7 +7295,7 @@ case 44:
 step = 40;
 continue;
 case 39:
- if (!(c === 0x64)) { step = 52; continue; }
+ if (c !== 0x64) { step = 52; continue; }
 step = 51;
 case 51:
 A = len === 6 ;
@@ -7314,7 +7314,7 @@ case 55:
 if (!A) { step = 60; continue; }
 step = 59;
 case 59:
-if (!(hasNew)) { step = 63; continue; }
+if (!hasNew) { step = 63; continue; }
 case 62:
  step = 65; case 65:
 v9 = (f9 = f9 || this_tok_throwSyntaxError('delete is illegal right after new'))(thawValue);
@@ -7334,7 +7334,7 @@ case 60:
 step = 53;
 continue;
 case 52:
- if (!(c === 0x76)) { step = 70; continue; }
+ if (c !== 0x76) { step = 70; continue; }
 case 69:
 step = 72;
 case 72:
@@ -7343,10 +7343,10 @@ if (frozen) return v11;
 else f11 = null;
 step = 73;
 case 73:
-if (!(v11)) { step = 75; continue; }
+if (!v11) { step = 75; continue; }
 step = 74;
 case 74:
-if (!(hasNew)) { step = 78; continue; }
+if (!hasNew) { step = 78; continue; }
 case 77:
  step = 80; case 80:
 v12 = (f12 = f12 || this_tok_throwSyntaxError('void is illegal right after new'))(thawValue);
@@ -7383,7 +7383,7 @@ return v14;
 step = 3;
 case 3:
   A = c === 0x21 ;
-if (!(!A)) { step = 87; continue; }
+if (A) { step = 87; continue; }
 step = 86;
 case 86:
  A =  c === 0x7e; 
@@ -7399,7 +7399,7 @@ case 90:
 if (!A) { step = 93; continue; }
 step = 92;
 case 92:
-if (!(hasNew)) { step = 96; continue; }
+if (!hasNew) { step = 96; continue; }
 case 95:
  step = 98; case 98:
 v15 = (f15 = f15 || this_tok_throwSyntaxError('! and ~ are illegal right after new'))(thawValue);
@@ -7423,7 +7423,7 @@ return 0;
 step = 93;
 case 93:
   A = c === 0x2d ;
-if (!(!A)) { step = 105; continue; }
+if (A) { step = 105; continue; }
 step = 104;
 case 104:
  A =  c === 0x2b; 
@@ -7432,7 +7432,7 @@ case 105:
 if (!A) { step = 108; continue; }
 step = 107;
 case 107:
-if (!(hasNew)) { step = 111; continue; }
+if (!hasNew) { step = 111; continue; }
 case 110:
  step = 113; case 113:
 v18 = (f18 = f18 || this_tok_throwSyntaxError('illegal operator right after new'))(thawValue);
@@ -7443,7 +7443,7 @@ case 114:
 // have to verify len anyways, for += and -= case
 step = 111;
 case 111:
-if (!(this_tok_lastLen === 1)) { step = 116; continue; }
+if (this_tok_lastLen !== 1) { step = 116; continue; }
 case 115:
 step = 118; case 118:
 v19 = (f19 = f19 || this_tok_next(true))(thawValue);
@@ -7465,7 +7465,7 @@ if (frozen) return v21;
 else f21 = null;
 step = 123;
 case 123:
-if (!(v21 === c)) { step = 125; continue; }
+if (v21 !== c) { step = 125; continue; }
 case 124:
 step = 127; case 127:
 v22 = (f22 = f22 || this_tok_next(true))(thawValue);
@@ -7546,7 +7546,7 @@ case 3:
        c = this_tok_firstTokenChar;
 // dont use ?: here (build script)
        fail;
-      if (!(maybeLabel)) { step = 5; continue; }
+      if (!maybeLabel) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
@@ -7569,7 +7569,7 @@ case 10:
 fail = v2;
 step = 6;
 case 6:
-if (!(fail)) { step = 12; continue; }
+if (!fail) { step = 12; continue; }
 case 11:
  step = 14; case 14:
 v3 = (f3 = f3 || this_tok_throwSyntaxError('Reserved identifier ['+identifier+'] found in expression'))(thawValue);
@@ -7625,10 +7625,10 @@ else f0 = null;
 step = 3;
 case 3:
  assignable = v0;
-      if (!(count === this_tok_tokenCountAll)) { step = 5; continue; }
+      if (count !== this_tok_tokenCountAll) { step = 5; continue; }
 step = 4;
 case 4:
-if (!(optional)) { step = 8; continue; }
+if (!optional) { step = 8; continue; }
 step = 7;
 case 7:
  return 0; // prevents `return.foo`
@@ -7670,7 +7670,7 @@ return function inside_this_par_parsePrimaryValue(thawValue){
 // we know it's going to be a punctuator so we wont use this_tok_isValue here
        t = this_tok_lastType;
         A = t === 10 ;
-if (!(!A)) { step = 3; continue; }
+if (A) { step = 3; continue; }
 step = 2;
 case 2:
  A =  t === 8; 
@@ -7687,7 +7687,7 @@ case 9:
 return 0;
 step = 6;
 case 6:
-if (!(t === 7)) { step = 11; continue; }
+if (t !== 7) { step = 11; continue; }
 step = 10;
 case 10:
 // special case: numbers must always be followed by whitespace (or EOF)
@@ -7706,7 +7706,7 @@ if (frozen) return v2;
 else f2 = null;
 step = 16;
 case 16:
-if (!(v2)) { step = 18; continue; }
+if (!v2) { step = 18; continue; }
 case 17:
 step = 20;
 case 20:
@@ -7724,7 +7724,7 @@ if (frozen) return v4;
 else f4 = null;
 step = 23;
 case 23:
-if (!(v4)) { step = 25; continue; }
+if (!v4) { step = 25; continue; }
 case 24:
 step = 27; case 27:
 v5 = (f5 = f5 || this_par_parseObject())(thawValue);
@@ -7741,7 +7741,7 @@ if (frozen) return v6;
 else f6 = null;
 step = 30;
 case 30:
-if (!(v6)) { step = 32; continue; }
+if (!v6) { step = 32; continue; }
 case 31:
 step = 34; case 34:
 v7 = (f7 = f7 || this_par_parseArray())(thawValue);
@@ -7752,7 +7752,7 @@ case 35:
 return 0;
 step = 32;
 case 32:
-if (!(!optional)) { step = 37; continue; }
+if (optional) { step = 37; continue; }
 case 36:
  step = 39; case 39:
 v8 = (f8 = f8 || this_tok_throwSyntaxError('Unable to parse required primary value'))(thawValue);
@@ -7787,7 +7787,7 @@ return function inside_this_par_parsePrimarySuffixes(thawValue){
 // label edge case. if any suffix parsed, colon is no longer valid
        colonIsError = false;
        allowCallAssignment = this_par_options.allowCallAssignment;
-if (!(unassignableUntilAfterCall)) { step = 3; continue; }
+if (!unassignableUntilAfterCall) { step = 3; continue; }
 step = 2;
 case 2:
  assignable = 0; // for new, must have trailing property _after_ a call
@@ -7839,10 +7839,10 @@ case 23:
 step = 9;
 continue;
 case 8:
- if (!(c === 0x2e)) { step = 26; continue; }
+ if (c !== 0x2e) { step = 26; continue; }
 step = 25;
 case 25:
-if (!(this_tok_lastType === 7)) { step = 29; continue; }
+if (this_tok_lastType !== 7) { step = 29; continue; }
 case 28:
  step = 6;
 continue; // ASI: foo\n.5 -> [foo][\n][.5]
@@ -7874,7 +7874,7 @@ case 39:
 step = 27;
 continue;
 case 26:
- if (!(c === 0x28)) { step = 42; continue; }
+ if (c !== 0x28) { step = 42; continue; }
 case 41:
 step = 44; case 44:
 v5 = (f5 = f5 || this_tok_next(true))(thawValue);
@@ -7904,7 +7904,7 @@ if (!A) { step = 51; continue; }
 step = 50;
 case 50:
    A = c === 0x2b ;
-if (!(!A)) { step = 54; continue; }
+if (A) { step = 54; continue; }
 step = 53;
 case 53:
  A =  c === 0x2d; 
@@ -8006,13 +8006,13 @@ return function inside_this_par_isAssignmentOperator(thawValue){
       // for string lengths unless we need to disambiguate optional chars
 len = this_tok_lastLen;
        c = this_tok_firstTokenChar;
-if (!(len === 1)) { step = 3; continue; }
+if (len !== 1) { step = 3; continue; }
 step = 2;
 case 2:
  return c === 0x3d;
 step = 3;
 case 3:
-if (!(len === 2)) { step = 6; continue; }
+if (len !== 2) { step = 6; continue; }
 step = 5;
 case 5:
 // if a token, which must be valid at this point has the equal sign
@@ -8025,28 +8025,28 @@ case 5:
         // the gain is minimal since compound ops dont occur very often
 A = 
             c === 0x2b ;
-if (!(!A)) { step = 9; continue; }
+if (A) { step = 9; continue; }
 step = 8;
 case 8:
  A = 
             c === 0x2d ;  
 step = 9;
 case 9:
-if (!(!A)) { step = 12; continue; }
+if (A) { step = 12; continue; }
 step = 11;
 case 11:
  A = 
             c === 0x7c ;  
 step = 12;
 case 12:
-if (!(!A)) { step = 15; continue; }
+if (A) { step = 15; continue; }
 step = 14;
 case 14:
  A = 
             c === 0x26 ;  
 step = 15;
 case 15:
-if (!(!A)) { step = 18; continue; }
+if (A) { step = 18; continue; }
 step = 17;
 case 17:
  A = 
@@ -8068,21 +8068,21 @@ A =  (v0 === 0x3d);
 step = 21;
 case 21:
   A = (A) ;
-if (!(!A)) { step = 26; continue; }
+if (A) { step = 26; continue; }
 step = 25;
 case 25:
  A = 
           c === 0x2a ;  
 step = 26;
 case 26:
-if (!(!A)) { step = 29; continue; }
+if (A) { step = 29; continue; }
 step = 28;
 case 28:
  A = 
           c === 0x25 ;  
 step = 29;
 case 29:
-if (!(!A)) { step = 32; continue; }
+if (A) { step = 32; continue; }
 step = 31;
 case 31:
  A = 
@@ -8094,18 +8094,18 @@ return A;
 // valid tokens starting with < are: < <= << <<= only len=3 is what we want here
 step = 6;
 case 6:
-if (!(c === 0x3c)) { step = 35; continue; }
+if (c !== 0x3c) { step = 35; continue; }
 step = 34;
 case 34:
  return len === 3;
 // valid tokens starting with > are: > >> >= >>= >>> >>>=, we only look for >>= and >>>=
 step = 35;
 case 35:
-if (!(c === 0x3e)) { step = 38; continue; }
+if (c !== 0x3e) { step = 38; continue; }
 step = 37;
 case 37:
    A = len === 4 ;
-if (!(!A)) { step = 41; continue; }
+if (A) { step = 41; continue; }
 step = 40;
 case 40:
    A = len === 3 ;
@@ -8160,13 +8160,13 @@ return function inside_this_par_isBinaryOperator(thawValue){
 c = this_tok_firstTokenChar;
        len = this_tok_lastLen;
 A = c === 0x3b ;
-if (!(!A)) { step = 3; continue; }
+if (A) { step = 3; continue; }
 step = 2;
 case 2:
  A =  c === 0x29 ;  
 step = 3;
 case 3:
-if (!(!A)) { step = 6; continue; }
+if (A) { step = 6; continue; }
 step = 5;
 case 5:
  A =  c === 0x2c; 
@@ -8178,11 +8178,11 @@ case 8:
  return false; // expression enders: 26% 24% 20%
 step = 9;
 case 9:
-if (!(len === 1)) { step = 12; continue; }
+if (len !== 1) { step = 12; continue; }
 step = 11;
 case 11:
 A = c === 0x5d ;
-if (!(!A)) { step = 15; continue; }
+if (A) { step = 15; continue; }
 step = 14;
 case 14:
  A =  c === 0x7d; 
@@ -8195,55 +8195,55 @@ case 17:
 step = 18;
 case 18:
   A = c === 0x2b ;
-if (!(!A)) { step = 21; continue; }
+if (A) { step = 21; continue; }
 step = 20;
 case 20:
  A =  c === 0x2a ;  
 step = 21;
 case 21:
-if (!(!A)) { step = 24; continue; }
+if (A) { step = 24; continue; }
 step = 23;
 case 23:
  A =  c === 0x3c ;  
 step = 24;
 case 24:
-if (!(!A)) { step = 27; continue; }
+if (A) { step = 27; continue; }
 step = 26;
 case 26:
  A =  c === 0x2d ;  
 step = 27;
 case 27:
-if (!(!A)) { step = 30; continue; }
+if (A) { step = 30; continue; }
 step = 29;
 case 29:
  A =  c === 0x3e ;  
 step = 30;
 case 30:
-if (!(!A)) { step = 33; continue; }
+if (A) { step = 33; continue; }
 step = 32;
 case 32:
  A =  c === 0x2f ;  
 step = 33;
 case 33:
-if (!(!A)) { step = 36; continue; }
+if (A) { step = 36; continue; }
 step = 35;
 case 35:
  A =  c === 0x26 ;  
 step = 36;
 case 36:
-if (!(!A)) { step = 39; continue; }
+if (A) { step = 39; continue; }
 step = 38;
 case 38:
  A =  c === 0x7c ;  
 step = 39;
 case 39:
-if (!(!A)) { step = 42; continue; }
+if (A) { step = 42; continue; }
 step = 41;
 case 41:
  A =  c === 0x25 ;  
 step = 42;
 case 42:
-if (!(!A)) { step = 45; continue; }
+if (A) { step = 45; continue; }
 step = 44;
 case 44:
  A =  c === 0x5e; 
@@ -8252,29 +8252,29 @@ case 45:
 return A;
 step = 12;
 case 12:
-if (!(len === 2)) { step = 48; continue; }
+if (len !== 2) { step = 48; continue; }
 step = 47;
 case 47:
 A = c === 0x3d ;
-if (!(!A)) { step = 51; continue; }
+if (A) { step = 51; continue; }
 step = 50;
 case 50:
  A =  c === 0x21 ;  
 step = 51;
 case 51:
-if (!(!A)) { step = 54; continue; }
+if (A) { step = 54; continue; }
 step = 53;
 case 53:
  A =  c === 0x3c ;  
 step = 54;
 case 54:
-if (!(!A)) { step = 57; continue; }
+if (A) { step = 57; continue; }
 step = 56;
 case 56:
  A =  c === 0x3e ;  
 step = 57;
 case 57:
-if (!(!A)) { step = 60; continue; }
+if (A) { step = 60; continue; }
 step = 59;
 case 59:
    A = c === 0x26 ;
@@ -8293,7 +8293,7 @@ case 63:
 A =  (A) ;  
 step = 60;
 case 60:
-if (!(!A)) { step = 68; continue; }
+if (A) { step = 68; continue; }
 step = 67;
 case 67:
    A = c === 0x7c ;
@@ -8312,7 +8312,7 @@ case 71:
 A =  (A) ;  
 step = 68;
 case 68:
-if (!(!A)) { step = 76; continue; }
+if (A) { step = 76; continue; }
 case 75:
 step = 78;
 case 78:
@@ -8327,17 +8327,17 @@ case 76:
 return A;
 step = 48;
 case 48:
-if (!(len === 3)) { step = 81; continue; }
+if (len !== 3) { step = 81; continue; }
 step = 80;
 case 80:
 A = c === 0x3d ;
-if (!(!A)) { step = 84; continue; }
+if (A) { step = 84; continue; }
 step = 83;
 case 83:
  A =  c === 0x21 ;  
 step = 84;
 case 84:
-if (!(!A)) { step = 87; continue; }
+if (A) { step = 87; continue; }
 step = 86;
 case 86:
    A = c === 0x3e ;
@@ -8359,7 +8359,7 @@ case 87:
 return A;
 step = 81;
 case 81:
-if (!(len === 10)) { step = 95; continue; }
+if (len !== 10) { step = 95; continue; }
 case 94:
 step = 97;
 case 97:
@@ -8407,7 +8407,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 5;
 case 5:
-if (!(groupAssignable === 2)) { step = 7; continue; }
+if (groupAssignable !== 2) { step = 7; continue; }
 step = 6;
 case 6:
  groupAssignable = 0;
@@ -8473,13 +8473,13 @@ step = 2;
 case 2:
 type = this_tok_lastType;
           A = type === 13 ;
-if (!(!A)) { step = 5; continue; }
+if (A) { step = 5; continue; }
 step = 4;
 case 4:
  A =  type === 10 ;  
 step = 5;
 case 5:
-if (!(!A)) { step = 8; continue; }
+if (A) { step = 8; continue; }
 step = 7;
 case 7:
  A =  type === 7; 
@@ -8557,7 +8557,7 @@ case 8:
 if (!A) { step = 13; continue; }
 step = 12;
 case 12:
-if (!(this_tok_lastType === 13)) { step = 16; continue; }
+if (this_tok_lastType !== 13) { step = 16; continue; }
 case 15:
 step = 18; case 18:
 v2 = (f2 = f2 || this_tok_next(false))(thawValue);
@@ -8598,7 +8598,7 @@ case 25:
 if (!A) { step = 30; continue; }
 step = 29;
 case 29:
-if (!(this_tok_lastType === 13)) { step = 33; continue; }
+if (this_tok_lastType !== 13) { step = 33; continue; }
 case 32:
 step = 35; case 35:
 v6 = (f6 = f6 || this_tok_next(false))(thawValue);
@@ -8710,14 +8710,14 @@ c = this_tok_firstTokenChar;
       // chr: a:5%, b:4%, c:5%, d:3%, e:3%, f:1%, g:2%, h:1%, i:1%, j:1%, k:1%, l:1%, m:2%, n:2%, o:1%, p:2%, q:0%, r:2%, s:2%, t:30%, u:1%, v:1%, w:1%, x:0%, y:0%, z:0%, rest: 28%
       // so: len=1 and c=t and c as non-lowercase-letter should exit early
 A = c < 0x63 ;
-if (!(!A)) { step = 3; continue; }
+if (A) { step = 3; continue; }
 step = 2;
 case 2:
  A =  // 38%
         c === 0x74 ;  
 step = 3;
 case 3:
-if (!(!A)) { step = 6; continue; }
+if (A) { step = 6; continue; }
 step = 5;
 case 5:
  A =  // 30%
@@ -8725,8 +8725,7 @@ case 5:
       ; 
 step = 6;
 case 6:
-if (!(
-        A)) { step = 9; continue; }
+if (!A) { step = 9; continue; }
 step = 8;
 case 8:
  return false;
@@ -8737,7 +8736,7 @@ case 8:
 // rest true: 9%, false: 11%?
 step = 9;
 case 9:
-if (!(c === 0x63)) { step = 12; continue; }
+if (c !== 0x63) { step = 12; continue; }
 step = 11;
 case 11:
   // 2.5%
@@ -8801,7 +8800,7 @@ step = 36;
 case 36:
  value = v3;
           A = value === 'catch' ;
-if (!(!A)) { step = 38; continue; }
+if (A) { step = 38; continue; }
 step = 37;
 case 37:
  A =  value === 'case'; 
@@ -8810,7 +8809,7 @@ case 38:
 return (A);
 step = 12;
 case 12:
-if (!(c === 0x73)) { step = 41; continue; }
+if (c !== 0x73) { step = 41; continue; }
 step = 40;
 case 40:
   // 1.8%
@@ -8837,7 +8836,7 @@ case 46:
 return A;
 step = 41;
 case 41:
-if (!(c === 0x64)) { step = 51; continue; }
+if (c !== 0x64) { step = 51; continue; }
 step = 50;
 case 50:
   // 1.5%
@@ -8864,7 +8863,7 @@ case 56:
 return A;
 step = 51;
 case 51:
-if (!(c === 0x65)) { step = 61; continue; }
+if (c !== 0x65) { step = 61; continue; }
 step = 60;
 case 60:
   // 1.1%
@@ -8890,7 +8889,7 @@ A =  v9 === 'else';
 step = 66;
 case 66:
   A = (A) ;
-if (!(!A)) { step = 71; continue; }
+if (A) { step = 71; continue; }
 step = 70;
 case 70:
    A = d === 0x6e ;
@@ -8929,7 +8928,7 @@ step = 85;
 case 85:
  value = v11;
           A = value === 'export' ;
-if (!(!A)) { step = 87; continue; }
+if (A) { step = 87; continue; }
 step = 86;
 case 86:
  A =  value === 'extends'; 
@@ -8938,7 +8937,7 @@ case 87:
 return (A);
 step = 61;
 case 61:
-if (!(c === 0x66)) { step = 90; continue; }
+if (c !== 0x66) { step = 90; continue; }
 step = 89;
 case 89:
   // 0.8%
@@ -8965,7 +8964,7 @@ case 95:
 return A;
 step = 90;
 case 90:
-if (!(c === 0x69)) { step = 100; continue; }
+if (c !== 0x69) { step = 100; continue; }
 step = 99;
 case 99:
   // 0.8%
@@ -8982,7 +8981,7 @@ if (!A) { step = 105; continue; }
 step = 104;
 case 104:
    A = this_tok_lastLen === 2 ;
-if (!(!A)) { step = 108; continue; }
+if (A) { step = 108; continue; }
 case 107:
 step = 110;
 case 110:
@@ -8998,7 +8997,7 @@ A =  (A);
 step = 105;
 case 105:
   A = (A) ;
-if (!(!A)) { step = 113; continue; }
+if (A) { step = 113; continue; }
 step = 112;
 case 112:
    A = d === 0x6d ;
@@ -9066,7 +9065,7 @@ return function inside_this_par_isReservedIdentifier(thawValue){
 c = this_tok_firstTokenChar;
        len = this_tok_lastLen;
 // a:8%, b:6%, c:6%, d:4%, e:4%, f:3%, g:2%, h:2%, i:4%, j:1%, k:1%, l:2%, m:2%, n:4%, o:2%, p:3%, q:0%, r:2%, s:3%, t:17%, u:1%, v:2%, w:1%, x:1%, y:1%, z:0%, rest:17%
-if (!(len === 1)) { step = 3; continue; }
+if (len !== 1) { step = 3; continue; }
 step = 2;
 case 2:
  return false; // 39%
@@ -9086,7 +9085,7 @@ case 5:
       // so: only c=t and len=4 are standing out, slightly. rest is negligible
 step = 6;
 case 6:
-if (!(len === 4)) { step = 9; continue; }
+if (len !== 4) { step = 9; continue; }
 step = 8;
 case 8:
   // 19%
@@ -9098,10 +9097,10 @@ case 8:
         // 4: s:13% e:3% l:2% t:1% (dehmls)
 // true
         // this
-        if (!(c === 0x74)) { step = 12; continue; }
+        if (c !== 0x74) { step = 12; continue; }
 step = 11;
 case 11:
-if (!(ignoreValues)) { step = 15; continue; }
+if (!ignoreValues) { step = 15; continue; }
 step = 14;
 case 14:
  return false;
@@ -9115,7 +9114,7 @@ step = 18;
 case 18:
  value = v0;
             A = value === 'this' ;
-if (!(!A)) { step = 20; continue; }
+if (A) { step = 20; continue; }
 step = 19;
 case 19:
  A =  value === 'true'; 
@@ -9125,7 +9124,7 @@ return (A);
 // null
 step = 12;
 case 12:
-if (!(c === 0x6e)) { step = 23; continue; }
+if (c !== 0x6e) { step = 23; continue; }
 step = 22;
 case 22:
 A = !ignoreValues ;
@@ -9146,7 +9145,7 @@ return A;
         // enum
 step = 23;
 case 23:
-if (!(c === 0x65)) { step = 31; continue; }
+if (c !== 0x65) { step = 31; continue; }
 step = 30;
 case 30:
 // case else true
@@ -9159,7 +9158,7 @@ step = 34;
 case 34:
  value = v2;
             A = value === 'else' ;
-if (!(!A)) { step = 36; continue; }
+if (A) { step = 36; continue; }
 step = 35;
 case 35:
  A =  value === 'enum'; 
@@ -9169,7 +9168,7 @@ return (A);
 // case
 step = 31;
 case 31:
-if (!(c === 0x63)) { step = 39; continue; }
+if (c !== 0x63) { step = 39; continue; }
 case 38:
 step = 41;
 case 41:
@@ -9188,7 +9187,7 @@ case 43:
 // void
 step = 44;
 case 44:
-if (!(c === 0x76)) { step = 47; continue; }
+if (c !== 0x76) { step = 47; continue; }
 step = 46;
 case 46:
 A = !ignoreValues ;
@@ -9208,7 +9207,7 @@ return A;
 // with
 step = 47;
 case 47:
-if (!(c === 0x77)) { step = 55; continue; }
+if (c !== 0x77) { step = 55; continue; }
 case 54:
 step = 57;
 case 57:
@@ -9240,7 +9239,7 @@ case 62:
  return false; // 6.4%
 step = 63;
 case 63:
-if (!(c === 0x63)) { step = 66; continue; }
+if (c !== 0x63) { step = 66; continue; }
 step = 65;
 case 65:
   // 1.5%
@@ -9254,7 +9253,7 @@ case 69:
 return v6 === 'continue';
 step = 66;
 case 66:
-if (!(c === 0x64)) { step = 71; continue; }
+if (c !== 0x64) { step = 71; continue; }
 step = 70;
 case 70:
   // 0.8%
@@ -9267,7 +9266,7 @@ step = 74;
 case 74:
  value = v7;
             A = value === 'default' ;
-if (!(!A)) { step = 76; continue; }
+if (A) { step = 76; continue; }
 step = 75;
 case 75:
  A =  value === 'debugger'; 
@@ -9276,7 +9275,7 @@ case 76:
 return A;
 step = 71;
 case 71:
-if (!(c === 0x65)) { step = 79; continue; }
+if (c !== 0x65) { step = 79; continue; }
 step = 78;
 case 78:
   // 0.8%
@@ -9290,7 +9289,7 @@ case 82:
 return v8 === 'extends';
 step = 79;
 case 79:
-if (!(c === 0x66)) { step = 84; continue; }
+if (c !== 0x66) { step = 84; continue; }
 step = 83;
 case 83:
   // 0.5%
@@ -9303,7 +9302,7 @@ step = 87;
 case 87:
  value = v9;
             A = value === 'finally' ;
-if (!(!A)) { step = 89; continue; }
+if (A) { step = 89; continue; }
 step = 88;
 case 88:
  A =  value === 'function'; 
@@ -9312,7 +9311,7 @@ case 89:
 return A;
 step = 84;
 case 84:
-if (!(c === 0x69)) { step = 92; continue; }
+if (c !== 0x69) { step = 92; continue; }
 step = 91;
 case 91:
   // 0.7%
@@ -9332,11 +9331,11 @@ return false; // 1%
       // 6: typeof return switch delete export import: never: 3
 step = 60;
 case 60:
-if (!(len === 2)) { step = 97; continue; }
+if (len !== 2) { step = 97; continue; }
 step = 96;
 case 96:
   // 4.6%
-        if (!(c === 0x69)) { step = 100; continue; }
+        if (c !== 0x69) { step = 100; continue; }
 case 99:
 step = 102;
 case 102:
@@ -9347,7 +9346,7 @@ step = 103;
 case 103:
  value = v11;
             A = value === 'if' ;
-if (!(!A)) { step = 105; continue; }
+if (A) { step = 105; continue; }
 step = 104;
 case 104:
  A =  value === 'in'; 
@@ -9356,7 +9355,7 @@ case 105:
 return A;
 step = 100;
 case 100:
-if (!(c === 0x64)) { step = 108; continue; }
+if (c !== 0x64) { step = 108; continue; }
 case 107:
 step = 110;
 case 110:
@@ -9371,11 +9370,11 @@ case 108:
 return false;
 step = 97;
 case 97:
-if (!(len === 5)) { step = 113; continue; }
+if (len !== 5) { step = 113; continue; }
 step = 112;
 case 112:
   // 4.2%
-        if (!(c === 0x66)) { step = 116; continue; }
+        if (c !== 0x66) { step = 116; continue; }
 step = 115;
 case 115:
    A = !ignoreValues ;
@@ -9394,7 +9393,7 @@ case 119:
 return A;
 step = 116;
 case 116:
-if (!(c === 0x73)) { step = 124; continue; }
+if (c !== 0x73) { step = 124; continue; }
 case 123:
 step = 126;
 case 126:
@@ -9406,7 +9405,7 @@ case 127:
 return v14 === 'super';
 step = 124;
 case 124:
-if (!(c === 0x63)) { step = 129; continue; }
+if (c !== 0x63) { step = 129; continue; }
 case 128:
 step = 131;
 case 131:
@@ -9417,13 +9416,13 @@ step = 132;
 case 132:
  value = v15;
             A = value === 'catch' ;
-if (!(!A)) { step = 134; continue; }
+if (A) { step = 134; continue; }
 step = 133;
 case 133:
  A =  value === 'class' ;  
 step = 134;
 case 134:
-if (!(!A)) { step = 137; continue; }
+if (A) { step = 137; continue; }
 step = 136;
 case 136:
  A =  value === 'const'; 
@@ -9432,7 +9431,7 @@ case 137:
 return A;
 step = 129;
 case 129:
-if (!(c === 0x74)) { step = 140; continue; }
+if (c !== 0x74) { step = 140; continue; }
 case 139:
 step = 142;
 case 142:
@@ -9444,7 +9443,7 @@ case 143:
 return v16 === 'throw';
 step = 140;
 case 140:
-if (!(c === 0x62)) { step = 145; continue; }
+if (c !== 0x62) { step = 145; continue; }
 case 144:
 step = 147;
 case 147:
@@ -9456,7 +9455,7 @@ case 148:
 return v17 === 'break';
 step = 145;
 case 145:
-if (!(c === 0x77)) { step = 150; continue; }
+if (c !== 0x77) { step = 150; continue; }
 case 149:
 step = 152;
 case 152:
@@ -9471,11 +9470,11 @@ case 150:
 return false;
 step = 113;
 case 113:
-if (!(len === 3)) { step = 155; continue; }
+if (len !== 3) { step = 155; continue; }
 step = 154;
 case 154:
   // 4%
-        if (!(c === 0x6e)) { step = 158; continue; }
+        if (c !== 0x6e) { step = 158; continue; }
 step = 157;
 case 157:
    A = !ignoreValues ;
@@ -9494,7 +9493,7 @@ case 161:
 return A;
 step = 158;
 case 158:
-if (!(c === 0x76)) { step = 166; continue; }
+if (c !== 0x76) { step = 166; continue; }
 case 165:
 step = 168;
 case 168:
@@ -9506,7 +9505,7 @@ case 169:
 return v20 === 'var';
 step = 166;
 case 166:
-if (!(c === 0x74)) { step = 171; continue; }
+if (c !== 0x74) { step = 171; continue; }
 case 170:
 step = 173;
 case 173:
@@ -9518,7 +9517,7 @@ case 174:
 return v21 === 'try';
 step = 171;
 case 171:
-if (!(c === 0x66)) { step = 176; continue; }
+if (c !== 0x66) { step = 176; continue; }
 case 175:
 step = 178;
 case 178:
@@ -9534,7 +9533,7 @@ return false;
 // 3%
 step = 155;
 case 155:
-if (!(c === 0x73)) { step = 181; continue; }
+if (c !== 0x73) { step = 181; continue; }
 case 180:
 step = 183;
 case 183:
@@ -9546,7 +9545,7 @@ case 184:
 return v23 === 'switch';
 step = 181;
 case 181:
-if (!(c === 0x72)) { step = 186; continue; }
+if (c !== 0x72) { step = 186; continue; }
 case 185:
 step = 188;
 case 188:
@@ -9558,7 +9557,7 @@ case 189:
 return v24 === 'return';
 step = 186;
 case 186:
-if (!(c === 0x74)) { step = 191; continue; }
+if (c !== 0x74) { step = 191; continue; }
 step = 190;
 case 190:
    A = !ignoreValues ;
@@ -9577,7 +9576,7 @@ case 194:
 return A;
 step = 191;
 case 191:
-if (!(c === 0x69)) { step = 199; continue; }
+if (c !== 0x69) { step = 199; continue; }
 case 198:
 step = 201;
 case 201:
@@ -9589,7 +9588,7 @@ case 202:
 return v26 === 'import';
 step = 199;
 case 199:
-if (!(c === 0x65)) { step = 204; continue; }
+if (c !== 0x65) { step = 204; continue; }
 case 203:
 step = 206;
 case 206:
@@ -9601,7 +9600,7 @@ case 207:
 return v27 === 'export';
 step = 204;
 case 204:
-if (!(c === 0x64)) { step = 209; continue; }
+if (c !== 0x64) { step = 209; continue; }
 step = 208;
 case 208:
    A = !ignoreValues ;
@@ -9637,11 +9636,11 @@ return function inside_this_par_isValueKeyword(thawValue){
 if (!(word.length === 4)) { step = 3; continue; }
 step = 2;
 case 2:
-if (!(c === 0x74)) { step = 6; continue; }
+if (c !== 0x74) { step = 6; continue; }
 step = 5;
 case 5:
    A = word === 'this' ;
-if (!(!A)) { step = 9; continue; }
+if (A) { step = 9; continue; }
 step = 8;
 case 8:
  A =  word === 'true'; 

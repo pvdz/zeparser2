@@ -370,6 +370,9 @@ function makeFreezable(data){
       .replace(/continue;\s*;/g, 'continue;') // remove single ;
       .replace(/;  if \(!/g, ';\nif (!') // add newline to artifact
       .replace(/(\s*continue;)(?:\s*step = \d+;)+/g, '$1') // remove dead code
+      .replace(/if\s*\(\s*\!\s*\(\s*([\w\d]+)\s*\)\s*\)/g, 'if (!$1)') // remove unnecessary paren wrapping: if (!(v5))
+      .replace(/if\s*\(\s*\!\s*\(\s*\!([\w\d]+)\s*\)\s*\)/g, 'if ($1)') // remove unnecessary paren wrapping with double negation: if (!(!v5))
+      .replace(/if\s*\(\s*\!\(\s*([\w\d]+)\s*===\s*([\w\d]+)\s*\)\s*\)/g, 'if ($1 !== $2)') // cleanup inverted comparison: if (!(v5 === 0x0A))
     ;
   } while (last !== out)
 
