@@ -2,6 +2,7 @@
 var Par = require('./par.js').Par;
 
 var ENABLE_LOOP_GUARD = false; // throw after a loop has been looped more than x times? use this for debugging endless loops.
+var ENABLE_DEBUG_COMMENTS = false; // compile in minor loop boundary comments? were very helpful during development of this transformation :)
 
 function makeFreezable(data){
   var par = new Par(data, {saveTokens:true, createBlackStream:true});
@@ -126,7 +127,7 @@ function makeFreezable(data){
 
       t.startCaseId = ++cases;
       t.value =
-        '\n// while start [black='+t.black+']'+
+        (ENABLE_DEBUG_COMMENTS?'\n// while start [black='+t.black+']':'')+
         '\nstep = '+t.startCaseId+';' +
         '\ncase '+t.startCaseId+':' +
         '\n';
@@ -137,10 +138,10 @@ function makeFreezable(data){
 
       t.endCaseId = ++cases;
       blacks[t.whileEndToken.black-1].value =
-        '\n// back to start of while [black='+t.black+']'+
+        (ENABLE_DEBUG_COMMENTS?'\n// back to start of while [black='+t.black+']':'')+
         '\nstep = '+t.startCaseId+';'+
         '\ncontinue'+
-        '\n// end of while [black='+t.black+']'+
+        (ENABLE_DEBUG_COMMENTS?'\n// end of while [black='+t.black+']':'')+
         '\ncase '+ t.endCaseId+':' +
         '\n';
     }
@@ -152,7 +153,7 @@ function makeFreezable(data){
 
       t.startCaseId = ++cases;
       t.value =
-        '\n// do start [black='+t.black+']'+
+        (ENABLE_DEBUG_COMMENTS?'\n// do start [black='+t.black+']':'')+
         '\nstep = '+t.startCaseId+';' +
         '\ncase '+t.startCaseId+':' +
         '\n';
@@ -165,8 +166,8 @@ function makeFreezable(data){
       // setup jump target for break
       t.endCaseId = ++cases;
       t.semiToken.value =
-        ' // jump to start of loop [black='+t.black+']'+
-        '\n// do end [black='+t.black+']'+
+        (ENABLE_DEBUG_COMMENTS?' // jump to start of loop [black='+t.black+']':'')+
+        (ENABLE_DEBUG_COMMENTS?'\n// do end [black='+t.black+']':'')+
         '\nstep = '+t.endCaseId+';' +
         '\ncase '+t.endCaseId+':\n';
     }
@@ -296,7 +297,7 @@ function makeFreezable(data){
       // setup jump target for break
       t.endCaseId = cases;
       t.rhc.value =
-        '\n// switch end [black='+t.black+']' +
+        (ENABLE_DEBUG_COMMENTS?'\n// switch end [black='+t.black+']':'')+
         '\nstep = '+t.endCaseId+';' +
         '\ncase '+t.endCaseId+':\n';
     }
@@ -327,7 +328,7 @@ function makeFreezable(data){
     if (t.isSwitchRhc) {
       if (nextCase) {
         t.before =
-          '\n// switch-case jump-target from last case-test (if fail)'+
+          (ENABLE_DEBUG_COMMENTS?'\n// switch-case jump-target from last case-test (if fail)':'')+
           '\nstep = '+nextCase+';' +
           '\ncase '+nextCase+':' +
           '\n'+
@@ -339,7 +340,7 @@ function makeFreezable(data){
       if (t.value !== 'break') throw 'assumption fail'; // prevent accidental overwrites, and figure out how to proceed if this does happen
       var loop = breakStack[breakStack.length-1];
       t.value =
-        '\n// break to loop [black='+loop.black+'] end\n'+
+        (ENABLE_DEBUG_COMMENTS?'\n// break to loop [black='+loop.black+'] end\n':'')+
         'step = '+loop.endCaseId+';\n'+
         'continue;\n';
     }

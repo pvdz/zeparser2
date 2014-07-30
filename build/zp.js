@@ -13,6 +13,7 @@
   var this_tok_input =  '';
   var this_tok_len =  0;
   var this_tok_pos =  0;
+  var this_tok_offset =  0;
   var this_tok_reachedEof =  false;
   var this_tok_options =  null;
   var this_tok_lastOffset =  0;
@@ -133,7 +134,7 @@
         this_tok_firstTokenChar = 0;
         return 14;
       }
-      var nextChar = this_tok_firstTokenChar = this_tok_input.charCodeAt(fullStart) | 0;
+      var nextChar = this_tok_firstTokenChar = this_tok_inputCharAt_offset(fullStart) | 0;
 
       var type = this_tok_nextTokenDeterminator(nextChar, expressionStart);
       this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - this_tok_lastOffset;
@@ -286,7 +287,7 @@
     }
   function this_tok_parseFwdSlash(expressionStart){
       if (this_tok_pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      var d = this_tok_input.charCodeAt(this_tok_pos+1);
+      var d = this_tok_inputCharAt_offset(this_tok_pos+1);
       if (d === 0x2f) return this_tok_parseSingleComment();
       if (d === 0x2a) return this_tok_parseMultiComment();
       if (expressionStart) return this_tok_parseRegex();
@@ -298,7 +299,7 @@
 
       var pos = this_tok_pos;
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      var crlf = (pos+1 < this_tok_len && this_tok_input.charCodeAt(pos+1)) === 0x0A ? 1 : 0;
+      var crlf = (pos+1 < this_tok_len && this_tok_inputCharAt_offset(pos+1)) === 0x0A ? 1 : 0;
 
       return this_tok_parseVerifiedNewline(pos + crlf, crlf);
     }
@@ -306,7 +307,6 @@
       // mark for ASI
       this_tok_lastNewline = true;
 
-      var input = this_tok_input; // normally we dont cache input, but its okay here since we dont ask for more input anywhere
       var tokens = this_tok_tokens;
       var saveTokens = this_tok_options.saveTokens;
       var onToken = this_tok_options.onToken;
@@ -321,19 +321,19 @@
 
       while (++pos < this_tok_len) {
 
-        var c = input.charCodeAt(pos);
+        var c = this_tok_inputCharAt_offset(pos);
 
         if (c !== 0x20 && c !== 0x09) break;
 
         if (saveTokens) {
           // we just checked another token, stash the _previous_ one.
           var s = pos-(1+extraForCrlf);
-          var v = input.slice(s, pos);
+          var v = this_tok_inputSlice_offset(s, pos);
           tokens.push({type:18, value:v, start:s, stop:pos, white:count});
         }
         if (onToken) {
           var s = pos-(1+extraForCrlf);
-          var v = input.slice(s, pos);
+          var v = this_tok_inputSlice_offset(s, pos);
           onToken(18, v, s, pos, count);
         }
 
@@ -352,7 +352,7 @@
 
       var pos = this_tok_pos+1;
       if (pos >= this_tok_len) this_tok_getMoreInput(false);
-      var d = this_tok_input.charCodeAt(pos);
+      var d = this_tok_inputCharAt_offset(pos);
       // pick one, any one :) (this func runs too infrequent to make a significant difference)
 //      this.pos += (d === c || d === ORD_IS_3D) ? 2 : 1;
 //      this.pos += 1 + (!(d - c && d - ORD_IS_3D) |0);
@@ -369,9 +369,9 @@
       var len = 1;
       var offset = this_tok_lastOffset;
       if (offset+1 >= this_tok_len) this_tok_getMoreInput(false);
-      if (this_tok_input.charCodeAt(offset+1) === 0x3d) {
+      if (this_tok_inputCharAt_offset(offset+1) === 0x3d) {
         if (offset+2 >= this_tok_len) this_tok_getMoreInput(false);
-        if (this_tok_input.charCodeAt(offset+2) === 0x3d) len = 3;
+        if (this_tok_inputCharAt_offset(offset+2) === 0x3d) len = 3;
         else len = 2;
       }
       this_tok_pos += len;
@@ -381,17 +381,17 @@
       var len = 1;
       var offset = this_tok_lastOffset;
       if (offset+1 >= this_tok_len) this_tok_getMoreInput(false);
-      var d = this_tok_input.charCodeAt(offset+1);
+      var d = this_tok_inputCharAt_offset(offset+1);
       if (d === 0x3d) len = 2;
       else if (d === c) {
         len = 2;
         if (offset+2 >= this_tok_len) this_tok_getMoreInput(false);
-        var e = this_tok_input.charCodeAt(offset+2);
+        var e = this_tok_inputCharAt_offset(offset+2);
         if (e === 0x3d) len = 3;
         else if (e === c && c !== 0x3c) {
           len = 3;
           if (offset+3 >= this_tok_len) this_tok_getMoreInput(false);
-          if (this_tok_input.charCodeAt(offset+3) === 0x3d) len = 4;
+          if (this_tok_inputCharAt_offset(offset+3) === 0x3d) len = 4;
         }
       }
       this_tok_pos += len;
@@ -400,7 +400,7 @@
   function this_tok_parseCompoundAssignment(){
       var len = 1;
       if (this_tok_pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      if (this_tok_input.charCodeAt(this_tok_pos+1) === 0x3d) len = 2;
+      if (this_tok_inputCharAt_offset(this_tok_pos+1) === 0x3d) len = 2;
       this_tok_pos += len;
       return 9;
     }
@@ -419,7 +419,7 @@
       do {
 
         if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
-        var c = this_tok_input.charCodeAt(pos);
+        var c = this_tok_inputCharAt_offset(pos);
         if (!c || c === 0x0D || c === 0x0A || (c ^ 0x2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
       } while (true);
 
@@ -464,13 +464,13 @@
       var noNewline = true;
       var c = 0;
       if (pos >= this_tok_len) this_tok_getMoreInput(false);
-      var d = this_tok_input.charCodeAt(pos);
+      var d = this_tok_inputCharAt_offset(pos);
 
       while (d) {
 
         c = d;
         if (++pos >= this_tok_len) this_tok_getMoreInput(false);
-        d = this_tok_input.charCodeAt(pos);
+        d = this_tok_inputCharAt_offset(pos);
 
         if (c === 0x2a && d === 0x2f) {
           this_tok_pos = pos+1;
@@ -496,7 +496,7 @@
       do {
 
         if (pos >= this_tok_len) this_tok_getMoreInput(false);
-        var c = this_tok_input.charCodeAt(pos++);
+        var c = this_tok_inputCharAt_offset(pos++);
 
         if (c === targetChar) {
           this_tok_pos = pos;
@@ -519,7 +519,7 @@
     }
   function this_tok_parseStringEscape(pos){
       if (pos >= this_tok_len) this_tok_getMoreInput(false);
-      var c = this_tok_input.charCodeAt(pos);
+      var c = this_tok_inputCharAt_offset(pos);
 
       // unicode escapes
       if (c === 0x75) {
@@ -531,7 +531,7 @@
         // for other line terminators here. we are merely checking to see
         // whether we need to skip an additional character for CRLF.
         if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-        if (this_tok_input.charCodeAt(pos+1) === 0x0A) ++pos;
+        if (this_tok_inputCharAt_offset(pos+1) === 0x0A) ++pos;
       // hex escapes
       } else if (c === 0x78) {
         if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
@@ -546,8 +546,7 @@
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+3 >= this_tok_len) this_tok_getMoreInput(false);
-      var input = this_tok_input; // cache input now, it wont change any further
-      return this_tok_parseHexDigit(input.charCodeAt(pos)) && this_tok_parseHexDigit(input.charCodeAt(pos+1)) && this_tok_parseHexDigit(input.charCodeAt(pos+2)) && this_tok_parseHexDigit(input.charCodeAt(pos+3));
+      return this_tok_parseHexDigit(this_tok_input.charCodeAt(pos)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+3));
     }
   function this_tok_parseHexDigit(c){
       // 0-9, a-f, A-F
@@ -555,7 +554,7 @@
     }
   function this_tok_parseLeadingDot(){
       if (this_tok_pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      var c = this_tok_input.charCodeAt(this_tok_pos+1);
+      var c = this_tok_inputCharAt_offset(this_tok_pos+1);
 
       if (c >= 0x30 && c <= 0x39) return this_tok_parseAfterDot(this_tok_pos+2);
 
@@ -572,7 +571,7 @@
         return 7;
       }
 
-      var d = this_tok_input.charCodeAt(this_tok_pos+1);
+      var d = this_tok_inputCharAt_offset(this_tok_pos+1);
       if (d === 0x78 || d === 0x58) { // x or X
         this_tok_parseHexNumber();
       } else if (d === 0x2e) {
@@ -593,7 +592,7 @@
       do {
 
         if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
-        var c = this_tok_input.charCodeAt(pos);
+        var c = this_tok_inputCharAt_offset(pos);
       } while ((c <= 0x39 && c >= 0x30) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
 
       this_tok_pos = pos;
@@ -607,7 +606,7 @@
       do {
 
         if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
-        var c = this_tok_input.charCodeAt(pos);
+        var c = this_tok_inputCharAt_offset(pos);
       } while (c >= 0x30 && c <= 0x39);
 
       if (c === 0x2e) return this_tok_parseAfterDot(pos+1);
@@ -618,7 +617,8 @@
   function this_tok_parseAfterDot(pos){
       if (pos < this_tok_len || this_tok_getMoreInput(false)) {
 
-        do { var c = this_tok_input.charCodeAt(pos);
+        do {
+          var c = this_tok_inputCharAt_offset(pos);
 
         } while (c >= 0x30 && c <= 0x39 && (++pos < this_tok_len || this_tok_getMoreInput(false)));
       }
@@ -632,17 +632,17 @@
   function this_tok_parseExponent(c, pos){
       if (c === 0x65 || c === 0x45) {
         if (++pos >= this_tok_len) this_tok_getMoreInput(false);
-        c = this_tok_input.charCodeAt(pos);
+        c = this_tok_inputCharAt_offset(pos);
         // sign is optional (especially for plus)
         if (c === 0x2d || c === 0x2b) {
           if (++pos >= this_tok_len) this_tok_getMoreInput(false); // must have at least one char after +-
-          c = this_tok_input.charCodeAt(pos);
+          c = this_tok_inputCharAt_offset(pos);
         }
 
         // first digit is mandatory
         if (c >= 0x30 && c <= 0x39) {
           if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) return pos;
-          c = this_tok_input.charCodeAt(pos);
+          c = this_tok_inputCharAt_offset(pos);
         }
         else this_tok_throwSyntaxError('Missing required digits after exponent');
 
@@ -651,7 +651,7 @@
         while (c >= 0x30 && c <= 0x39) {
 
           if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) return pos;
-          c = this_tok_input.charCodeAt(pos);
+          c = this_tok_inputCharAt_offset(pos);
         }
       }
       return pos;
@@ -677,11 +677,11 @@
       while (true) {
 
         if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(false)) this_tok_throwSyntaxError('Unterminated regular expression at eof');
-        var c = this_tok_input.charCodeAt(this_tok_pos++);
+        var c = this_tok_inputCharAt_offset(this_tok_pos++);
 
         if (c === 0x5c) { // backslash
           if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(false)) this_tok_throwSyntaxError('Unterminated regular expression escape at eof');
-          var d = this_tok_input.charCodeAt(this_tok_pos++);
+          var d = this_tok_inputCharAt_offset(this_tok_pos++);
           if (d === 0x0A || d === 0x0D || (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             this_tok_throwSyntaxError('Newline can not be escaped in regular expression');
           }
@@ -702,7 +702,7 @@
           this_tok_throwSyntaxError('Unterminated regular expression');
         }
 
-        var c = this_tok_input.charCodeAt(pos++);
+        var c = this_tok_inputCharAt_offset(pos++);
 
         if (c === 0x5d) {
           this_tok_pos = pos;
@@ -714,7 +714,7 @@
           // add a slash or its next char. ES5 settled it to "it's an escape".
           if (this_tok_options.regexNoClassEscape) {
             if (pos >= this_tok_len) this_tok_getMoreInput(false);
-            var d = this_tok_input.charCodeAt(pos++);
+            var d = this_tok_inputCharAt_offset(pos++);
             if (d === 0x0A || d === 0x0D || (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
               this_tok_throwSyntaxError('Newline can not be escaped in regular expression');
             }
@@ -744,7 +744,7 @@
       var i = false;
 
       if (pos < this_tok_len || this_tok_getMoreInput(false)) {
-        var c = this_tok_input.charCodeAt(pos);
+        var c = this_tok_inputCharAt_offset(pos);
 
         while (true) {
 
@@ -772,7 +772,7 @@
 
           if (backslash) pos += 5;
           if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
-          c = this_tok_input.charCodeAt(pos);
+          c = this_tok_inputCharAt_offset(pos);
         }
       }
       this_tok_pos = pos;
@@ -782,22 +782,15 @@
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
       if (pos+3 >= this_tok_len) this_tok_getMoreInput(false);
-      var input = this_tok_input; // safe to cache for the next line (only)
-      if (input.charCodeAt(pos) !== 0x75 || input.charCodeAt(pos+1) !== 0x30 || input.charCodeAt(pos+2) !== 0x30 || input.charCodeAt(pos+3) !== 0x36) {
+      if (this_tok_inputCharAt_offset(pos) !== 0x75 || this_tok_inputCharAt_offset(pos+1) !== 0x30 || this_tok_inputCharAt_offset(pos+2) !== 0x30 || this_tok_inputCharAt_offset(pos+3) !== 0x36) {
         return 0;
       }
 
       if (pos+4 >= this_tok_len) this_tok_getMoreInput(false);
-      var c = this_tok_input.charCodeAt(pos+4);
-      if (c === 0x37) {
-        return 0x67;
-      }
-      if (c === 0x39) {
-        return 0x69;
-      }
-      if (c === 0x64) {
-        return 0x6D;
-      }
+      var c = this_tok_inputCharAt_offset(pos+4);
+      if (c === 0x37) return 0x67;
+      if (c === 0x39) return 0x69;
+      if (c === 0x64) return 0x6D;
 
       return 0;
     }
@@ -817,13 +810,13 @@
         // sequential lower case letters are very common, 5:2
         // combining lower and upper case letters here to reduce branching later https://twitter.com/mraleph/status/467277652110614528
         if (pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
-        var c = this_tok_input.charCodeAt(pos);
+        var c = this_tok_inputCharAt_offset(pos);
         var b = c & 0xffdf;
 
         while (b >= 0x41 && b <= 0x5a) {
 
           if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
-          c = this_tok_input.charCodeAt(pos);
+          c = this_tok_inputCharAt_offset(pos);
           b = c & 0xffdf;
         }
 
@@ -857,7 +850,7 @@
     }
   function this_tok_parseAndValidateUnicodeAsIdentifier(pos, atStart){
       if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      if (this_tok_input.charCodeAt(pos + 1) === 0x75 && this_tok_parseUnicodeEscapeBody(pos + 2)) {
+      if (this_tok_inputCharAt_offset(pos + 1) === 0x75 && this_tok_parseUnicodeEscapeBody(pos + 2)) {
 
         // parseUnicodeEscapeBody will ensure enough input for this slice
         var u = parseInt(this_tok_input.slice(pos+2, pos+6), 16);
@@ -884,8 +877,8 @@
     }
   function this_tok_getLastValue(){
 //      return this.input.substring(this.lastOffset, this.lastStop);
-//      return this.input.slice(this.lastOffset, this.lastStop);
-      return this_tok_input.substr(this_tok_lastOffset, this_tok_lastLen);
+      return this_tok_inputSlice_offset(this_tok_lastOffset, this_tok_lastStop);
+//      return this.input.substr(this.lastOffset, this.lastLen);
 
       // this seems slightly slower
 //      var val = this.lastValue;
@@ -896,7 +889,7 @@
     }
   function this_tok_getNum(offset){
 
-      return this_tok_input.charCodeAt(this_tok_lastOffset+offset);
+      return this_tok_inputCharAt_offset(this_tok_lastOffset+offset);
     }
   function this_tok_throwSyntaxError(message){
       if (this_tok_options.neverThrow) {
@@ -907,6 +900,18 @@
       var pos = (this_tok_lastStop === this_tok_pos) ? this_tok_lastOffset : this_tok_pos;
       var inp = this_tok_input;
       throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
+    }
+  function this_tok_inputCharAt_offset(pos){
+      // proxy method to take care of subtracting the offset from the position
+      // in the regular build the offset is always zero so we can optimize this call.
+      // warning: this function is replaced for the regular build. dont do anything fancy in here!
+      return this_tok_input.charCodeAt(pos - this_tok_offset);
+    }
+  function this_tok_inputSlice_offset(from, to){
+      // proxy method to take care of subtracting the offset from the position
+      // in the regular build the offset is always zero so we can optimize this call.
+      // warning: this function is replaced for the regular build. dont do anything fancy in here!
+      return this_tok_input.slice(from - this_tok_offset, to - this_tok_offset);
     }
 
   // punctuator occurrence stats: http://qfox.nl/weblog/301
