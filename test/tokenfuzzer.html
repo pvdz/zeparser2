@@ -29,6 +29,7 @@
   <button onclick="preset('');">Safari</button>
 </p>
 <p>
+  <label><input id="nochecks" type="checkbox"> do NOT check anything; just run and watch for uncaught errors</label><br>
   <label><input id="keywords" type="checkbox"> include ES6 reserved keywords (causes many false positives on chrome/firefox)</label><br>
   <label><input id="instance" type="checkbox"> scrub number+instanceof and number+in tokens (IE parser bug)</label><br>
   <label><input id="unicode" type="checkbox"> scrub <code>\u0065</code> in identifiers (IE parser bug)</label><br>
@@ -41,7 +42,7 @@
   <label><input id="returns" type="checkbox"> remove trailing returns (IE parser bug)</label><br>
   <label><input id="labels" type="checkbox"> remove newlines after labels (IE parser bug)</label><br>
   <!-- strict regex checks (firefox) -->
-  <input type="button" value="run">
+  <input type="button" id="run" value="run">
 </p>
 <pre></pre>
 
@@ -131,6 +132,7 @@
   var tokensToUse;
   var white = [' ', '\t', '\r', '\n', '\r\n', '\u2028', '\u2029'];
 
+  var onlyCheckUncaughtErrors = true;
   var includeKeywords = false;
   var scrubInstanceof = false;
   var scrubUnicodeEscapes = false;
@@ -142,6 +144,8 @@
   var removeTrailingReturn = false;
   var includeAssignments = false;
   var removeLabelNewlines = false;
+
+  var running = false;
 
   function preset(list) {
     'keywords instance unicode regexes newlines strictassigns callsigns incassigns varex returns labels'.split(' ').forEach(function(id){
@@ -215,9 +219,8 @@
 
     var x = window.vvarex = /((?:^|[\u000a\u000d\u2029\u2028])var\s+\w+[^\u000a\u000d\u2029\u2028;]*(?:\s*[\u000a\u000d\u2029\u2028]\s*)+)\//;
 
-    // chrome doesnt support 2028 2029 very well
     if (scrubNewlines && (code.indexOf('\u2029') >= 0 || code.indexOf('\u2028') >= 0)) {
-      return clean(code.replace(/[\u2028\u2029]/g, '\n'), n+1);
+      return clean(code.replace(/[\u2028\u2029]/g, '\n'), n+1); // chrome doesnt support 2028 2029 very well
     } else if (scrubInstanceof && /\d\.?in(stanceof)?/.test(code)) {
       return clean(code.replace(/(\d\.?)(in(?:stanceof)?)/g, '$1 $2'), n+1); // chrome bug: number in/instanceof without space
     } else if (/^\s*-->/m.test(code)) {
@@ -241,6 +244,14 @@
 
   var t = 0;
   function start() {
+    if (running) {
+      document.querySelector('#run').value = 'run';
+      document.querySelector('pre').innerHTML = 'stopped';
+      t = 0;
+      return running = false;
+    }
+
+    onlyCheckUncaughtErrors = document.querySelector('#nochecks').checked;
     includeKeywords = document.querySelector('#keywords').checked;
     scrubInstanceof = document.querySelector('#instance').checked;
     scrubUnicodeEscapes = document.querySelector('#unicode').checked;
@@ -252,9 +263,12 @@
     includeAssignments = document.querySelector('#incassigns').checked;
     removeLabelNewlines = document.querySelector('#labels').checked;
 
+    document.querySelector('#run').value = 'stop';
+    running = true;
+
     tokensToUse = tokens.slice(0);
 
-    if (includeKeywords) {
+    if (includeKeywords || onlyCheckUncaughtErrors) {
       // ES6 keywords are okay in some browsers so they could report false positives
       tokensToUse.push(
        'class',
@@ -266,7 +280,7 @@
        'import'
       );
     }
-    if (includeAssignments) {
+    if (includeAssignments || onlyCheckUncaughtErrors) {
       tokensToUse.push(
         '--',
         '++',
@@ -291,6 +305,8 @@
     setTimeout(repeat, 100);
   }
   function repeat(){
+    if (!running) return;
+
     var n = 10000;
     while (--n) {
       ++t;
@@ -303,14 +319,16 @@
       }
 
       // remove browser specific quirks (dont like this since it might hide bugs, but it makes verification much faster)
-      var cleanTest = clean(test);
+      var cleanTest = onlyCheckUncaughtErrors ? test : clean(test);
 
-      // note this step seems to cause infinite memory collecting loop in firefox sometimes. cant repro it though.
-      var browserError = compiles(cleanTest);
+      // note this step seems to cause infinite memory collecting loop in firefox sometimes. cant repro it reliably though.
+      var browserError = onlyCheckUncaughtErrors ? '' : compiles(cleanTest);
 
-      var parserError = parse(cleanTest);
+      var parserError = parse(cleanTest) || '';
 
-      if (sloppyRegexCheck && browserError.indexOf('regular expression') >= 0) {
+      if (onlyCheckUncaughtErrors && (!parserError || parserError.indexOf('syntax error at pos=') >= 0)) {
+        // ignore intentional errors
+      } else if (sloppyRegexCheck && browserError.indexOf('regular expression') >= 0) {
         // ignore: some browsers dont do this properly and we dont care
       } else if (browserError.indexOf('quantifier') >= 0) {
         // ignore: par doesnt scan for internal regex validity
@@ -348,4 +366,9 @@
   }
 
   document.querySelector('[type="button"]').onclick = start;
+  document.querySelector('#nochecks').onclick = function(){
+    Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"]'), 0).forEach(function(e){
+      if (e.id !== 'nochecks') e.disabled = this.checked;
+    }, this);
+  };
 </script>
