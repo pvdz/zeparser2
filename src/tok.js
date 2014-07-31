@@ -858,14 +858,21 @@
       // hex escapes
       } else if (c === ORD_L_X_78) {
         if (pos+2 >= this.len) this.getMoreInput(REQUIRED, pos+3-this.len);
-        if (this.parseHexDigit(this.input.charCodeAt(pos+1)) && this.parseHexDigit(this.input.charCodeAt(pos+2))) pos += 2;
+
+        var a = this.inputCharAt_offset(pos+1);
+        var b = this.inputCharAt_offset(pos+2);
+        if (this.parseHexDigit(a) && this.parseHexDigit(b)) pos += 2;
         else this.throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     },
     parseUnicodeEscapeBody: function(pos){
       if (pos+3 >= this.len) this.getMoreInput(REQUIRED, pos+4-this.len);
-      return this.parseHexDigit(this.input.charCodeAt(pos)) && this.parseHexDigit(this.input.charCodeAt(pos+1)) && this.parseHexDigit(this.input.charCodeAt(pos+2)) && this.parseHexDigit(this.input.charCodeAt(pos+3));
+      var a = this.inputCharAt_offset(pos);
+      var b = this.inputCharAt_offset(pos+1);
+      var c = this.inputCharAt_offset(pos+2);
+      var d = this.inputCharAt_offset(pos+3);
+      return this.parseHexDigit(a) && this.parseHexDigit(b) && this.parseHexDigit(c) && this.parseHexDigit(d);
     },
     parseHexDigit: function(c){
       // 0-9, a-f, A-F
@@ -1184,7 +1191,7 @@
       if (this.inputCharAt_offset(pos + 1) === ORD_L_U_75 && this.parseUnicodeEscapeBody(pos + 2)) {
 
         // parseUnicodeEscapeBody will ensure enough input for this slice
-        var u = parseInt(this.input.slice(pos+2, pos+6), 16);
+        var u = parseInt(this.inputSlice_offset(pos+2, pos+6), 16);
         var b = u & 0xffdf;
         if (b >= ORD_L_A_UC_41 && b <= ORD_L_Z_UC_5A) {
           return true;
