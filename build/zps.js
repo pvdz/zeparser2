@@ -21,7 +21,7 @@ var this_tok_input =  '';
   var this_tok_tokenCountBlack =  0;
   var this_tok_tokens =  null;
   var this_tok_black =  null;
-  function this_tok_getMoreInput(mustHaveMore){
+  function this_tok_getMoreInput(eofAllowed, extraLen){
 var step = 1;
 var v0;
 var f0;
@@ -31,48 +31,56 @@ return function inside_this_tok_getMoreInput(thawValue){
     switch (step) {
       case 1:
 had = false;
-if (this_tok_reachedEof) { step = 3; continue; }
+      if (extraLen) { step = 3; continue; }
+step = 2;
 case 2:
+ extraLen = 1;
+step = 3;
+case 3:
+if (this_tok_reachedEof) { step = 6; continue; }
 case 5:
-step = 7;
-return (frozen = true), (undefined);
-case 7:
-had = thawValue;
-           A = had !== false ;
-if (!A) { step = 9; continue; }
-step = 8;
 case 8:
- A =  !had.length; 
-step = 9;
-case 9:
-if (A) { step = 5; continue; }
-step = 6;
-case 6:
-if (!had) { step = 12; continue; }
+step = 10;
+return (frozen = true), (undefined);
+case 10:
+had = thawValue;
+          if (!had) { step = 12; continue; }
 step = 11;
 case 11:
 this_tok_input += had;
-          this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+            this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+            extraLen -= had.length;
+step = 12;
 case 12:
-step = 3;
-case 3:
-if (had !== false) { step = 15; continue; }
+   A = had !== false ;
+if (!A) { step = 15; continue; }
 step = 14;
 case 14:
+ A =  extraLen > 0; 
+step = 15;
+case 15:
+if (A) { step = 8; continue; }
+case 9:
+step = 6;
+case 6:
+if (had !== false) { step = 18; continue; }
+step = 17;
+case 17:
 // if there was no more input, next time skip the freeze part
         this_tok_reachedEof = true;
-        if (!mustHaveMore) { step = 18; continue; }
-case 17:
- step = 20; case 20:
+        if (eofAllowed) { step = 21; continue; }
+case 20:
+ step = 23; case 23:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Unexpected EOF'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
+case 24:
 step = 21;
 case 21:
+return false;
+step = 18;
 case 18:
-step = 15;
-case 15:
-return had;
+return true;
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -441,7 +449,7 @@ if (!A) { step = 3; continue; }
 case 2:
 step = 5;
 case 5:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 6;
@@ -1283,7 +1291,7 @@ pos = this_tok_pos;
       if (!(pos+1 >= this_tok_len)) { step = 3; continue; }
 case 2:
  step = 5; case 5:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 case 6:
@@ -1717,7 +1725,7 @@ if (!A) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 8;
@@ -2060,8 +2068,8 @@ return;
 }
   function this_tok_parseStringEscape(pos){
 var step = 1;
-var v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
-var f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
+var v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
+var f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var c, A;
 return function inside_this_tok_parseStringEscape(thawValue){
   while (true) {
@@ -2146,58 +2154,49 @@ case 20:
  if (c !== 0x78) { step = 33; continue; }
 step = 32;
 case 32:
-if (!(pos+1 >= this_tok_len)) { step = 36; continue; }
+if (!(pos+2 >= this_tok_len)) { step = 36; continue; }
 case 35:
  step = 38; case 38:
-v6 = (f6 = f6 || this_tok_getMoreInput(false))(thawValue);
+v6 = (f6 = f6 || this_tok_getMoreInput(false, pos+3-this_tok_len))(thawValue);
 if (frozen) return v6;
 else f6 = null;
+step = 39;
 case 39:
-step = 36;
 case 36:
-if (!(pos+2 >= this_tok_len)) { step = 41; continue; }
+step = 40;
 case 40:
- step = 43; case 43:
-v7 = (f7 = f7 || this_tok_getMoreInput(false))(thawValue);
+v7 = (f7 = f7 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
 if (frozen) return v7;
 else f7 = null;
-step = 44;
-case 44:
+step = 41;
 case 41:
+ A = v7 ;
+if (!A) { step = 43; continue; }
+case 42:
 step = 45;
 case 45:
-v8 = (f8 = f8 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
+v8 = (f8 = f8 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
 if (frozen) return v8;
 else f8 = null;
 step = 46;
 case 46:
- A = v8 ;
+A =  v8; 
+step = 43;
+case 43:
 if (!A) { step = 48; continue; }
+step = 47;
 case 47:
-step = 50;
-case 50:
-v9 = (f9 = f9 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
+ pos += 2;
+step = 49;
+continue;
+case 48:
+ step = 50; case 50:
+v9 = (f9 = f9 || this_tok_throwSyntaxError('Invalid hex escape'))(thawValue);
 if (frozen) return v9;
 else f9 = null;
 step = 51;
 case 51:
-A =  v9; 
-step = 48;
-case 48:
-if (!A) { step = 53; continue; }
-step = 52;
-case 52:
- pos += 2;
-step = 54;
-continue;
-case 53:
- step = 55; case 55:
-v10 = (f10 = f10 || this_tok_throwSyntaxError('Invalid hex escape'))(thawValue);
-if (frozen) return v10;
-else f10 = null;
-step = 56;
-case 56:
-case 54:
+case 49:
 step = 11;
 case 11:
 case 21:
@@ -2212,93 +2211,66 @@ return;
 }
   function this_tok_parseUnicodeEscapeBody(pos){
 var step = 1;
-var v7, v6, v5, v4, v3, v2, v1, v0;
-var f7, f6, f5, f4, f3, f2, f1, f0;
+var v4, v3, v2, v1, v0;
+var f4, f3, f2, f1, f0;
 var A;
 return function inside_this_tok_parseUnicodeEscapeBody(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(pos >= this_tok_len)) { step = 3; continue; }
+if (!(pos+3 >= this_tok_len)) { step = 3; continue; }
 case 2:
  step = 5; case 5:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(false, pos+4-this_tok_len))(thawValue);
 if (frozen) return v0;
 else f0 = null;
+step = 6;
 case 6:
-step = 3;
 case 3:
-if (!(pos+1 >= this_tok_len)) { step = 8; continue; }
+step = 7;
 case 7:
- step = 10; case 10:
-v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+v1 = (f1 = f1 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos)))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 11:
 step = 8;
 case 8:
-if (!(pos+2 >= this_tok_len)) { step = 13; continue; }
+ A = v1 ;
+if (!A) { step = 10; continue; }
+case 9:
+step = 12;
 case 12:
- step = 15; case 15:
-v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+v2 = (f2 = f2 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 16:
 step = 13;
 case 13:
-if (!(pos+3 >= this_tok_len)) { step = 18; continue; }
+A =  v2 ;  
+step = 10;
+case 10:
+if (!A) { step = 15; continue; }
+case 14:
+step = 17;
 case 17:
- step = 20; case 20:
-v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
+v3 = (f3 = f3 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 21;
-case 21:
+step = 18;
 case 18:
+A =  v3 ;  
+step = 15;
+case 15:
+if (!A) { step = 20; continue; }
+case 19:
 step = 22;
 case 22:
-v4 = (f4 = f4 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos)))(thawValue);
+v4 = (f4 = f4 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+3)))(thawValue);
 if (frozen) return v4;
 else f4 = null;
 step = 23;
 case 23:
- A = v4 ;
-if (!A) { step = 25; continue; }
-case 24:
-step = 27;
-case 27:
-v5 = (f5 = f5 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
-if (frozen) return v5;
-else f5 = null;
-step = 28;
-case 28:
-A =  v5 ;  
-step = 25;
-case 25:
-if (!A) { step = 30; continue; }
-case 29:
-step = 32;
-case 32:
-v6 = (f6 = f6 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
-if (frozen) return v6;
-else f6 = null;
-step = 33;
-case 33:
-A =  v6 ;  
-step = 30;
-case 30:
-if (!A) { step = 35; continue; }
-case 34:
-step = 37;
-case 37:
-v7 = (f7 = f7 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+3)))(thawValue);
-if (frozen) return v7;
-else f7 = null;
-step = 38;
-case 38:
-A =  v7; 
-step = 35;
-case 35:
+A =  v4; 
+step = 20;
+case 20:
 return A;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -2425,7 +2397,7 @@ if (!A) { step = 3; continue; }
 case 2:
 step = 5;
 case 5:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 6;
@@ -2530,7 +2502,7 @@ if (!A) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 8;
@@ -2614,7 +2586,7 @@ if (!A) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 8;
@@ -2685,7 +2657,7 @@ if (A) { step = 3; continue; }
 case 2:
 step = 5;
 case 5:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 6;
@@ -2719,7 +2691,7 @@ if (A) { step = 21; continue; }
 case 20:
 step = 23;
 case 23:
-v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+v2 = (f2 = f2 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
 step = 24;
@@ -2832,7 +2804,7 @@ if (!A) { step = 35; continue; }
 case 34:
 step = 37;
 case 37:
-v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
+v4 = (f4 = f4 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v4;
 else f4 = null;
 step = 38;
@@ -2883,7 +2855,7 @@ if (!A) { step = 55; continue; }
 case 54:
 step = 57;
 case 57:
-v7 = (f7 = f7 || this_tok_getMoreInput(false))(thawValue);
+v7 = (f7 = f7 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v7;
 else f7 = null;
 step = 58;
@@ -2968,7 +2940,7 @@ if (!A) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 8;
@@ -3002,7 +2974,7 @@ if (!A) { step = 20; continue; }
 case 19:
 step = 22;
 case 22:
-v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
+v3 = (f3 = f3 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v3;
 else f3 = null;
 step = 23;
@@ -3121,7 +3093,7 @@ if (!A) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 8;
@@ -3240,8 +3212,8 @@ return;
 }
   function this_tok_regexFlags(){
 var step = 1;
-var v5, v4, v3, v2, v1, v0;
-var f5, f4, f3, f2, f1, f0;
+var v8, v7, v6, v5, v4, v3, v2, v1, v0;
+var f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var pos, g, m, i, A, c, backslash;
 return function inside_this_tok_regexFlags(thawValue){
   while (true) {
@@ -3275,7 +3247,7 @@ if (A) { step = 8; continue; }
 case 7:
 step = 10;
 case 10:
-v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+v1 = (f1 = f1 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v1;
 else f1 = null;
 step = 11;
@@ -3316,79 +3288,93 @@ if (c !== 0x67) { step = 25; continue; }
 step = 24;
 case 24:
 if (!g) { step = 28; continue; }
-step = 27;
 case 27:
- throw 'Illegal duplicate regex flag';
+ step = 30; case 30:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Illegal duplicate regex flag'))(thawValue);
+if (frozen) return v4;
+else f4 = null;
+case 31:
 step = 28;
 case 28:
 g = true;
 step = 26;
 continue;
 case 25:
- if (c !== 0x69) { step = 31; continue; }
-step = 30;
-case 30:
-if (!i) { step = 34; continue; }
-step = 33;
-case 33:
- throw 'Illegal duplicate regex flag';
-step = 34;
-case 34:
-i = true;
+ if (c !== 0x69) { step = 33; continue; }
 step = 32;
-continue;
-case 31:
- if (c !== 0x6D) { step = 37; continue; }
+case 32:
+if (!i) { step = 36; continue; }
+case 35:
+ step = 38; case 38:
+v5 = (f5 = f5 || this_tok_throwSyntaxError('Illegal duplicate regex flag'))(thawValue);
+if (frozen) return v5;
+else f5 = null;
+case 39:
 step = 36;
 case 36:
-if (!m) { step = 40; continue; }
-step = 39;
-case 39:
- throw 'Illegal duplicate regex flag';
+i = true;
+step = 34;
+continue;
+case 33:
+ if (c !== 0x6D) { step = 41; continue; }
 step = 40;
 case 40:
+if (!m) { step = 44; continue; }
+case 43:
+ step = 46; case 46:
+v6 = (f6 = f6 || this_tok_throwSyntaxError('Illegal duplicate regex flag'))(thawValue);
+if (frozen) return v6;
+else f6 = null;
+case 47:
+step = 44;
+case 44:
 m = true;
-step = 38;
+step = 42;
 continue;
-case 37:
+case 41:
+if (!backslash) { step = 49; continue; }
+step = 48;
+case 48:
+ throw 'illegal flag? ['+c+']';
+case 49:
 step = 18;
 continue;
 case 26:
-case 32:
-step = 38;
-case 38:
-if (!backslash) { step = 43; continue; }
+case 34:
 step = 42;
 case 42:
+if (!backslash) { step = 52; continue; }
+step = 51;
+case 51:
  pos += 5;
-step = 43;
-case 43:
+step = 52;
+case 52:
   A = ++pos >= this_tok_len ;
-if (!A) { step = 46; continue; }
-case 45:
-step = 48;
-case 48:
-v4 = (f4 = f4 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v4;
-else f4 = null;
-step = 49;
-case 49:
-A =  !v4; 
-step = 46;
-case 46:
-if (!A) { step = 51; continue; }
-case 50:
+if (!A) { step = 55; continue; }
+case 54:
+step = 57;
+case 57:
+v7 = (f7 = f7 || this_tok_getMoreInput(true))(thawValue);
+if (frozen) return v7;
+else f7 = null;
+step = 58;
+case 58:
+A =  !v7; 
+step = 55;
+case 55:
+if (!A) { step = 60; continue; }
+case 59:
  step = 18;
 continue;
-case 51:
-step = 53;
-case 53:
-v5 = (f5 = f5 || this_tok_inputCharAt_offset(pos))(thawValue);
-if (frozen) return v5;
-else f5 = null;
-step = 54;
-case 54:
-c = v5;
+case 60:
+step = 62;
+case 62:
+v8 = (f8 = f8 || this_tok_inputCharAt_offset(pos))(thawValue);
+if (frozen) return v8;
+else f8 = null;
+step = 63;
+case 63:
+c = v8;
 step = 17;
 continue
 case 18:
@@ -3403,134 +3389,97 @@ return;
 }
   function this_tok_regexFlagUniEscape(pos){
 var step = 1;
-var v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
-var f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
+var v5, v4, v3, v2, v1, v0;
+var f5, f4, f3, f2, f1, f0;
 var A, c;
 return function inside_this_tok_regexFlagUniEscape(thawValue){
   while (true) {
     switch (step) {
       case 1:
-if (!(pos >= this_tok_len)) { step = 3; continue; }
+if (!(pos+4 >= this_tok_len)) { step = 3; continue; }
 case 2:
  step = 5; case 5:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(false, pos+5-this_tok_len))(thawValue);
 if (frozen) return v0;
 else f0 = null;
+step = 6;
 case 6:
-step = 3;
 case 3:
-if (!(pos+1 >= this_tok_len)) { step = 8; continue; }
+step = 7;
 case 7:
- step = 10; case 10:
-v1 = (f1 = f1 || this_tok_getMoreInput(false))(thawValue);
+v1 = (f1 = f1 || this_tok_inputCharAt_offset(pos))(thawValue);
 if (frozen) return v1;
 else f1 = null;
-case 11:
 step = 8;
 case 8:
-if (!(pos+2 >= this_tok_len)) { step = 13; continue; }
+ A = v1 !== 0x75 ;
+if (A) { step = 10; continue; }
+case 9:
+step = 12;
 case 12:
- step = 15; case 15:
-v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+v2 = (f2 = f2 || this_tok_inputCharAt_offset(pos+1))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-case 16:
 step = 13;
 case 13:
-if (!(pos+3 >= this_tok_len)) { step = 18; continue; }
+A =  v2 !== 0x30 ;  
+step = 10;
+case 10:
+if (A) { step = 15; continue; }
+case 14:
+step = 17;
 case 17:
- step = 20; case 20:
-v3 = (f3 = f3 || this_tok_getMoreInput(false))(thawValue);
+v3 = (f3 = f3 || this_tok_inputCharAt_offset(pos+2))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 21;
-case 21:
+step = 18;
 case 18:
+A =  v3 !== 0x30 ;  
+step = 15;
+case 15:
+if (A) { step = 20; continue; }
+case 19:
 step = 22;
 case 22:
-v4 = (f4 = f4 || this_tok_inputCharAt_offset(pos))(thawValue);
+v4 = (f4 = f4 || this_tok_inputCharAt_offset(pos+3))(thawValue);
 if (frozen) return v4;
 else f4 = null;
 step = 23;
 case 23:
- A = v4 !== 0x75 ;
-if (A) { step = 25; continue; }
+A =  v4 !== 0x36; 
+step = 20;
+case 20:
+if (!A) { step = 25; continue; }
+step = 24;
 case 24:
+return 0;
+case 25:
 step = 27;
 case 27:
-v5 = (f5 = f5 || this_tok_inputCharAt_offset(pos+1))(thawValue);
+v5 = (f5 = f5 || this_tok_inputCharAt_offset(pos+4))(thawValue);
 if (frozen) return v5;
 else f5 = null;
 step = 28;
 case 28:
-A =  v5 !== 0x30 ;  
-step = 25;
-case 25:
-if (A) { step = 30; continue; }
+ c = v5;
+      if (c !== 0x37) { step = 30; continue; }
+step = 29;
 case 29:
-step = 32;
-case 32:
-v6 = (f6 = f6 || this_tok_inputCharAt_offset(pos+2))(thawValue);
-if (frozen) return v6;
-else f6 = null;
-step = 33;
-case 33:
-A =  v6 !== 0x30 ;  
+ return 0x67;
 step = 30;
 case 30:
-if (A) { step = 35; continue; }
-case 34:
-step = 37;
-case 37:
-v7 = (f7 = f7 || this_tok_inputCharAt_offset(pos+3))(thawValue);
-if (frozen) return v7;
-else f7 = null;
-step = 38;
-case 38:
-A =  v7 !== 0x36; 
+if (c !== 0x39) { step = 33; continue; }
+step = 32;
+case 32:
+ return 0x69;
+step = 33;
+case 33:
+if (c !== 0x64) { step = 36; continue; }
 step = 35;
 case 35:
-if (!A) { step = 40; continue; }
-step = 39;
-case 39:
-return 0;
-step = 40;
-case 40:
-if (!(pos+4 >= this_tok_len)) { step = 43; continue; }
-case 42:
- step = 45; case 45:
-v8 = (f8 = f8 || this_tok_getMoreInput(false))(thawValue);
-if (frozen) return v8;
-else f8 = null;
-step = 46;
-case 46:
-case 43:
-step = 47;
-case 47:
-v9 = (f9 = f9 || this_tok_inputCharAt_offset(pos+4))(thawValue);
-if (frozen) return v9;
-else f9 = null;
-step = 48;
-case 48:
- c = v9;
-      if (c !== 0x37) { step = 50; continue; }
-step = 49;
-case 49:
- return 0x67;
-step = 50;
-case 50:
-if (c !== 0x39) { step = 53; continue; }
-step = 52;
-case 52:
- return 0x69;
-step = 53;
-case 53:
-if (c !== 0x64) { step = 56; continue; }
-step = 55;
-case 55:
  return 0x6D;
-step = 56;
-case 56:
+step = 36;
+case 36:
 return 0;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3582,7 +3531,7 @@ if (!A) { step = 5; continue; }
 case 4:
 step = 7;
 case 7:
-v0 = (f0 = f0 || this_tok_getMoreInput(false))(thawValue);
+v0 = (f0 = f0 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 8;
@@ -3623,7 +3572,7 @@ if (!A) { step = 23; continue; }
 case 22:
 step = 25;
 case 25:
-v2 = (f2 = f2 || this_tok_getMoreInput(false))(thawValue);
+v2 = (f2 = f2 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v2;
 else f2 = null;
 step = 26;
@@ -3992,6 +3941,8 @@ return;
   typeToString[15] = 'asi';
   typeToString[16] = 'error';
   typeToString[18] = 'white space';
+// note: making REQUIRED `true` wont change the test outcome, but does allow the parser
+  // to parse beyond input (and bail on the bad cases anyways, with random errors).
 // \n
       // \r
 /**

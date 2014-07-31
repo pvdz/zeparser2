@@ -35,8 +35,11 @@
 
   var EXPR = true;
   var PUNC = false;
-  var REQUIRED = true;
-  var OPTIONALLY = false;
+
+  // note: making REQUIRED `true` wont change the test outcome, but does allow the parser
+  // to parse beyond input (and bail on the bad cases anyways, with random errors).
+  var REQUIRED = false;
+  var OPTIONALLY = true;
 
   var UNICODE_LIMIT_127 = 127;
 
@@ -261,11 +264,11 @@
     /**
      * Call whenever reaching EOF.
      *
-     * @param {boolean} mustHaveMore=false Throw unexpected EOF error if there is no more input?
+     * @param {boolean} eofAllowed Throw unexpected EOF error if there is no more input?
      * @param {number} extraLen=1 How many bytes should we at least get now?
      * @returns {boolean}
      */
-    getMoreInput: function(mustHaveMore, extraLen){
+    getMoreInput: function(eofAllowed, extraLen){
       var had = false;
       if (!extraLen) extraLen = 1;
 
@@ -285,7 +288,7 @@
       if (had === false) {
         // if there was no more input, next time skip the freeze part
         this.reachedEof = true;
-        if (mustHaveMore) this.throwSyntaxError('Unexpected EOF');
+        if (!eofAllowed) this.throwSyntaxError('Unexpected EOF');
         return false;
       }
 
@@ -854,18 +857,14 @@
         if (this.inputCharAt_offset(pos+1) === ORD_LF_0A) ++pos;
       // hex escapes
       } else if (c === ORD_L_X_78) {
-        if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
-        if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
+        if (pos+2 >= this.len) this.getMoreInput(REQUIRED, pos+3-this.len);
         if (this.parseHexDigit(this.input.charCodeAt(pos+1)) && this.parseHexDigit(this.input.charCodeAt(pos+2))) pos += 2;
         else this.throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     },
     parseUnicodeEscapeBody: function(pos){
-      if (pos >= this.len) this.getMoreInput(REQUIRED);
-      if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
-      if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+3 >= this.len) this.getMoreInput(REQUIRED, pos+4-this.len);
       return this.parseHexDigit(this.input.charCodeAt(pos)) && this.parseHexDigit(this.input.charCodeAt(pos+1)) && this.parseHexDigit(this.input.charCodeAt(pos+2)) && this.parseHexDigit(this.input.charCodeAt(pos+3));
     },
     parseHexDigit: function(c){
@@ -1085,15 +1084,16 @@
           }
 
           if (c === ORD_L_G_67) {
-            if (g) throw 'Illegal duplicate regex flag';
+            if (g) this.throwSyntaxError('Illegal duplicate regex flag');
             g = true;
           } else if (c === ORD_L_I_69) {
-            if (i) throw 'Illegal duplicate regex flag';
+            if (i) this.throwSyntaxError('Illegal duplicate regex flag');
             i = true;
           } else if (c === ORD_L_M_6D) {
-            if (m) throw 'Illegal duplicate regex flag';
+            if (m) this.throwSyntaxError('Illegal duplicate regex flag');
             m = true;
           } else {
+            if (backslash) throw 'illegal flag? ['+c+']';
             break;
           }
 
@@ -1105,15 +1105,11 @@
       this.pos = pos;
     },
     regexFlagUniEscape: function(pos){
-      if (pos >= this.len) this.getMoreInput(REQUIRED);
-      if (pos+1 >= this.len) this.getMoreInput(REQUIRED);
-      if (pos+2 >= this.len) this.getMoreInput(REQUIRED);
-      if (pos+3 >= this.len) this.getMoreInput(REQUIRED);
+      if (pos+4 >= this.len) this.getMoreInput(REQUIRED, pos+5-this.len);
       if (this.inputCharAt_offset(pos) !== ORD_L_U_75 || this.inputCharAt_offset(pos+1) !== ORD_L_0_30 || this.inputCharAt_offset(pos+2) !== ORD_L_0_30 || this.inputCharAt_offset(pos+3) !== ORD_L_6_36) {
         return 0;
       }
 
-      if (pos+4 >= this.len) this.getMoreInput(REQUIRED);
       var c = this.inputCharAt_offset(pos+4);
       if (c === ORD_L_7_37) return ORD_L_G_67;
       if (c === ORD_L_9_39) return ORD_L_I_69;

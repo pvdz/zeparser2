@@ -26,29 +26,31 @@
   var this_tok_tokenCountBlack =  0;
   var this_tok_tokens =  null;
   var this_tok_black =  null;
-  function this_tok_getMoreInput(mustHaveMore){
+  function this_tok_getMoreInput(eofAllowed, extraLen){
       var had = false;
+      if (!extraLen) extraLen = 1;
 
       if (!this_tok_reachedEof) {
 
         do {
 
           had = this_tok_waitForInput();
-        } while (had !== false && !had.length);
-
-        if (had) {
-          this_tok_input += had;
-          this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
-        }
+          if (had) {
+            this_tok_input += had;
+            this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+            extraLen -= had.length;
+          }
+        } while (had !== false && extraLen > 0);
       }
 
       if (had === false) {
         // if there was no more input, next time skip the freeze part
         this_tok_reachedEof = true;
-        if (mustHaveMore) this_tok_throwSyntaxError('Unexpected EOF');
+        if (!eofAllowed) this_tok_throwSyntaxError('Unexpected EOF');
+        return false;
       }
 
-      return had;
+      return true;
     }
   function this_tok_updateInput(input){
       this_tok_input += input;
@@ -130,7 +132,7 @@
       // note: the offset might change in the newline+space optim trick, so dont re-use it
       var fullStart = this_tok_lastOffset = this_tok_pos;
 
-      if (fullStart >= this_tok_len && !this_tok_getMoreInput(false)) {
+      if (fullStart >= this_tok_len && !this_tok_getMoreInput(true)) {
         this_tok_firstTokenChar = 0;
         return 14;
       }
@@ -298,7 +300,7 @@
       // consume it for the CRLF case. this is completely optional.
 
       var pos = this_tok_pos;
-      if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
+      if (pos+1 >= this_tok_len) this_tok_getMoreInput(true);
       var crlf = (pos+1 < this_tok_len && this_tok_inputCharAt_offset(pos+1)) === 0x0A ? 1 : 0;
 
       return this_tok_parseVerifiedNewline(pos + crlf, crlf);
@@ -418,7 +420,7 @@
 
       do {
 
-        if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
+        if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) break;
         var c = this_tok_inputCharAt_offset(pos);
         if (!c || c === 0x0D || c === 0x0A || (c ^ 0x2028) <= 1) break; // c !== ORD_PS && c !== ORD_LS
       } while (true);
@@ -534,18 +536,14 @@
         if (this_tok_inputCharAt_offset(pos+1) === 0x0A) ++pos;
       // hex escapes
       } else if (c === 0x78) {
-        if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-        if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
+        if (pos+2 >= this_tok_len) this_tok_getMoreInput(false, pos+3-this_tok_len);
         if (this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2))) pos += 2;
         else this_tok_throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     }
   function this_tok_parseUnicodeEscapeBody(pos){
-      if (pos >= this_tok_len) this_tok_getMoreInput(false);
-      if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
-      if (pos+3 >= this_tok_len) this_tok_getMoreInput(false);
+      if (pos+3 >= this_tok_len) this_tok_getMoreInput(false, pos+4-this_tok_len);
       return this_tok_parseHexDigit(this_tok_input.charCodeAt(pos)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+3));
     }
   function this_tok_parseHexDigit(c){
@@ -566,7 +564,7 @@
       // 0.1234  0.  0e12 0e-12 0e12+ 0.e12 0.1e23 0xdeadbeeb
 
       // trailing zero at eof can be valid, but must be checked for additional input first
-      if (this_tok_pos+1 >= this_tok_len && !this_tok_getMoreInput(false)) {
+      if (this_tok_pos+1 >= this_tok_len && !this_tok_getMoreInput(true)) {
         ++this_tok_pos;
         return 7;
       }
@@ -591,7 +589,7 @@
 
       do {
 
-        if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
+        if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) break;
         var c = this_tok_inputCharAt_offset(pos);
       } while ((c <= 0x39 && c >= 0x30) || (c >= 0x61 && c <= 0x66) || (c >= 0x41 && c <= 0x46));
 
@@ -605,7 +603,7 @@
 
       do {
 
-        if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
+        if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) break;
         var c = this_tok_inputCharAt_offset(pos);
       } while (c >= 0x30 && c <= 0x39);
 
@@ -615,12 +613,12 @@
       return 7;
     }
   function this_tok_parseAfterDot(pos){
-      if (pos < this_tok_len || this_tok_getMoreInput(false)) {
+      if (pos < this_tok_len || this_tok_getMoreInput(true)) {
 
         do {
           var c = this_tok_inputCharAt_offset(pos);
 
-        } while (c >= 0x30 && c <= 0x39 && (++pos < this_tok_len || this_tok_getMoreInput(false)));
+        } while (c >= 0x30 && c <= 0x39 && (++pos < this_tok_len || this_tok_getMoreInput(true)));
       }
 
       pos = this_tok_parseExponent(c, pos);
@@ -641,7 +639,7 @@
 
         // first digit is mandatory
         if (c >= 0x30 && c <= 0x39) {
-          if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) return pos;
+          if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) return pos;
           c = this_tok_inputCharAt_offset(pos);
         }
         else this_tok_throwSyntaxError('Missing required digits after exponent');
@@ -650,7 +648,7 @@
 
         while (c >= 0x30 && c <= 0x39) {
 
-          if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) return pos;
+          if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) return pos;
           c = this_tok_inputCharAt_offset(pos);
         }
       }
@@ -676,11 +674,11 @@
 
       while (true) {
 
-        if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(false)) this_tok_throwSyntaxError('Unterminated regular expression at eof');
+        if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(true)) this_tok_throwSyntaxError('Unterminated regular expression at eof');
         var c = this_tok_inputCharAt_offset(this_tok_pos++);
 
         if (c === 0x5c) { // backslash
-          if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(false)) this_tok_throwSyntaxError('Unterminated regular expression escape at eof');
+          if (this_tok_pos >= this_tok_len && !this_tok_getMoreInput(true)) this_tok_throwSyntaxError('Unterminated regular expression escape at eof');
           var d = this_tok_inputCharAt_offset(this_tok_pos++);
           if (d === 0x0A || d === 0x0D || (d ^ 0x2028) <= 1 /*d === ORD_PS || d === ORD_LS*/) {
             this_tok_throwSyntaxError('Newline can not be escaped in regular expression');
@@ -698,7 +696,7 @@
 
       while (true) {
 
-        if (pos >= this_tok_len && !this_tok_getMoreInput(false)) {
+        if (pos >= this_tok_len && !this_tok_getMoreInput(true)) {
           this_tok_throwSyntaxError('Unterminated regular expression');
         }
 
@@ -743,7 +741,7 @@
       var m = false;
       var i = false;
 
-      if (pos < this_tok_len || this_tok_getMoreInput(false)) {
+      if (pos < this_tok_len || this_tok_getMoreInput(true)) {
         var c = this_tok_inputCharAt_offset(pos);
 
         while (true) {
@@ -758,35 +756,32 @@
           }
 
           if (c === 0x67) {
-            if (g) throw 'Illegal duplicate regex flag';
+            if (g) this_tok_throwSyntaxError('Illegal duplicate regex flag');
             g = true;
           } else if (c === 0x69) {
-            if (i) throw 'Illegal duplicate regex flag';
+            if (i) this_tok_throwSyntaxError('Illegal duplicate regex flag');
             i = true;
           } else if (c === 0x6D) {
-            if (m) throw 'Illegal duplicate regex flag';
+            if (m) this_tok_throwSyntaxError('Illegal duplicate regex flag');
             m = true;
           } else {
+            if (backslash) throw 'illegal flag? ['+c+']';
             break;
           }
 
           if (backslash) pos += 5;
-          if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
+          if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) break;
           c = this_tok_inputCharAt_offset(pos);
         }
       }
       this_tok_pos = pos;
     }
   function this_tok_regexFlagUniEscape(pos){
-      if (pos >= this_tok_len) this_tok_getMoreInput(false);
-      if (pos+1 >= this_tok_len) this_tok_getMoreInput(false);
-      if (pos+2 >= this_tok_len) this_tok_getMoreInput(false);
-      if (pos+3 >= this_tok_len) this_tok_getMoreInput(false);
+      if (pos+4 >= this_tok_len) this_tok_getMoreInput(false, pos+5-this_tok_len);
       if (this_tok_inputCharAt_offset(pos) !== 0x75 || this_tok_inputCharAt_offset(pos+1) !== 0x30 || this_tok_inputCharAt_offset(pos+2) !== 0x30 || this_tok_inputCharAt_offset(pos+3) !== 0x36) {
         return 0;
       }
 
-      if (pos+4 >= this_tok_len) this_tok_getMoreInput(false);
       var c = this_tok_inputCharAt_offset(pos+4);
       if (c === 0x37) return 0x67;
       if (c === 0x39) return 0x69;
@@ -809,13 +804,13 @@
 
         // sequential lower case letters are very common, 5:2
         // combining lower and upper case letters here to reduce branching later https://twitter.com/mraleph/status/467277652110614528
-        if (pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
+        if (pos >= this_tok_len && !this_tok_getMoreInput(true)) break;
         var c = this_tok_inputCharAt_offset(pos);
         var b = c & 0xffdf;
 
         while (b >= 0x41 && b <= 0x5a) {
 
-          if (++pos >= this_tok_len && !this_tok_getMoreInput(false)) break;
+          if (++pos >= this_tok_len && !this_tok_getMoreInput(true)) break;
           c = this_tok_inputCharAt_offset(pos);
           b = c & 0xffdf;
         }
@@ -936,6 +931,9 @@
   typeToString[15] = 'asi';
   typeToString[16] = 'error';
   typeToString[18] = 'white space';
+
+  // note: making REQUIRED `true` wont change the test outcome, but does allow the parser
+  // to parse beyond input (and bail on the bad cases anyways, with random errors).
 
       // \n
       // \r
