@@ -38,48 +38,59 @@ case 2:
 step = 3;
 case 3:
 if (this_tok_reachedEof) { step = 6; continue; }
+step = 5;
 case 5:
+// trunc the input, eliminating the consumed part
+        if (!(this_tok_lastOffset > this_tok_offset)) { step = 9; continue; }
+step = 8;
 case 8:
-step = 10;
-return (frozen = true), (undefined);
-case 10:
-had = thawValue;
-          if (!had) { step = 12; continue; }
-step = 11;
+this_tok_input = this_tok_input.slice(this_tok_lastOffset - this_tok_offset);
+          this_tok_offset = this_tok_lastOffset;
+case 9:
 case 11:
-this_tok_input += had;
-            this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
-            extraLen -= had.length;
-step = 12;
-case 12:
-   A = had !== false ;
-if (!A) { step = 15; continue; }
+step = 13;
+return (frozen = true), (undefined);
+case 13:
+had = thawValue;
+          if (!had) { step = 15; continue; }
 step = 14;
 case 14:
- A =  extraLen > 0; 
+// note: this is why you cant cache this.input
+            this_tok_input += had;
+            extraLen -= had.length;
 step = 15;
 case 15:
-if (A) { step = 8; continue; }
-case 9:
-step = 6;
-case 6:
-if (had !== false) { step = 18; continue; }
+   A = had !== false ;
+if (!A) { step = 18; continue; }
 step = 17;
 case 17:
+ A =  extraLen > 0; 
+step = 18;
+case 18:
+if (A) { step = 11; continue; }
+step = 12;
+case 12:
+// note: this is why you cant cache this.len
+        this_tok_len = this_tok_offset + this_tok_input.length;
+step = 6;
+case 6:
+if (had !== false) { step = 21; continue; }
+step = 20;
+case 20:
 // if there was no more input, next time skip the freeze part
         this_tok_reachedEof = true;
-        if (eofAllowed) { step = 21; continue; }
-case 20:
- step = 23; case 23:
+        if (eofAllowed) { step = 24; continue; }
+case 23:
+ step = 26; case 26:
 v0 = (f0 = f0 || this_tok_throwSyntaxError('Unexpected EOF'))(thawValue);
 if (frozen) return v0;
 else f0 = null;
+case 27:
+step = 24;
 case 24:
+return false;
 step = 21;
 case 21:
-return false;
-step = 18;
-case 18:
 return true;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -2068,9 +2079,9 @@ return;
 }
   function this_tok_parseStringEscape(pos){
 var step = 1;
-var v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
-var f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
-var c, A;
+var v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
+var f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
+var c, a, b, A;
 return function inside_this_tok_parseStringEscape(thawValue){
   while (true) {
     switch (step) {
@@ -2165,38 +2176,54 @@ case 39:
 case 36:
 step = 40;
 case 40:
-v7 = (f7 = f7 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
+v7 = (f7 = f7 || this_tok_inputCharAt_offset(pos+1))(thawValue);
 if (frozen) return v7;
 else f7 = null;
 step = 41;
 case 41:
- A = v7 ;
-if (!A) { step = 43; continue; }
+ a = v7;
+step = 42;
 case 42:
-step = 45;
-case 45:
-v8 = (f8 = f8 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
+v8 = (f8 = f8 || this_tok_inputCharAt_offset(pos+2))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-step = 46;
-case 46:
-A =  v8; 
 step = 43;
 case 43:
-if (!A) { step = 48; continue; }
-step = 47;
-case 47:
- pos += 2;
-step = 49;
-continue;
-case 48:
- step = 50; case 50:
-v9 = (f9 = f9 || this_tok_throwSyntaxError('Invalid hex escape'))(thawValue);
+ b = v8;
+step = 44;
+case 44:
+v9 = (f9 = f9 || this_tok_parseHexDigit(a))(thawValue);
 if (frozen) return v9;
 else f9 = null;
+step = 45;
+case 45:
+ A = v9 ;
+if (!A) { step = 47; continue; }
+case 46:
+step = 49;
+case 49:
+v10 = (f10 = f10 || this_tok_parseHexDigit(b))(thawValue);
+if (frozen) return v10;
+else f10 = null;
+step = 50;
+case 50:
+A =  v10; 
+step = 47;
+case 47:
+if (!A) { step = 52; continue; }
 step = 51;
 case 51:
-case 49:
+ pos += 2;
+step = 53;
+continue;
+case 52:
+ step = 54; case 54:
+v11 = (f11 = f11 || this_tok_throwSyntaxError('Invalid hex escape'))(thawValue);
+if (frozen) return v11;
+else f11 = null;
+step = 55;
+case 55:
+case 53:
 step = 11;
 case 11:
 case 21:
@@ -2211,9 +2238,9 @@ return;
 }
   function this_tok_parseUnicodeEscapeBody(pos){
 var step = 1;
-var v4, v3, v2, v1, v0;
-var f4, f3, f2, f1, f0;
-var A;
+var v8, v7, v6, v5, v4, v3, v2, v1, v0;
+var f8, f7, f6, f5, f4, f3, f2, f1, f0;
+var a, b, c, d, A;
 return function inside_this_tok_parseUnicodeEscapeBody(thawValue){
   while (true) {
     switch (step) {
@@ -2229,48 +2256,80 @@ case 6:
 case 3:
 step = 7;
 case 7:
-v1 = (f1 = f1 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos)))(thawValue);
+v1 = (f1 = f1 || this_tok_inputCharAt_offset(pos))(thawValue);
 if (frozen) return v1;
 else f1 = null;
 step = 8;
 case 8:
- A = v1 ;
-if (!A) { step = 10; continue; }
+ a = v1;
+step = 9;
 case 9:
-step = 12;
-case 12:
-v2 = (f2 = f2 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)))(thawValue);
+v2 = (f2 = f2 || this_tok_inputCharAt_offset(pos+1))(thawValue);
 if (frozen) return v2;
 else f2 = null;
-step = 13;
-case 13:
-A =  v2 ;  
 step = 10;
 case 10:
-if (!A) { step = 15; continue; }
-case 14:
-step = 17;
-case 17:
-v3 = (f3 = f3 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)))(thawValue);
+ b = v2;
+step = 11;
+case 11:
+v3 = (f3 = f3 || this_tok_inputCharAt_offset(pos+2))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-step = 18;
-case 18:
-A =  v3 ;  
-step = 15;
-case 15:
-if (!A) { step = 20; continue; }
-case 19:
-step = 22;
-case 22:
-v4 = (f4 = f4 || this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+3)))(thawValue);
+step = 12;
+case 12:
+ c = v3;
+step = 13;
+case 13:
+v4 = (f4 = f4 || this_tok_inputCharAt_offset(pos+3))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-step = 23;
-case 23:
-A =  v4; 
+step = 14;
+case 14:
+ d = v4;
+step = 15;
+case 15:
+v5 = (f5 = f5 || this_tok_parseHexDigit(a))(thawValue);
+if (frozen) return v5;
+else f5 = null;
+step = 16;
+case 16:
+ A = v5 ;
+if (!A) { step = 18; continue; }
+case 17:
 step = 20;
 case 20:
+v6 = (f6 = f6 || this_tok_parseHexDigit(b))(thawValue);
+if (frozen) return v6;
+else f6 = null;
+step = 21;
+case 21:
+A =  v6 ;  
+step = 18;
+case 18:
+if (!A) { step = 23; continue; }
+case 22:
+step = 25;
+case 25:
+v7 = (f7 = f7 || this_tok_parseHexDigit(c))(thawValue);
+if (frozen) return v7;
+else f7 = null;
+step = 26;
+case 26:
+A =  v7 ;  
+step = 23;
+case 23:
+if (!A) { step = 28; continue; }
+case 27:
+step = 30;
+case 30:
+v8 = (f8 = f8 || this_tok_parseHexDigit(d))(thawValue);
+if (frozen) return v8;
+else f8 = null;
+step = 31;
+case 31:
+A =  v8; 
+step = 28;
+case 28:
 return A;
 return;
         default: throw "uncompiled step? ["+step+"]";
@@ -3690,8 +3749,8 @@ return;
 }
   function this_tok_parseAndValidateUnicodeAsIdentifier(pos, atStart){
 var step = 1;
-var v5, v4, v3, v2, v1, v0;
-var f5, f4, f3, f2, f1, f0;
+var v6, v5, v4, v3, v2, v1, v0;
+var f6, f5, f4, f3, f2, f1, f0;
 var A, u, b;
 return function inside_this_tok_parseAndValidateUnicodeAsIdentifier(thawValue){
   while (true) {
@@ -3730,75 +3789,82 @@ if (!A) { step = 15; continue; }
 step = 14;
 case 14:
 // parseUnicodeEscapeBody will ensure enough input for this slice
-         u = parseInt(this_tok_input.slice(pos+2, pos+6), 16);
-         b = u & 0xffdf;
-          A = b >= 0x41 ;
-if (!A) { step = 18; continue; }
 step = 17;
 case 17:
- A =  b <= 0x5a; 
-step = 18;
-case 18:
-if (!A) { step = 21; continue; }
-step = 20;
-case 20:
-return true;
-step = 21;
-case 21:
-  A = u >= 0x30 ;
-if (!A) { step = 24; continue; }
-step = 23;
-case 23:
- A =  u <= 0x39; 
-step = 24;
-case 24:
-if (!A) { step = 27; continue; }
-step = 26;
-case 26:
-if (!atStart) { step = 30; continue; }
-case 29:
- step = 32; case 32:
-v3 = (f3 = f3 || this_tok_throwSyntaxError('Digit not allowed at start of identifier, not even escaped'))(thawValue);
+v3 = (f3 = f3 || this_tok_inputSlice_offset(pos+2, pos+6))(thawValue);
 if (frozen) return v3;
 else f3 = null;
-case 33:
-step = 30;
-case 30:
+step = 18;
+case 18:
+ u = parseInt(v3, 16);
+         b = u & 0xffdf;
+          A = b >= 0x41 ;
+if (!A) { step = 20; continue; }
+step = 19;
+case 19:
+ A =  b <= 0x5a; 
+step = 20;
+case 20:
+if (!A) { step = 23; continue; }
+step = 22;
+case 22:
 return true;
-step = 27;
-case 27:
-  A = u === 0x5f ;
-if (A) { step = 35; continue; }
-step = 34;
-case 34:
- A =  u === 0x24; 
-step = 35;
-case 35:
-if (!A) { step = 38; continue; }
-step = 37;
-case 37:
-return true;
-step = 38;
-case 38:
-if (!(uniRegex.test(String.fromCharCode(u)))) { step = 41; continue; }
-step = 40;
-case 40:
-return true;
-case 41:
-step = 43; case 43:
-v4 = (f4 = f4 || this_tok_throwSyntaxError('Encountered \\u escape ('+u+') but the char is not a valid identifier part'))(thawValue);
+step = 23;
+case 23:
+  A = u >= 0x30 ;
+if (!A) { step = 26; continue; }
+step = 25;
+case 25:
+ A =  u <= 0x39; 
+step = 26;
+case 26:
+if (!A) { step = 29; continue; }
+step = 28;
+case 28:
+if (!atStart) { step = 32; continue; }
+case 31:
+ step = 34; case 34:
+v4 = (f4 = f4 || this_tok_throwSyntaxError('Digit not allowed at start of identifier, not even escaped'))(thawValue);
 if (frozen) return v4;
 else f4 = null;
-case 44:
+case 35:
+step = 32;
+case 32:
+return true;
+step = 29;
+case 29:
+  A = u === 0x5f ;
+if (A) { step = 37; continue; }
+step = 36;
+case 36:
+ A =  u === 0x24; 
+step = 37;
+case 37:
+if (!A) { step = 40; continue; }
+step = 39;
+case 39:
+return true;
+step = 40;
+case 40:
+if (!(uniRegex.test(String.fromCharCode(u)))) { step = 43; continue; }
+step = 42;
+case 42:
+return true;
+case 43:
+step = 45; case 45:
+v5 = (f5 = f5 || this_tok_throwSyntaxError('Encountered \\u escape ('+u+') but the char is not a valid identifier part'))(thawValue);
+if (frozen) return v5;
+else f5 = null;
+case 46:
 step = 15;
 case 15:
 this_tok_pos = pos;
-      step = 45; case 45:
-v5 = (f5 = f5 || this_tok_throwSyntaxError('Unexpected backslash inside identifier'))(thawValue);
-if (frozen) return v5;
-else f5 = null;
-step = 46;
-case 46:
+      step = 47; case 47:
+v6 = (f6 = f6 || this_tok_throwSyntaxError('Unexpected backslash inside identifier'))(thawValue);
+if (frozen) return v6;
+else f6 = null;
+step = 48;
+case 48:
 return;
         default: throw "uncompiled step? ["+step+"]";
       }
@@ -3845,7 +3911,7 @@ return function inside_this_tok_getNum(thawValue){
       case 1:
 step = 2;
 case 2:
-v0 = (f0 = f0 || this_tok_inputCharAt_offset(this_tok_lastOffset+offset))(thawValue);
+v0 = (f0 = f0 || this_tok_inputCharAt_offset(this_tok_lastOffset + offset))(thawValue);
 if (frozen) return v0;
 else f0 = null;
 step = 3;
@@ -3975,6 +4041,7 @@ if (opt.saveTokens) options.saveTokens = true;
     }this_tok_len = this_tok_input.length;
 // v8 "appreciates" it when all instance properties are set explicitly
     this_tok_pos = 0;
+    this_tok_offset = 0;
     this_tok_reachedEof = false;
 this_tok_lastOffset = 0;
     this_tok_lastStop = 0;

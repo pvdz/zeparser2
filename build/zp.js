@@ -31,16 +31,24 @@
       if (!extraLen) extraLen = 1;
 
       if (!this_tok_reachedEof) {
+        // trunc the input, eliminating the consumed part
+        if (this_tok_lastOffset > this_tok_offset) {
+          this_tok_input = this_tok_input.slice(this_tok_lastOffset - this_tok_offset);
+          this_tok_offset = this_tok_lastOffset;
+        }
 
         do {
 
           had = this_tok_waitForInput();
           if (had) {
+            // note: this is why you cant cache this.input
             this_tok_input += had;
-            this_tok_len = this_tok_input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
             extraLen -= had.length;
           }
         } while (had !== false && extraLen > 0);
+
+        // note: this is why you cant cache this.len
+        this_tok_len = this_tok_offset + this_tok_input.length;
       }
 
       if (had === false) {
@@ -537,14 +545,21 @@
       // hex escapes
       } else if (c === 0x78) {
         if (pos+2 >= this_tok_len) this_tok_getMoreInput(false, pos+3-this_tok_len);
-        if (this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2))) pos += 2;
+
+        var a = this_tok_inputCharAt_offset(pos+1);
+        var b = this_tok_inputCharAt_offset(pos+2);
+        if (this_tok_parseHexDigit(a) && this_tok_parseHexDigit(b)) pos += 2;
         else this_tok_throwSyntaxError('Invalid hex escape');
       }
       return pos+1;
     }
   function this_tok_parseUnicodeEscapeBody(pos){
       if (pos+3 >= this_tok_len) this_tok_getMoreInput(false, pos+4-this_tok_len);
-      return this_tok_parseHexDigit(this_tok_input.charCodeAt(pos)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+1)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+2)) && this_tok_parseHexDigit(this_tok_input.charCodeAt(pos+3));
+      var a = this_tok_inputCharAt_offset(pos);
+      var b = this_tok_inputCharAt_offset(pos+1);
+      var c = this_tok_inputCharAt_offset(pos+2);
+      var d = this_tok_inputCharAt_offset(pos+3);
+      return this_tok_parseHexDigit(a) && this_tok_parseHexDigit(b) && this_tok_parseHexDigit(c) && this_tok_parseHexDigit(d);
     }
   function this_tok_parseHexDigit(c){
       // 0-9, a-f, A-F
@@ -848,7 +863,7 @@
       if (this_tok_inputCharAt_offset(pos + 1) === 0x75 && this_tok_parseUnicodeEscapeBody(pos + 2)) {
 
         // parseUnicodeEscapeBody will ensure enough input for this slice
-        var u = parseInt(this_tok_input.slice(pos+2, pos+6), 16);
+        var u = parseInt(this_tok_inputSlice_offset(pos+2, pos+6), 16);
         var b = u & 0xffdf;
         if (b >= 0x41 && b <= 0x5a) {
           return true;
@@ -884,7 +899,7 @@
     }
   function this_tok_getNum(offset){
 
-      return this_tok_inputCharAt_offset(this_tok_lastOffset+offset);
+      return this_tok_inputCharAt_offset(this_tok_lastOffset + offset);
     }
   function this_tok_throwSyntaxError(message){
       if (this_tok_options.neverThrow) {
@@ -971,6 +986,7 @@
 
     // v8 "appreciates" it when all instance properties are set explicitly
     this_tok_pos = 0;
+    this_tok_offset = 0;
     this_tok_reachedEof = false;
 
     this_tok_lastOffset = 0;

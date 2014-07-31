@@ -181,6 +181,7 @@
 
     // v8 "appreciates" it when all instance properties are set explicitly
     this.pos = 0;
+    this.offset = 0;
     this.reachedEof = false;
 
     this.lastOffset = 0;
@@ -273,16 +274,25 @@
       if (!extraLen) extraLen = 1;
 
       if (!this.reachedEof) {
+        // trunc the input, eliminating the consumed part
+        if (this.lastOffset > this.offset) {
+          this.input = this.input.slice(this.lastOffset - this.offset);
+          this.offset = this.lastOffset;
+        }
+
         var guard = 100000; // #zp-build loopguard
         do {
           if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           had = this.waitForInput();
           if (had) {
+            // note: this is why you cant cache this.input
             this.input += had;
-            this.len = this.input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
             extraLen -= had.length;
           }
         } while (had !== false && extraLen > 0);
+
+        // note: this is why you cant cache this.len
+        this.len = this.offset + this.input.length;
       }
 
       if (had === false) {
@@ -1230,7 +1240,7 @@
     // TOFIX: this is kind of the same as inputCharAt_offset...?
     getNum: function(offset){
       if (offset >= this.len) throw 'I dont think this should ever happen since isNum from parser assumes current token has been parsed. Does isnum ever check beyond current token?'; // #zp-build drop line
-      return this.inputCharAt_offset(this.lastOffset+offset);
+      return this.inputCharAt_offset(this.lastOffset + offset);
     },
 
     throwSyntaxError: function(message){
