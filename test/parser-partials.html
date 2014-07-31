@@ -136,7 +136,7 @@
           }
 
           if (crashed) {
-            debug('<b class="red">Test crashed:</span>', desc, '(' + crashed + ')');
+            debug('<b class="red">Test ['+i+'] crashed:</span>', desc, '(' + crashed + ')');
             debug('<b>' + sans(input) + '</b>');
             debug('<br/>');
             ++fail;
@@ -151,7 +151,6 @@
           if (testNewlines && NEWLINEFORSTATE[++newlineState]) --i; // repeat with different newline
           else newlineState = NEWLINESTATE_N;
         }
-
         debug("<h1>These tests should fail:</h1><br/>");
 
         newlineState = NEWLINESTATE_N;
