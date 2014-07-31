@@ -1110,7 +1110,7 @@
             if (m) this.throwSyntaxError('Illegal duplicate regex flag');
             m = true;
           } else {
-            if (backslash) throw 'illegal flag? ['+c+']';
+            if (backslash) this.throwSyntaxError('illegal flag? ['+c+']');
             break;
           }
 
