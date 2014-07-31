@@ -227,6 +227,8 @@ code = '(function(exports){'+code+'})(typeof exports === "undefined" ? window : 
 // find all (identifier) occurrences of this value and replace them with the primitive. Remove the definitions.
 // (I declare my vars and constants individually and don't use (uppercased) labels)
 
+// TOFIX: add check for duplicate declarations to be the same value. if tok and par define the same constant with a different value, things go wrong because they're considered to be in the same space now
+
 var constants = [];
 var hash = {};
 var tok = Par.parse(code, {saveTokens:true, createBlackStream:true}).tok;
