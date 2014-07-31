@@ -30,7 +30,7 @@
     </script>
 
     <script>
-      var s = ["\\u0", "06d"];
+      var s = ["var ", " a =", " 200;"];
       console.warn("Parsing:", [s]);
 
       try {
@@ -44,7 +44,7 @@
         obj.thaw();
 
         while (s.length) {
-          console.log('pushing', [s[0]]);
+          console.log('onestream.html: thawing with', [s[0]]);
           obj.thaw(s.shift());
         }
 
