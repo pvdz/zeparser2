@@ -261,32 +261,35 @@
     /**
      * Call whenever reaching EOF.
      *
-     * @param mustHaveMore
+     * @param {boolean} mustHaveMore=false Throw unexpected EOF error if there is no more input?
+     * @param {number} extraLen=1 How many bytes should we at least get now?
      * @returns {boolean}
      */
-    getMoreInput: function(mustHaveMore){
+    getMoreInput: function(mustHaveMore, extraLen){
       var had = false;
+      if (!extraLen) extraLen = 1;
 
       if (!this.reachedEof) {
         var guard = 100000; // #zp-build loopguard
         do {
           if (USE_LOOP_GUARDS) if (!--guard) throw 'loop security'; // #zp-build loopguard
           had = this.waitForInput();
-        } while (had !== false && !had.length);
-
-        if (had) {
-          this.input += had;
-          this.len = this.input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
-        }
+          if (had) {
+            this.input += had;
+            this.len = this.input.length; // note: this might cause problems with cached lengths when freezing at the right time with the right input. TOFIX: test and solve
+            extraLen -= had.length;
+          }
+        } while (had !== false && extraLen > 0);
       }
 
       if (had === false) {
         // if there was no more input, next time skip the freeze part
         this.reachedEof = true;
         if (mustHaveMore) this.throwSyntaxError('Unexpected EOF');
+        return false;
       }
 
-      return had;
+      return true;
     },
     /**
      * TOFIX: we can probably drop this
