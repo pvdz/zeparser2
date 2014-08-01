@@ -3271,8 +3271,8 @@ return;
 }
   function this_tok_regexFlags(){
 var step = 1;
-var v8, v7, v6, v5, v4, v3, v2, v1, v0;
-var f8, f7, f6, f5, f4, f3, f2, f1, f0;
+var v9, v8, v7, v6, v5, v4, v3, v2, v1, v0;
+var f9, f8, f7, f6, f5, f4, f3, f2, f1, f0;
 var pos, g, m, i, A, c, backslash;
 return function inside_this_tok_regexFlags(thawValue){
   while (true) {
@@ -3392,9 +3392,13 @@ step = 42;
 continue;
 case 41:
 if (!backslash) { step = 49; continue; }
-step = 48;
 case 48:
- throw 'illegal flag? ['+c+']';
+ step = 51; case 51:
+v7 = (f7 = f7 || this_tok_throwSyntaxError('illegal flag? ['+c+']'))(thawValue);
+if (frozen) return v7;
+else f7 = null;
+step = 52;
+case 52:
 case 49:
 step = 18;
 continue;
@@ -3402,38 +3406,38 @@ case 26:
 case 34:
 step = 42;
 case 42:
-if (!backslash) { step = 52; continue; }
-step = 51;
-case 51:
+if (!backslash) { step = 54; continue; }
+step = 53;
+case 53:
  pos += 5;
-step = 52;
-case 52:
-  A = ++pos >= this_tok_len ;
-if (!A) { step = 55; continue; }
+step = 54;
 case 54:
-step = 57;
-case 57:
-v7 = (f7 = f7 || this_tok_getMoreInput(true))(thawValue);
-if (frozen) return v7;
-else f7 = null;
-step = 58;
-case 58:
-A =  !v7; 
-step = 55;
-case 55:
-if (!A) { step = 60; continue; }
+  A = ++pos >= this_tok_len ;
+if (!A) { step = 57; continue; }
+case 56:
+step = 59;
 case 59:
- step = 18;
-continue;
-case 60:
-step = 62;
-case 62:
-v8 = (f8 = f8 || this_tok_inputCharAt_offset(pos))(thawValue);
+v8 = (f8 = f8 || this_tok_getMoreInput(true))(thawValue);
 if (frozen) return v8;
 else f8 = null;
-step = 63;
-case 63:
-c = v8;
+step = 60;
+case 60:
+A =  !v8; 
+step = 57;
+case 57:
+if (!A) { step = 62; continue; }
+case 61:
+ step = 18;
+continue;
+case 62:
+step = 64;
+case 64:
+v9 = (f9 = f9 || this_tok_inputCharAt_offset(pos))(thawValue);
+if (frozen) return v9;
+else f9 = null;
+step = 65;
+case 65:
+c = v9;
 step = 17;
 continue
 case 18:
