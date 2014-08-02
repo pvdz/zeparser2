@@ -17,24 +17,7 @@
     <p>Confirms that `Par.parse` returns the proper object.</p>
     <p id="result">Running...</p>
 
-    <script>
-      // ensure Par is loaded
-
-      Par = parent.Par; // use Par from parent frame
-      if (!Par) {
-        console.warn('api-test.html: no parent.Par found, loading own Par ['+location.search+']');
-        switch (location.search) {
-          case '?build':
-            document.write('<script src="../build/zp.js"><\/script>');
-            break;
-          case '?streaming':
-            document.write('<script src="../build/zps.js"><\/script>');
-            break;
-          default:
-            document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
-        }
-      }
-    </script>
+    <script src="loader.js"></script>
 
     <script>
     try {
@@ -73,12 +56,33 @@
       if (Par.ERROR !== ERROR) throw 'Missing Par.ERROR';
 
       // first simple test
-      var p1 = Par.parse('var foo = bar;', {runWithoutFurtherInput:true});
+      var p1 = Par.parse('var foo = bar;');
+      if (top.location.search === '?streaming') {
+        if (typeof p1 !== 'object') throw 'Streamer should first return a simple object';
+        if (typeof p1.thaw !== 'function') throw 'Streamer should expose thaw';
+        if (p1.frozen !== true) throw 'Streamer should start frozen';
+        var t = p1.thaw();
+        if (top === window) console.log('thaw:',t);
+        if (top === window) console.log('p:',p1);
+        if (typeof p1.thaw !== 'function') throw 'Streamer should keep thaw exposed';
+        if (p1.frozen !== true) throw 'Streamer should yield frozen the first time';
+        var pt = p1.thaw(false);
+        if (top === window) console.log('thaw:',pt);
+        if (top === window) console.log('p:',p1);
+        if (typeof p1.thaw !== 'function') throw 'Thaw should not be removed';
+        if (p1.frozen !== false) throw 'Streamer should not be frozen now';
+        p1 = pt;
+
+        // p1 should now be regular api
+      }
       if (top === window) console.log('p1',p1);
-      if (typeof p1 !== 'object') throw 'par is not an object';
-      if (typeof p1.par !== 'object') throw 'par.par is not an object';
-      if (typeof p1.tok !== 'object') throw 'par.tok is not an object';
-      if (typeof p1.options !== 'object') throw 'par.options is not an object';
+      if (typeof p1 !== 'object') throw 'p1 is not an object';
+      if (typeof p1.par !== 'object') throw 'p1.par is not an object';
+      if (!(p1.par instanceof Par)) throw 'p1.par should be instanceof Par';
+      if (typeof p1.tok !== 'object') throw 'p1.tok is not an object';
+      if (!(p1.tok instanceof Par.Tok)) throw 'p1.tok should be instanceof Par.Tok';
+      if (top === window) console.log(p1)
+      if (typeof p1.options !== 'object') throw 'p1.options is not an object';
       if (!('allowCallAssignment' in p1.options)) throw 'missing option allowCallAssignment';
       if (!('checkAccessorArgs' in p1.options)) throw 'missing option allowCallAssignment';
       if (!('createBlackStream' in p1.options)) throw 'missing option allowCallAssignment';
