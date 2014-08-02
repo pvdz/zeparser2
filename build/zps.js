@@ -1821,7 +1821,7 @@ case 8:
  d = v1;
 step = 9;
 case 9:
-if (!(!(d))) { step = 12; continue; }
+if (d) { step = 12; continue; }
 case 11:
  step = 10;
 continue;
@@ -4112,7 +4112,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 5;
 case 5:
-if (!(!(v0))) { step = 7; continue; }
+if (v0) { step = 7; continue; }
 case 6:
  step = 3;
 continue;
@@ -5627,7 +5627,7 @@ if (frozen) return v5;
 else f5 = null;
 step = 27;
 case 27:
-if (!(!(v5))) { step = 29; continue; }
+if (v5) { step = 29; continue; }
 case 28:
  step = 25;
 continue;
@@ -6113,7 +6113,7 @@ if (frozen) return v4;
 else f4 = null;
 step = 22;
 case 22:
-if (!(!(v4))) { step = 24; continue; }
+if (v4) { step = 24; continue; }
 case 23:
  step = 20;
 continue;
@@ -6552,7 +6552,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 10;
 case 10:
-if (!(!(v1))) { step = 12; continue; }
+if (v1) { step = 12; continue; }
 case 11:
  step = 8;
 continue; 
@@ -6598,7 +6598,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 7;
 case 7:
-if (!(!(v1))) { step = 9; continue; }
+if (v1) { step = 9; continue; }
 case 8:
  step = 5;
 continue; 
@@ -6735,7 +6735,7 @@ if (frozen) return v0;
 else f0 = null;
 step = 5;
 case 5:
-if (!(!(v0))) { step = 7; continue; }
+if (v0) { step = 7; continue; }
 case 6:
  step = 3;
 continue;
@@ -6925,7 +6925,7 @@ if (frozen) return v1;
 else f1 = null;
 step = 7;
 case 7:
-if (!(!(v1))) { step = 9; continue; }
+if (v1) { step = 9; continue; }
 case 8:
  step = 5;
 continue;
@@ -6976,7 +6976,7 @@ case 5:
        repeat = true;
 step = 6;
 case 6:
-if (!(!(repeat))) { step = 9; continue; }
+if (repeat) { step = 9; continue; }
 case 8:
  step = 7;
 continue; 

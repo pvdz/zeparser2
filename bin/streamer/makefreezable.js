@@ -359,6 +359,7 @@ function makeFreezable(data){
       .replace(/if\s*\(\s*\!\s*\(\s*([\w\d]+)\s*\)\s*\)/g, 'if (!$1)') // remove unnecessary paren wrapping: if (!(v5))
       .replace(/if\s*\(\s*\!\s*\(\s*\!([\w\d]+)\s*\)\s*\)/g, 'if ($1)') // remove unnecessary paren wrapping with double negation: if (!(!v5))
       .replace(/if\s*\(\s*\!\(\s*([\w\d]+)\s*===\s*([\w\d]+)\s*\)\s*\)/g, 'if ($1 !== $2)') // cleanup inverted comparison: if (!(v5 === 0x0A))
+      .replace(/if\s*\(\s*\!\s*\(\s*\!\s*\(\s*([\d\w]+)\s*\)\s*\)\s*\)/g, 'if ($1)') // same as above, with extra paren padding: if (!(!(v5)))
     ;
   } while (last !== out)
 
