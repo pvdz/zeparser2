@@ -7,23 +7,6 @@
   div>p { text-align: center; }
 </style>
 
-<script>
-  var e = document.querySelector('a[href="'+(location.search||'?dev')+'"]').parentNode;
-  e.innerHTML = e.innerHTML.replace('&nbsp;','&lt;').replace('&nbsp;','&gt;');
-  e.firstElementChild.style.textDecoration = 'none';
-
-  switch (location.search) {
-    case '?build':
-      document.write('<script src="../build/zp.js"><\/script>');
-      break;
-    case '?streaming':
-      document.write('<script src="../build/zps.js"><\/script>');
-      break;
-    default:
-      document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
-  }
-</script>
-
 <p>
   <a href="onetok.html">onetok.html</a> | <a href="onepar.html">onepar.html</a> | <a href="onestream.html">onestream.html</a>
 </p>

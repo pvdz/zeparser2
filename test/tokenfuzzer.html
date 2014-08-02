@@ -1,21 +1,5 @@
 <body>
-<script>
-  // ensure Par is loaded
-  Par = parent.Par; // use Par from parent frame
-  if (!Par) {
-    console.warn('tokenfuzzer.html: no parent.Par found, loading own Par ['+location.search+']');
-    switch (location.search) {
-      case '?build':
-        document.write('<script src="../build/zp.js"><\/script>');
-        break;
-      case '?streaming':
-        document.write('<script src="../build/zps.js"><\/script>');
-        break;
-      default:
-        document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
-    }
-  }
-</script>
+<script src="loader.js"></script>
 
 <h1>Token fuzzer</h1>
 <p>This is a combinatory fuzzer that only randomly concats tokens to produce something that may or may parse as valid JS.</p>

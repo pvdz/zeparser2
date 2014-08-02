@@ -15,19 +15,8 @@
     (c) qfox.nl<br/>
     Testing tokenizer on one case. <br/>
 
-    <script>
-      console.warn('loading own Tok ['+location.search+']');
-      switch (location.search) {
-        case '?build':
-          document.write('<script src="../build/zp.js"><\/script>');
-          break;
-        case '?streaming':
-          document.write('<script src="../build/zps.js"><\/script>');
-          break;
-        default:
-          document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
-      }
-    </script>
+    <script src="loader.js"></script>
+
     <script>
       var Tok = Par.Tok;
     </script>

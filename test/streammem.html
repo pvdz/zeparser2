@@ -1,25 +1,8 @@
 <p>Tests whether thawing won't gain memory by repeatedly parsing some data.</p>
 <p id="result">Running...</p>
 
-<script>
-  // ensure Par is loaded
+<script src="loader.js"></script>
 
-  Par = parent.Par; // use Par from parent frame
-  if (!Par) {
-    console.warn('streamer.html: no parent.Par found, loading own Par ['+location.search+']');
-    switch (location.search) {
-      case '?build':
-        document.write('<script src="../build/zp.js"><\/script>');
-        break;
-      case '?streaming':
-        document.write('<script src="../build/zps.js"><\/script>');
-        break;
-      default:
-        document.write('<script src="../src/uni.js"><\/script><script src="../src/tok.js"><\/script><script src="../src/par.js"><\/script>');
-    }
-
-  }
-</script>
 break right after single quote
 <script>
   var limit = 4e4;
