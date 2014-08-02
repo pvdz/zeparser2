@@ -93,7 +93,6 @@ step = 21;
 case 21:
 return true;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -107,7 +106,6 @@ return function inside_this_tok_updateInput(thawValue){
 this_tok_input += input;
       this_tok_len += input.length;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -121,7 +119,6 @@ return function inside_this_tok_waitForInput(thawValue){
 // noop
       return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -147,7 +144,6 @@ step = 3;
 case 3:
 return equals;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -180,7 +176,6 @@ step = 5;
 case 5:
 return equals;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -213,7 +208,6 @@ step = 5;
 case 5:
 return equals;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -244,7 +238,6 @@ else f1 = null;
 step = 8;
 case 8:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -275,7 +268,6 @@ else f1 = null;
 step = 8;
 case 8:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -319,7 +311,6 @@ else f2 = null;
 step = 10;
 case 10:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -390,7 +381,6 @@ case 17:
 this_tok_lastType = type;
       return type;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -438,7 +428,6 @@ step = 11;
 case 11:
 return type;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -493,7 +482,6 @@ case 13:
       this_tok_lastLen = (this_tok_lastStop = this_tok_pos) - this_tok_lastOffset;
 return type;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -559,7 +547,6 @@ step = 21;
 case 21:
 return v3;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -810,7 +797,6 @@ case 53:
 step = 1;
 case 1:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1010,7 +996,6 @@ return v10;
 step = 1;
 case 1:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1054,7 +1039,6 @@ else f2 = null;
 step = 13;
 case 13:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1173,7 +1157,6 @@ step = 1;
 case 1:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1207,7 +1190,6 @@ case 5:
 this_tok_pos = v1;
       return 13;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1282,7 +1264,6 @@ step = 25;
 case 25:
 return v5;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1331,7 +1312,6 @@ step = 13;
 case 13:
 return v2;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1424,7 +1404,6 @@ this_tok_tokenCountAll = count;
       this_tok_pos = pos;
 return 18;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1474,7 +1453,6 @@ case 10:
 this_tok_pos = pos + ((A) ? 1 : 0);
 return 9;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1539,7 +1517,6 @@ case 10:
 this_tok_pos += len;
       return 9;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1648,7 +1625,6 @@ case 13:
 this_tok_pos += len;
       return 9;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1688,7 +1664,6 @@ case 10:
 this_tok_pos += len;
       return 9;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1713,7 +1688,6 @@ step = 4;
 case 4:
 return 9;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1812,7 +1786,6 @@ if (foundCr) return this.parseCR();
       return this.parseVerifiedNewline(this.pos, 0);
 */
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1920,7 +1893,6 @@ else f4 = null;
 step = 40;
 case 40:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1942,7 +1914,6 @@ step = 3;
 case 3:
 return v0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -1964,7 +1935,6 @@ step = 3;
 case 3:
 return v0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2072,7 +2042,6 @@ else f4 = null;
 step = 40;
 case 40:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2231,7 +2200,6 @@ step = 33;
 case 33:
 return pos+1;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2332,7 +2300,6 @@ step = 28;
 case 28:
 return A;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2381,7 +2348,6 @@ step = 12;
 case 12:
 return (A);
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2434,7 +2400,6 @@ case 13:
 ++this_tok_pos;
       return 9;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2538,7 +2503,6 @@ step = 22;
 case 22:
 return 7;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2622,7 +2586,6 @@ case 3:
 this_tok_pos = pos;
       return 7;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2697,7 +2660,6 @@ case 23:
 this_tok_pos = v3;
       return 7;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2775,7 +2737,6 @@ pos = v3;
 this_tok_pos = pos;
 return 7;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2942,7 +2903,6 @@ step = 6;
 case 6:
 return pos;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -2977,7 +2937,6 @@ step = 5;
 case 5:
 return 8;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3130,7 +3089,6 @@ step = 2;
 continue
 case 3:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3264,7 +3222,6 @@ step = 2;
 continue
 case 3:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3445,7 +3402,6 @@ step = 13;
 case 13:
 this_tok_pos = pos;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3545,7 +3501,6 @@ step = 36;
 case 36:
 return 0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3568,7 +3523,6 @@ case 3:
 this_tok_pos = v0;
       return 13;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3679,7 +3633,6 @@ continue
 case 3:
 return pos;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3746,7 +3699,6 @@ step = 20;
 case 20:
 return 0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3870,7 +3822,6 @@ else f6 = null;
 step = 48;
 case 48:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3900,7 +3851,6 @@ return v0;
 //      }
 //      return val;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3922,7 +3872,6 @@ step = 3;
 case 3:
 return v0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3956,7 +3905,6 @@ case 3:
        inp = this_tok_input;
       throw message+'. A syntax error at pos='+pos+' Search for #|#: `'+inp.substring(pos-2000, pos)+'#|#'+inp.substring(pos, pos+2000)+'`';
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3972,7 +3920,6 @@ return function inside_this_tok_inputCharAt_offset(thawValue){
       // warning: this function is replaced for the regular build. dont do anything fancy in here!
       return this_tok_input.charCodeAt(pos - this_tok_offset);
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -3988,7 +3935,6 @@ return function inside_this_tok_inputSlice_offset(thawValue){
       // warning: this function is replaced for the regular build. dont do anything fancy in here!
       return this_tok_input.slice(from - this_tok_offset, to - this_tok_offset);
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4087,7 +4033,6 @@ var this_par_options =  null;
 var step = 1;
 var v2, v1, v0;
 var f2, f1, f0;
-var frob = this.frozenObject;
 var A;
 return function inside_this_par_run(thawValue){
 frozen = false;
@@ -4098,8 +4043,6 @@ frozen = false;
       step = 2; case 2:
 v0 = (f0 = f0 || this_tok_next(true))(thawValue);
 if (frozen) {
-          frob.frozen = true;
-          frob.value = v0;
           return v0;
         }
 else f0 = null;
@@ -4109,8 +4052,6 @@ case 3:
       step = 4; case 4:
 v1 = (f1 = f1 || this_par_parseStatements(false, '', false, ''))(thawValue);
 if (frozen) {
-          frob.frozen = true;
-          frob.value = v1;
           return v1;
         }
 else f1 = null;
@@ -4128,8 +4069,6 @@ case 9:
  step = 12; case 12:
 v2 = (f2 = f2 || this_tok_throwSyntaxError('Did not complete parsing..'))(thawValue);
 if (frozen) {
-          frob.frozen = true;
-          frob.value = v2;
           return v2;
         }
 else f2 = null;
@@ -4142,7 +4081,7 @@ case 14:
  this['frozenObject'].frozen = false;
 step = 15;
 case 15:
-return (frob.frozen = false, frob.value =  {
+return {
         par: this,
         tok: this_par_tok,
         options: this_par_options,
@@ -4150,9 +4089,8 @@ return (frob.frozen = false, frob.value =  {
         blacks: this_tok_black,
         tokenCountWhite: this_tok_tokenCountAll,
         tokenCountBlack: this_tok_tokenCountBlack,
-      }||undefined);
+      };
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4183,7 +4121,6 @@ step = 2;
 continue
 case 3:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4216,7 +4153,6 @@ step = 8;
 case 8:
 return v1;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4275,7 +4211,6 @@ step = 18;
 case 18:
 return v3;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4446,7 +4381,6 @@ step = 60;
 case 60:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4746,7 +4680,6 @@ else f17 = null;
 step = 121;
 case 121:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4776,7 +4709,6 @@ else f2 = null;
 step = 7;
 case 7:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4860,7 +4792,6 @@ else f7 = null;
 step = 28;
 case 28:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4938,7 +4869,6 @@ step = 3;
 case 3:
 return vars === 1;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -4990,7 +4920,6 @@ case 16:
 step = 11;
 case 11:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5062,7 +4991,6 @@ case 24:
 step = 21;
 case 21:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5101,7 +5029,6 @@ else f2 = null;
 step = 10;
 case 10:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5281,7 +5208,6 @@ else f14 = null;
 step = 61;
 case 61:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5312,7 +5238,6 @@ else f2 = null;
 step = 7;
 case 7:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5340,7 +5265,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5439,7 +5363,6 @@ else f6 = null;
 step = 36;
 case 36:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5536,7 +5459,6 @@ else f5 = null;
 step = 31;
 case 31:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5591,7 +5513,6 @@ else f3 = null;
 step = 18;
 case 18:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5632,7 +5553,6 @@ else f3 = null;
 step = 12;
 case 12:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5746,7 +5666,6 @@ else f8 = null;
 step = 42;
 case 42:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5785,7 +5704,6 @@ else f3 = null;
 step = 12;
 case 12:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5820,7 +5738,6 @@ else f2 = null;
 step = 10;
 case 10:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5870,7 +5787,6 @@ case 14:
 step = 11;
 case 11:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5949,7 +5865,6 @@ case 26:
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -5980,7 +5895,6 @@ case 8:
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6006,7 +5920,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6037,7 +5950,6 @@ else f2 = null;
 step = 7;
 case 7:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6111,7 +6023,6 @@ else f6 = null;
 step = 24;
 case 24:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6146,7 +6057,6 @@ else f3 = null;
 step = 9;
 case 9:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6270,7 +6180,6 @@ case 4:
 step = 46;
 case 46:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6299,7 +6208,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6324,7 +6232,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6368,7 +6275,6 @@ else f2 = null;
 step = 13;
 case 13:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6411,7 +6317,6 @@ step = 9;
 case 9:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6458,7 +6363,6 @@ step = 9;
 case 9:
 return 15;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6483,7 +6387,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6619,7 +6522,6 @@ case 49:
 step = 12;
 case 12:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6666,7 +6568,6 @@ case 8:
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6714,7 +6615,6 @@ continue
 case 5:
 return groupAssignable;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6750,7 +6650,6 @@ step = 5;
 case 5:
 return groupAssignable;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6813,7 +6712,6 @@ step = 5;
 case 5:
 return assignable;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6876,7 +6774,6 @@ step = 2;
 continue
 case 3:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6931,7 +6828,6 @@ step = 2;
 continue
 case 3:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -6966,7 +6862,6 @@ else f3 = null;
 step = 9;
 case 9:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7001,7 +6896,6 @@ else f3 = null;
 step = 9;
 case 9:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7049,7 +6943,6 @@ continue
 case 5:
 return validForInLhs;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7163,7 +7056,6 @@ continue
 case 7:
 return count === this_tok_tokenCountAll ? assignable : 0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7185,7 +7077,6 @@ step = 3;
 case 3:
 return v0;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7549,7 +7440,6 @@ step = 142;
 case 142:
 return v26;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7630,7 +7520,6 @@ step = 21;
 case 21:
 return v6;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7678,7 +7567,6 @@ step = 13;
 case 13:
 return v2;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -7793,7 +7681,6 @@ step = 37;
 case 37:
 return 1;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8014,7 +7901,6 @@ step = 81;
 case 81:
 return assignable;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8157,7 +8043,6 @@ step = 38;
 case 38:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8402,7 +8287,6 @@ step = 95;
 case 95:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8443,7 +8327,6 @@ step = 7;
 case 7:
 return groupAssignable;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8483,7 +8366,6 @@ else f2 = null;
 step = 9;
 case 9:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8542,7 +8424,6 @@ else f2 = null;
 step = 18;
 case 18:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8661,7 +8542,6 @@ case 31:
 step = 14;
 case 14:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8686,7 +8566,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -8711,7 +8590,6 @@ else f1 = null;
 step = 5;
 case 5:
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -9049,7 +8927,6 @@ step = 100;
 case 100:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -9649,7 +9526,6 @@ step = 209;
 case 209:
 return false;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };
@@ -9702,7 +9578,6 @@ step = 18;
 case 18:
 return A;
 return;
-        default: throw "uncompiled step? ["+step+"]";
       }
     }
   };

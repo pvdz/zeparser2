@@ -35,7 +35,7 @@ function makeFreezable(data){
       t.rhc.value =
         '\n' +
         '          return;\n'+
-        '        default: throw "uncompiled step? ["+step+"]";\n'+
+        (ENABLE_LOOP_GUARD?'        default: throw "uncompiled step? ["+step+"]";\n':'')+
         '      }\n' +
         '    }\n' +
         '  };\n'+
@@ -82,7 +82,6 @@ function makeFreezable(data){
         (vars.length ? 'var ' + vars.join(', ') + ';\n' : '') +
         (funcs.length ? 'var ' + funcs.join(', ') + ';\n' : '') +
         (switchCounter ? 'var switchValue, matched, fellThrough;\n' : '') +
-        (isRootDir ? 'var frob = this.frozenObject;\n':'')+
         (varDecls.length ? 'var '+varDecls.join(', ')+';\n' : '')+
         'return function inside_'+currentFunc.name+'(thawValue){\n' +
         (isRootDir ? 'frozen = false;\n':'')+
@@ -233,8 +232,6 @@ function makeFreezable(data){
           ')(thawValue);\n' +
           'if (frozen) '+
           (isRootDir?'{\n':'')+
-          (isRootDir?"          frob.frozen = true;\n":'')+
-          (isRootDir?"          frob.value = v"+callCounter+";\n":'')+
           (isRootDir?'          ':'')+
           'return v'+callCounter+';\n'+
           (isRootDir?'        }\n':'')+
@@ -261,8 +258,6 @@ function makeFreezable(data){
           'v'+callCounter+' = (f'+callCounter+' = f'+callCounter+' || '+call+')(thawValue);\n' +
           'if (frozen) '+
           (isRootDir?'{\n':'')+
-          (isRootDir?"          frob.frozen = true;\n":'')+
-          (isRootDir?"          frob.value = v"+callCounter+";\n":'')+
           (isRootDir?'          ':'')+
           'return v'+callCounter+';\n'+
           (isRootDir?'        }\n':'')+
@@ -271,15 +266,6 @@ function makeFreezable(data){
           stmtstrt.value;
       }
       ++callCounter;
-    }
-
-    if (t.isReturn && isRootDir) {
-      t.after +=
-        ' (frob.frozen = false, frob.value = ';
-
-      t.argEndToken.before =
-        '||undefined)'+
-        t.argEndToken.before;
     }
 
     if (t.isSwitch) {
