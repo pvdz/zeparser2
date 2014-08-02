@@ -4136,6 +4136,12 @@ else f2 = null;
 case 13:
 step = 10;
 case 10:
+if (!(this['frozenObject'])) { step = 15; continue; }
+step = 14;
+case 14:
+ this['frozenObject'].frozen = false;
+step = 15;
+case 15:
 return (frob.frozen = false, frob.value =  {
         par: this,
         tok: this_par_tok,
@@ -9722,8 +9728,7 @@ var Par = exports.Par = function(input, options){
 // special build
     if (typeof frozen !== 'undefined') {
       this['frozenObject'] = {
-        frozen: false,
-        value: undefined,
+        frozen: true,
         thaw: null
       };
     }
@@ -9753,10 +9758,10 @@ Par.updateTok = function(T) {
   };
 Par.parse = function(input, options){
     var par = new Par(input, options);
-    // the call makes sure run has the proper context for the streaming version
-    // it will be the only instance method that has the proper context :)
-    // TOFIX: we can probably eliminate that now?
-    var f = par.run.call(par);
+// no need for .call; for streamer the generator ignores it, we call/apply below.
+    // We consider runWithoutFurtherInput a testing mechanism so dont have to care
+    // about the api there either. Regular build works fine without call here.
+    var f = par.run();
 // `frozen` is added as a module global in an extra build step
     if (typeof frozen !== 'undefined') {
       // f will be a generator
@@ -9771,12 +9776,13 @@ Par.parse = function(input, options){
         // testing
         do{{{{{{ {
           // start parsing nao
-          var yieldValue = f(false);
+          var yieldValue = f.call(par, false);
         } }}}}}}while (frozen);
         f = yieldValue;
       } else {
-        par.frozenObject.thaw = f;
+        var thaw = f;
         f = par.frozenObject;
+        f.thaw = function(){ return thaw.apply(par, arguments); };
       }
     }}
 return f;
